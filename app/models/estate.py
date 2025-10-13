@@ -58,3 +58,97 @@ class Estate(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
+
+    @staticmethod
+    def get_all(search: Optional[str] = None, is_active: Optional[bool] = None):
+        query = Estate.query
+        if search:
+            like = f"%{search}%"
+            query = query.filter(
+                db.or_(Estate.name.ilike(like), Estate.code.ilike(like))
+            )
+        if is_active is not None:
+            query = query.filter(Estate.is_active == is_active)
+        return query
+
+    @staticmethod
+    def get_by_id(estate_id: int):
+        return Estate.query.get(estate_id)
+
+    @staticmethod
+    def create_from_payload(payload):
+        estate = Estate(
+            code=payload.get("code"),
+            name=payload.get("name"),
+            address=payload.get("address"),
+            city=payload.get("city"),
+            postal_code=payload.get("postal_code"),
+            contact_name=payload.get("contact_name"),
+            contact_phone=payload.get("contact_phone"),
+            contact_email=payload.get("contact_email"),
+            total_units=payload.get("total_units", 0),
+            electricity_markup_percentage=payload.get(
+                "electricity_markup_percentage", 0.00
+            ),
+            water_markup_percentage=payload.get("water_markup_percentage", 0.00),
+            solar_free_allocation_kwh=payload.get("solar_free_allocation_kwh", 50.00),
+            is_active=payload.get("is_active", True),
+        )
+        db.session.add(estate)
+        db.session.commit()
+        return estate
+
+    def update_from_payload(self, payload):
+        for field in (
+            "code",
+            "name",
+            "address",
+            "city",
+            "postal_code",
+            "contact_name",
+            "contact_phone",
+            "contact_email",
+            "total_units",
+            "electricity_markup_percentage",
+            "water_markup_percentage",
+            "solar_free_allocation_kwh",
+            "is_active",
+        ):
+            if field in payload:
+                setattr(self, field, payload[field])
+        db.session.commit()
+        return self
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "address": self.address,
+            "city": self.city,
+            "postal_code": self.postal_code,
+            "contact_name": self.contact_name,
+            "contact_phone": self.contact_phone,
+            "contact_email": self.contact_email,
+            "total_units": self.total_units,
+            "bulk_electricity_meter_id": self.bulk_electricity_meter_id,
+            "bulk_water_meter_id": self.bulk_water_meter_id,
+            "electricity_rate_table_id": self.electricity_rate_table_id,
+            "water_rate_table_id": self.water_rate_table_id,
+            "electricity_markup_percentage": float(self.electricity_markup_percentage)
+            if self.electricity_markup_percentage is not None
+            else None,
+            "water_markup_percentage": float(self.water_markup_percentage)
+            if self.water_markup_percentage is not None
+            else None,
+            "solar_free_allocation_kwh": float(self.solar_free_allocation_kwh)
+            if self.solar_free_allocation_kwh is not None
+            else None,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

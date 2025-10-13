@@ -63,3 +63,88 @@ class Unit(db.Model):
             name="ck_units_occupancy_status",
         ),
     )
+
+    @staticmethod
+    def get_all(
+        estate_id: Optional[int] = None,
+        occupancy_status: Optional[str] = None,
+        search: Optional[str] = None,
+    ):
+        query = Unit.query
+        if estate_id is not None:
+            query = query.filter(Unit.estate_id == estate_id)
+        if occupancy_status is not None:
+            query = query.filter(Unit.occupancy_status == occupancy_status)
+        if search:
+            like = f"%{search}%"
+            query = query.filter(
+                db.or_(Unit.unit_number.ilike(like), Unit.building.ilike(like))
+            )
+        return query
+
+    @staticmethod
+    def get_by_id(unit_id):
+        return Unit.query.get(unit_id)
+
+    @staticmethod
+    def create_from_payload(payload):
+        unit = Unit(
+            estate_id=payload["estate_id"],
+            unit_number=payload["unit_number"],
+            floor=payload.get("floor"),
+            building=payload.get("building"),
+            bedrooms=payload.get("bedrooms"),
+            bathrooms=payload.get("bathrooms"),
+            size_sqm=payload.get("size_sqm"),
+            occupancy_status=payload.get("occupancy_status", "vacant"),
+            resident_id=payload.get("resident_id"),
+            electricity_meter_id=payload.get("electricity_meter_id"),
+            water_meter_id=payload.get("water_meter_id"),
+            solar_meter_id=payload.get("solar_meter_id"),
+            is_active=payload.get("is_active", True),
+        )
+        db.session.add(unit)
+        db.session.commit()
+        return unit
+
+    def update_from_payload(self, payload):
+        for field in (
+            "estate_id",
+            "unit_number",
+            "floor",
+            "building",
+            "bedrooms",
+            "bathrooms",
+            "size_sqm",
+            "occupancy_status",
+            "resident_id",
+            "electricity_meter_id",
+            "water_meter_id",
+            "solar_meter_id",
+            "is_active",
+        ):
+            if field in payload:
+                setattr(self, field, payload[field])
+        db.session.commit()
+        return self
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "estate_id": self.estate_id,
+            "unit_number": self.unit_number,
+            "floor": self.floor,
+            "building": self.building,
+            "bedrooms": self.bedrooms,
+            "bathrooms": self.bathrooms,
+            "size_sqm": float(self.size_sqm) if self.size_sqm is not None else None,
+            "occupancy_status": self.occupancy_status,
+            "resident_id": self.resident_id,
+            "wallet_id": self.wallet_id,
+            "electricity_meter_id": self.electricity_meter_id,
+            "water_meter_id": self.water_meter_id,
+            "solar_meter_id": self.solar_meter_id,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

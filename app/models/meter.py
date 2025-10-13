@@ -60,3 +60,46 @@ class Meter(db.Model):
             name="ck_meters_comm_status",
         ),
     )
+
+    @staticmethod
+    def get_all(
+        meter_type: Optional[str] = None, communication_status: Optional[str] = None
+    ):
+        query = Meter.query
+        if meter_type:
+            query = query.filter(Meter.meter_type == meter_type)
+        if communication_status:
+            query = query.filter(Meter.communication_status == communication_status)
+        return query
+
+    @staticmethod
+    def get_by_id(meter_id):
+        return Meter.query.get(meter_id)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "serial_number": self.serial_number,
+            "meter_type": self.meter_type,
+            "manufacturer": self.manufacturer,
+            "model": self.model,
+            "installation_date": self.installation_date.isoformat()
+            if self.installation_date
+            else None,
+            "last_reading": float(self.last_reading)
+            if self.last_reading is not None
+            else None,
+            "last_reading_date": self.last_reading_date.isoformat()
+            if self.last_reading_date
+            else None,
+            "communication_type": self.communication_type,
+            "communication_status": self.communication_status,
+            "last_communication": self.last_communication.isoformat()
+            if self.last_communication
+            else None,
+            "firmware_version": self.firmware_version,
+            "is_prepaid": self.is_prepaid,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

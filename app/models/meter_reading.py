@@ -38,3 +38,31 @@ class MeterReading(db.Model):
             name="ck_meter_readings_type",
         ),
     )
+
+    @staticmethod
+    def list_for_meter(
+        meter_id: int, start: Optional[datetime] = None, end: Optional[datetime] = None
+    ):
+        query = MeterReading.query.filter(MeterReading.meter_id == meter_id)
+        if start is not None:
+            query = query.filter(MeterReading.reading_date >= start)
+        if end is not None:
+            query = query.filter(MeterReading.reading_date <= end)
+        return query.order_by(MeterReading.reading_date.desc())
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "meter_id": self.meter_id,
+            "reading_value": float(self.reading_value),
+            "reading_date": self.reading_date.isoformat(),
+            "reading_type": self.reading_type,
+            "consumption_since_last": float(self.consumption_since_last)
+            if self.consumption_since_last is not None
+            else None,
+            "is_validated": self.is_validated,
+            "validation_date": self.validation_date.isoformat()
+            if self.validation_date
+            else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

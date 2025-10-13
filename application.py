@@ -4,6 +4,8 @@ from flask import Flask
 
 from config import Config
 from app.db import db
+from app.routes.v1 import api_v1
+from app.auth import login_manager
 
 
 def create_app() -> Flask:
@@ -11,6 +13,7 @@ def create_app() -> Flask:
     app.config.from_object(Config)
 
     db.init_app(app)
+    login_manager.init_app(app)
 
     with app.app_context():
         # Import models so tables are registered
@@ -34,6 +37,9 @@ def create_app() -> Flask:
             MeterAlert,
             ReconciliationReport,
         )
+
+        # Register API blueprints
+        app.register_blueprint(api_v1)
 
     return app
 

@@ -48,3 +48,34 @@ class RateTable(db.Model):
             name="ck_rate_tables_utility_type",
         ),
     )
+
+    @staticmethod
+    def get_by_id(rate_table_id: int) -> Optional["RateTable"]:
+        return RateTable.query.get(rate_table_id)
+
+    @staticmethod
+    def list_filtered(utility_type: str = None, is_active: bool = None):
+        query = RateTable.query
+        if utility_type:
+            query = query.filter(RateTable.utility_type == utility_type)
+        if is_active is not None:
+            query = query.filter(RateTable.is_active == is_active)
+        return query.order_by(RateTable.effective_from.desc())
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "utility_type": self.utility_type,
+            "rate_structure": self.rate_structure,
+            "is_default": self.is_default,
+            "effective_from": self.effective_from.isoformat()
+            if self.effective_from
+            else None,
+            "effective_to": self.effective_to.isoformat()
+            if self.effective_to
+            else None,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

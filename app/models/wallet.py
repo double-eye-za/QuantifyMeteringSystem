@@ -66,3 +66,47 @@ class Wallet(db.Model):
         ),
         CheckConstraint("water_minimum_activation >= 0", name="ck_wallets_water_min"),
     )
+
+    @staticmethod
+    def get_by_id(wallet_id: int):
+        return Wallet.query.get(wallet_id)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "unit_id": self.unit_id,
+            "balance": float(self.balance),
+            "electricity_balance": float(self.electricity_balance),
+            "water_balance": float(self.water_balance),
+            "solar_balance": float(self.solar_balance),
+            "low_balance_threshold": float(self.low_balance_threshold)
+            if self.low_balance_threshold is not None
+            else None,
+            "low_balance_alert_type": self.low_balance_alert_type,
+            "low_balance_days_threshold": self.low_balance_days_threshold,
+            "last_low_balance_alert": self.last_low_balance_alert.isoformat()
+            if self.last_low_balance_alert
+            else None,
+            "alert_frequency_hours": self.alert_frequency_hours,
+            "electricity_minimum_activation": float(
+                self.electricity_minimum_activation
+            ),
+            "water_minimum_activation": float(self.water_minimum_activation),
+            "auto_topup_enabled": self.auto_topup_enabled,
+            "auto_topup_amount": float(self.auto_topup_amount)
+            if self.auto_topup_amount is not None
+            else None,
+            "auto_topup_threshold": float(self.auto_topup_threshold)
+            if self.auto_topup_threshold is not None
+            else None,
+            "daily_avg_consumption": float(self.daily_avg_consumption)
+            if self.daily_avg_consumption is not None
+            else None,
+            "last_consumption_calc_date": self.last_consumption_calc_date.isoformat()
+            if self.last_consumption_calc_date
+            else None,
+            "is_suspended": self.is_suspended,
+            "suspension_reason": self.suspension_reason,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
