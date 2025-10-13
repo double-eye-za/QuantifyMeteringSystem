@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumption Reports - Quantify Metering System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1A73E8',
+                        secondary: '#34A853',
+                        danger: '#EA4335',
+                        warning: '#FBBC04'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Sidebar -->
+    <aside class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0">
+        <div class="h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+            <!-- Logo -->
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-bolt text-white"></i>
+                    </div>
+                    <span class="font-bold text-lg text-gray-900 dark:text-white">Quantify Metering</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="p-4 space-y-2 flex-1">
+                <a href="index.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-gauge-high w-5"></i>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </a>
+                <a href="estates.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-building w-5"></i>
+                    <span class="text-sm font-medium">Estates</span>
+                </a>
+                <a href="units.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-house w-5"></i>
+                    <span class="text-sm font-medium">Units</span>
+                </a>
+                <a href="meters.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-tachometer-alt w-5"></i>
+                    <span class="text-sm font-medium">Meters</span>
+                </a>
+                <a href="billing.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-wallet w-5"></i>
+                    <span class="text-sm font-medium">Billing</span>
+                </a>
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span class="text-sm font-medium">Reports</span>
+                </a>
+                <a href="rate-tables-simplified.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-table w-5"></i>
+                    <span class="text-sm font-medium">Rate Tables</span>
+                </a>
+                
+                <!-- Administration Section -->
+                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 mt-6">Administration</div>
+                <a href="users.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="text-sm font-medium">Users</span>
+                </a>
+                <a href="roles.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-user-shield w-5"></i>
+                    <span class="text-sm font-medium">Roles</span>
+                </a>
+                <a href="settings.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="text-sm font-medium">Settings</span>
+                </a>
+                <a href="audit-log.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-clipboard-list w-5"></i>
+                    <span class="text-sm font-medium">Audit Log</span>
+                </a>
+            </nav>
+
+            <!-- User Section -->
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <a href="profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-user w-5"></i>
+                    <span class="text-sm font-medium">My Profile</span>
+                </a>
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
+                    <i class="fas fa-right-from-bracket w-5"></i>
+                    <span class="text-sm font-medium">Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="p-4 sm:ml-64">
+        <!-- Top Bar -->
+        <nav class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button class="sm:hidden mr-4 text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Consumption Reports</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="themeToggle" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    <div class="relative">
+                        <button class="flex items-center text-sm bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2">
+                            <i class="fas fa-user-circle mr-2"></i>
+                            <span class="dark:text-white">Admin</span>
+                            <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Report Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Consumption</span>
+                    <i class="fas fa-chart-line text-primary"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">18,750 kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</span>
+                    <i class="fas fa-rand-sign text-green-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">R 31,250</div>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-1">+12% from last month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Water Usage</span>
+                    <i class="fas fa-tint text-blue-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">45,000 L</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Solar Generation</span>
+                    <i class="fas fa-solar-panel text-yellow-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">8,200 kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+        </div>
+
+        <!-- Report Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report Type</label>
+                    <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2">
+                        <option>Consumption Summary</option>
+                        <option>Billing Report</option>
+                        <option>Top-up History</option>
+                        <option>Estate Comparison</option>
+                        <option>Unit Analysis</option>
+                        <option>Meter Performance</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period</label>
+                    <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2">
+                        <option>This Month</option>
+                        <option>Last Month</option>
+                        <option>Last 3 Months</option>
+                        <option>Last 6 Months</option>
+                        <option>Year to Date</option>
+                        <option>Custom Range</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estate</label>
+                    <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2">
+                        <option>All Estates</option>
+                        <option>Willow Creek Residential</option>
+                        <option>Parkview Gardens</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meter Type</label>
+                    <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2">
+                        <option>All Types</option>
+                        <option>Electricity</option>
+                        <option>Water</option>
+                        <option>Solar</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-filter mr-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Monthly Consumption Trend -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Monthly Consumption Trend</h3>
+                    <button class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Estate Comparison -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Estate Comparison</h3>
+                    <button class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="estateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Report Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Detailed Consumption Report</h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </button>
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-file-excel mr-2"></i>Excel
+                        </button>
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Unit</th>
+                            <th scope="col" class="px-6 py-3">Estate</th>
+                            <th scope="col" class="px-6 py-3">Electricity (kWh)</th>
+                            <th scope="col" class="px-6 py-3">Water (L)</th>
+                            <th scope="col" class="px-6 py-3">Solar (kWh)</th>
+                            <th scope="col" class="px-6 py-3">Total Cost</th>
+                            <th scope="col" class="px-6 py-3">Payments</th>
+                            <th scope="col" class="px-6 py-3">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A101</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">450</td>
+                            <td class="px-6 py-4">12,500</td>
+                            <td class="px-6 py-4">180</td>
+                            <td class="px-6 py-4 font-semibold">R 1,250.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,500.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 250.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A102</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">380</td>
+                            <td class="px-6 py-4">10,200</td>
+                            <td class="px-6 py-4">150</td>
+                            <td class="px-6 py-4 font-semibold">R 1,050.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,200.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B201</td>
+                            <td class="px-6 py-4">Parkview Gardens</td>
+                            <td class="px-6 py-4">520</td>
+                            <td class="px-6 py-4">15,800</td>
+                            <td class="px-6 py-4">200</td>
+                            <td class="px-6 py-4 font-semibold">R 1,450.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,400.00</td>
+                            <td class="px-6 py-4 font-semibold text-red-600">-R 50.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B202</td>
+                            <td class="px-6 py-4">Parkview Gardens</td>
+                            <td class="px-6 py-4">290</td>
+                            <td class="px-6 py-4">8,500</td>
+                            <td class="px-6 py-4">120</td>
+                            <td class="px-6 py-4 font-semibold">R 850.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,000.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">C301</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">410</td>
+                            <td class="px-6 py-4">11,200</td>
+                            <td class="px-6 py-4">165</td>
+                            <td class="px-6 py-4 font-semibold">R 1,150.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,300.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-700">
+                        <tr class="font-semibold text-gray-900 dark:text-white">
+                            <td class="px-6 py-4">Total</td>
+                            <td class="px-6 py-4">-</td>
+                            <td class="px-6 py-4">2,050</td>
+                            <td class="px-6 py-4">58,200</td>
+                            <td class="px-6 py-4">815</td>
+                            <td class="px-6 py-4">R 5,750.00</td>
+                            <td class="px-6 py-4 text-green-600">R 6,400.00</td>
+                            <td class="px-6 py-4 text-green-600">R 650.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">
+                        Showing <span class="font-medium">1</span> to <span class="font-medium">5</span> of <span class="font-medium">100</span> results
+                    </span>
+                    <div class="flex space-x-1">
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Previous
+                        </button>
+                        <button class="px-3 py-2 text-sm bg-primary text-white rounded-lg">1</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">2</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">3</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Insights -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Insights</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <i class="fas fa-chart-line text-blue-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Peak consumption time</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">18:00 - 21:00 daily</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <i class="fas fa-award text-green-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Most efficient unit</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B202 - 290 kWh/month</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">High consumption alert</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B201 - 20% above average</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <i class="fas fa-solar-panel text-purple-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Solar contribution</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">28% of total electricity usage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            html.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Monthly Consumption Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                datasets: [{
+                    label: 'Electricity (kWh)',
+                    data: [15200, 14800, 16500, 17200, 18100, 19500, 20200, 19800, 18500, 18750],
+                    borderColor: '#FBBC04',
+                    backgroundColor: 'rgba(251, 188, 4, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Water (L x100)',
+                    data: [380, 360, 420, 440, 460, 480, 490, 470, 450, 450],
+                    borderColor: '#1A73E8',
+                    backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Solar (kWh)',
+                    data: [7200, 7500, 8100, 8300, 8500, 8800, 9000, 8700, 8400, 8200],
+                    borderColor: '#34A853',
+                    backgroundColor: 'rgba(52, 168, 83, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Estate Comparison Chart
+        const estateCtx = document.getElementById('estateChart').getContext('2d');
+        new Chart(estateCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Electricity', 'Water', 'Solar'],
+                datasets: [{
+                    label: 'Willow Creek',
+                    data: [9500, 22500, 4100],
+                    backgroundColor: '#1A73E8'
+                }, {
+                    label: 'Parkview Gardens',
+                    data: [9250, 22500, 4100],
+                    backgroundColor: '#34A853'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Logout Function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

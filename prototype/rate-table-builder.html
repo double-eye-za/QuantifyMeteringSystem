@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Table Builder - Quantify Metering System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1A73E8',
+                        secondary: '#34A853',
+                        danger: '#EA4335',
+                        warning: '#FBBC04'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-bolt text-white"></i>
+                    </div>
+                    <span class="font-bold text-lg text-gray-900 dark:text-white">Quantify</span>
+                </div>
+            </div>
+            
+            <nav class="p-4 space-y-2">
+                <a href="index.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-gauge-high w-5"></i>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </a>
+                <a href="estates.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-building w-5"></i>
+                    <span class="text-sm font-medium">Estates</span>
+                </a>
+                <a href="units.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-house w-5"></i>
+                    <span class="text-sm font-medium">Units</span>
+                </a>
+                <a href="meters.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-tachometer-alt w-5"></i>
+                    <span class="text-sm font-medium">Meters</span>
+                </a>
+                <a href="billing.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-wallet w-5"></i>
+                    <span class="text-sm font-medium">Billing</span>
+                </a>
+                <a href="reports.html" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span class="text-sm font-medium">Reports</span>
+                </a>
+                <a href="rate-tables-simplified.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary">
+                    <i class="fas fa-table w-5"></i>
+                    <span class="text-sm font-medium">Rate Tables</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Top Bar -->
+            <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            <a href="rate-tables-simplified.html" class="hover:text-primary">Rate Tables</a>
+                            <i class="fas fa-chevron-right text-xs"></i>
+                            <span>Create New</span>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Rate Table Builder</h1>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Design complex rate structures with multiple pricing models</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="previewRates()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                            <i class="fas fa-eye mr-2"></i>Preview
+                        </button>
+                        <button onclick="saveRateTable()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-save mr-2"></i>Save Rate Table
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-6">
+                <!-- Step Progress -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold">1</div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">Basic Info</p>
+                                <p class="text-xs text-gray-500">Name and type</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="flex items-center">
+                            <div id="step2" class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Rate Structure</p>
+                                <p class="text-xs text-gray-400">Define pricing</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="flex items-center">
+                            <div id="step3" class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Review</p>
+                                <p class="text-xs text-gray-400">Confirm details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Basic Information -->
+                <div id="step1Content" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-info-circle text-primary mr-2"></i>Basic Information
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Rate Table Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="rateName" placeholder="e.g., Residential Complex 2025" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Resource Type <span class="text-red-500">*</span>
+                            </label>
+                            <select id="resourceType" onchange="updateRateTypes()" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary">
+                                <option value="">Select Resource</option>
+                                <option value="electricity">Electricity</option>
+                                <option value="water">Water</option>
+                                <option value="gas">Gas</option>
+                                <option value="service">Service Fee</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Effective Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="effectiveDate" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Category
+                            </label>
+                            <select id="category" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary">
+                                <option>Residential</option>
+                                <option>Commercial</option>
+                                <option>Industrial</option>
+                                <option>Subsidized</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Description
+                        </label>
+                        <textarea id="description" rows="3" placeholder="Brief description of this rate table"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 2: Rate Structure Configuration -->
+                <div id="step2Content" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <i class="fas fa-calculator text-primary mr-2"></i>Rate Structure Configuration
+                    </h2>
+
+                    <!-- Pricing Model Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Select Pricing Model(s) - You can combine multiple models
+                        </label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Tiered Pricing -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="tieredPricing" onchange="togglePricingModel('tiered')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-layer-group text-blue-500 mr-2"></i>Tiered Pricing
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Different rates for consumption levels (e.g., 0-50 kWh, 51-100 kWh)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Time of Use -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="touPricing" onchange="togglePricingModel('tou')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Time of Use
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Different rates by time of day (peak, off-peak, standard)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Seasonal -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="seasonalPricing" onchange="togglePricingModel('seasonal')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Different rates by season (summer, winter)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Flat Rate -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="flatPricing" onchange="togglePricingModel('flat')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-equals text-purple-500 mr-2"></i>Flat Rate
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Single rate for all consumption
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Fixed Charge -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="fixedPricing" onchange="togglePricingModel('fixed')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Fixed monthly/daily fee regardless of usage
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Demand Charge -->
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <label class="flex items-start cursor-pointer">
+                                    <input type="checkbox" id="demandPricing" onchange="togglePricingModel('demand')" 
+                                        class="mt-1 rounded border-gray-300 dark:border-gray-600">
+                                    <div class="ml-3">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand Charge
+                                        </p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            Based on peak demand (kW)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Rate Configuration Sections -->
+                    <!-- Tiered Pricing Section -->
+                    <div id="tieredSection" class="hidden mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-layer-group text-blue-500 mr-2"></i>Tiered Rate Configuration
+                        </h3>
+                        <div id="tieredRates" class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-20">Tier 1:</span>
+                                <input type="number" placeholder="From" class="w-24 px-2 py-1 border rounded" value="0" disabled>
+                                <span>-</span>
+                                <input type="number" placeholder="To" class="w-24 px-2 py-1 border rounded" value="50">
+                                <span class="text-sm">kWh</span>
+                                <span class="text-sm">@</span>
+                                <span class="text-sm">R</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="1.50">
+                                <span class="text-sm">/kWh</span>
+                            </div>
+                        </div>
+                        <button onclick="addTier()" class="mt-3 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i>Add Tier
+                        </button>
+                    </div>
+
+                    <!-- Time of Use Section -->
+                    <div id="touSection" class="hidden mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Time of Use Configuration
+                        </h3>
+                        <div class="space-y-3">
+                            <!-- Peak Hours -->
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-24">Peak Hours:</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="06:00">
+                                <span>to</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="10:00">
+                                <span class="text-sm">@</span>
+                                <span class="text-sm">R</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="3.50">
+                                <span class="text-sm">/kWh</span>
+                            </div>
+                            <!-- Standard Hours -->
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-24">Standard:</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="10:00">
+                                <span>to</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="18:00">
+                                <span class="text-sm">@</span>
+                                <span class="text-sm">R</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="2.50">
+                                <span class="text-sm">/kWh</span>
+                            </div>
+                            <!-- Off-Peak -->
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-24">Off-Peak:</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="18:00">
+                                <span>to</span>
+                                <input type="time" class="px-2 py-1 border rounded" value="06:00">
+                                <span class="text-sm">@</span>
+                                <span class="text-sm">R</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="1.50">
+                                <span class="text-sm">/kWh</span>
+                            </div>
+                        </div>
+                        <button onclick="addTimeSlot()" class="mt-3 px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                            <i class="fas fa-plus mr-1"></i>Add Time Period
+                        </button>
+                    </div>
+
+                    <!-- Seasonal Section -->
+                    <div id="seasonalSection" class="hidden mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal Configuration
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+                                <label class="block text-sm font-medium mb-2">Summer (Dec - Feb)</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm">R</span>
+                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border rounded" value="2.80">
+                                    <span class="text-sm">/kWh</span>
+                                </div>
+                            </div>
+                            <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+                                <label class="block text-sm font-medium mb-2">Winter (Jun - Aug)</label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm">R</span>
+                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border rounded" value="3.20">
+                                    <span class="text-sm">/kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flat Rate Section -->
+                    <div id="flatSection" class="hidden mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-equals text-purple-500 mr-2"></i>Flat Rate Configuration
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">Rate:</span>
+                            <span class="text-sm">R</span>
+                            <input type="number" step="0.01" placeholder="Rate" class="w-32 px-2 py-1 border rounded" value="2.50">
+                            <select class="px-2 py-1 border rounded">
+                                <option>/kWh</option>
+                                <option>/kL</option>
+                                <option>/unit</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Fixed Charge Section -->
+                    <div id="fixedSection" class="hidden mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge Configuration
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">Charge:</span>
+                            <span class="text-sm">R</span>
+                            <input type="number" step="0.01" placeholder="Amount" class="w-32 px-2 py-1 border rounded" value="150.00">
+                            <select class="px-2 py-1 border rounded">
+                                <option>per month</option>
+                                <option>per day</option>
+                                <option>per year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Demand Charge Section -->
+                    <div id="demandSection" class="hidden mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand Charge Configuration
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-32">Demand Charge:</span>
+                                <span class="text-sm">R</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="50.00">
+                                <span class="text-sm">per kW of peak demand</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-medium w-32">Measurement:</span>
+                                <select class="px-2 py-1 border rounded">
+                                    <option>15-minute peak</option>
+                                    <option>30-minute peak</option>
+                                    <option>Monthly peak</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Preview and Additional Settings -->
+                <div id="step3Content" class="hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-cog text-primary mr-2"></i>Additional Settings
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Markup Settings -->
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Markup & Taxes</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">Apply Markup</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="checkbox" id="applyMarkup" checked class="rounded">
+                                            <input type="number" value="20" class="w-16 px-2 py-1 border rounded text-sm">
+                                            <span class="text-sm">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">Include VAT</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="checkbox" id="includeVAT" checked class="rounded">
+                                            <span class="text-sm">15%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Free Allocations -->
+                            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Free Allocations</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">Free Units</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" value="0" class="w-20 px-2 py-1 border rounded text-sm">
+                                            <select class="px-2 py-1 border rounded text-sm">
+                                                <option>kWh/month</option>
+                                                <option>kL/month</option>
+                                                <option>units/month</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">Applies to</label>
+                                        <select class="px-2 py-1 border rounded text-sm">
+                                            <option>All units</option>
+                                            <option>Specific category</option>
+                                            <option>Custom selection</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rate Preview -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-eye text-primary mr-2"></i>Rate Table Preview
+                        </h2>
+                        
+                        <div class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6">
+                            <div id="previewContent" class="space-y-4">
+                                <!-- Preview will be dynamically generated here -->
+                                <p class="text-gray-600 dark:text-gray-400">Configure your rate structure to see the preview...</p>
+                            </div>
+                        </div>
+
+                        <!-- Sample Calculations -->
+                        <div class="mt-6">
+                            <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Sample Bill Calculations</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Low Usage (50 kWh)</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">R 86.25</p>
+                                    <p class="text-xs text-gray-500">incl. markup + VAT</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Average (250 kWh)</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">R 517.50</p>
+                                    <p class="text-xs text-gray-500">incl. markup + VAT</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">High Usage (500 kWh)</p>
+                                    <p class="text-xl font-bold text-gray-900 dark:text-white">R 1,207.50</p>
+                                    <p class="text-xs text-gray-500">incl. markup + VAT</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between mt-6">
+                    <button onclick="previousStep()" id="prevBtn" class="hidden px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Previous
+                    </button>
+                    <button onclick="nextStep()" id="nextBtn" class="ml-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700">
+                        Next<i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let tierCount = 1;
+
+        function nextStep() {
+            if (currentStep < 3) {
+                document.getElementById(`step${currentStep}Content`).classList.add('hidden');
+                currentStep++;
+                document.getElementById(`step${currentStep}Content`).classList.remove('hidden');
+                document.getElementById(`step${currentStep}`).classList.remove('bg-gray-300', 'dark:bg-gray-600');
+                document.getElementById(`step${currentStep}`).classList.add('bg-primary');
+                
+                if (currentStep > 1) {
+                    document.getElementById('prevBtn').classList.remove('hidden');
+                }
+                
+                if (currentStep === 3) {
+                    document.getElementById('nextBtn').classList.add('hidden');
+                    generatePreview();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step${currentStep}Content`).classList.add('hidden');
+                document.getElementById(`step${currentStep}`).classList.remove('bg-primary');
+                document.getElementById(`step${currentStep}`).classList.add('bg-gray-300', 'dark:bg-gray-600');
+                currentStep--;
+                document.getElementById(`step${currentStep}Content`).classList.remove('hidden');
+                
+                if (currentStep === 1) {
+                    document.getElementById('prevBtn').classList.add('hidden');
+                }
+                
+                if (currentStep < 3) {
+                    document.getElementById('nextBtn').classList.remove('hidden');
+                }
+            }
+        }
+
+        function togglePricingModel(model) {
+            const section = document.getElementById(`${model}Section`);
+            const checkbox = document.getElementById(`${model}Pricing`);
+            
+            if (checkbox.checked) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+
+        function addTier() {
+            tierCount++;
+            const tieredRates = document.getElementById('tieredRates');
+            const newTier = document.createElement('div');
+            newTier.className = 'flex items-center gap-3';
+            newTier.innerHTML = `
+                <span class="text-sm font-medium w-20">Tier ${tierCount}:</span>
+                <input type="number" placeholder="From" class="w-24 px-2 py-1 border rounded">
+                <span>-</span>
+                <input type="number" placeholder="To" class="w-24 px-2 py-1 border rounded">
+                <span class="text-sm">kWh</span>
+                <span class="text-sm">@</span>
+                <span class="text-sm">R</span>
+                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded">
+                <span class="text-sm">/kWh</span>
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            tieredRates.appendChild(newTier);
+        }
+
+        function generatePreview() {
+            const previewContent = document.getElementById('previewContent');
+            const rateName = document.getElementById('rateName').value || 'Unnamed Rate Table';
+            const resourceType = document.getElementById('resourceType').value || 'electricity';
+            
+            let previewHTML = `
+                <div class="mb-4">
+                    <h3 class="font-semibold text-lg">${rateName}</h3>
+                    <p class="text-sm text-gray-600">Resource: ${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)}</p>
+                </div>
+                <div class="space-y-2">
+            `;
+            
+            // Add configured pricing models to preview
+            if (document.getElementById('tieredPricing').checked) {
+                previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2">✓ Tiered Pricing Structure</p>
+                        <p class="text-xs text-gray-600">Multiple consumption tiers configured</p>
+                    </div>
+                `;
+            }
+            
+            if (document.getElementById('touPricing').checked) {
+                previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2">✓ Time of Use Pricing</p>
+                        <p class="text-xs text-gray-600">Peak, Standard, and Off-Peak rates</p>
+                    </div>
+                `;
+            }
+            
+            previewHTML += '</div>';
+            previewContent.innerHTML = previewHTML;
+        }
+
+        function saveRateTable() {
+            alert('Rate table saved successfully! Redirecting to rate tables page...');
+            window.location.href = 'rate-tables-simplified.html';
+        }
+
+        function previewRates() {
+            generatePreview();
+            alert('Preview updated in Step 3');
+        }
+
+        // Theme Toggle
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            html.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
