@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from flask_login import UserMixin
 from ..db import db
 
 
 @dataclass
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id: Optional[int]
@@ -46,3 +47,6 @@ class User(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
+
+    def get_id(self) -> str:
+        return str(self.id)

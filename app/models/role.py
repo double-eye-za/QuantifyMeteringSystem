@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy.dialects.postgresql import JSONB
+import json
 
 from ..db import db
 
@@ -22,7 +22,7 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     name = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
-    permissions = db.Column(JSONB, nullable=False, default=dict)
+    permissions = db.Column(db.Text, nullable=False, default="{}")
     is_system_role = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     updated_at = db.Column(

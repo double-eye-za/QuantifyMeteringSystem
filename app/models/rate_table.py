@@ -5,7 +5,7 @@ from datetime import date
 from typing import Optional
 
 from sqlalchemy import CheckConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+import json
 
 from ..db import db
 
@@ -17,7 +17,7 @@ class RateTable(db.Model):
     id: Optional[int]
     name: str
     utility_type: str
-    rate_structure: dict
+    rate_structure: str
     is_default: Optional[bool]
     effective_from: date
     effective_to: Optional[date]
@@ -30,7 +30,7 @@ class RateTable(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     name = db.Column(db.String(255), nullable=False)
     utility_type = db.Column(db.String(20), nullable=False)
-    rate_structure = db.Column(JSONB, nullable=False)
+    rate_structure = db.Column(db.Text, nullable=False)
     is_default = db.Column(db.Boolean, default=False)
     effective_from = db.Column(db.Date, nullable=False)
     effective_to = db.Column(db.Date)
@@ -67,7 +67,11 @@ class RateTable(db.Model):
             "id": self.id,
             "name": self.name,
             "utility_type": self.utility_type,
-            "rate_structure": self.rate_structure,
+            "rate_structure": (
+                json.loads(self.rate_structure)
+                if isinstance(self.rate_structure, str)
+                else self.rate_structure
+            ),
             "is_default": self.is_default,
             "effective_from": self.effective_from.isoformat()
             if self.effective_from

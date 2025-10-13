@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import CheckConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+import json
 
 from ..db import db
 
@@ -28,7 +28,7 @@ class Notification(db.Model):
     error_message: Optional[str]
     push_token: Optional[str]
     push_provider: Optional[str]
-    push_payload: Optional[dict]
+    push_payload: Optional[str]
     created_at: Optional[datetime]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -45,7 +45,7 @@ class Notification(db.Model):
     error_message = db.Column(db.Text)
     push_token = db.Column(db.Text)
     push_provider = db.Column(db.String(20))
-    push_payload = db.Column(JSONB)
+    push_payload = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (

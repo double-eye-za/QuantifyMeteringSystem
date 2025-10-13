@@ -1,16 +1,20 @@
 from __future__ import annotations
-
 from flask import Flask
-
 from config import Config
 from app.db import db
 from app.routes.v1 import api_v1
 from app.auth import login_manager
+import os
 
 
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
+    # Allow runtime override of DB via env for tests
+
+    env_db = os.getenv("DATABASE_URL")
+    if env_db:
+        app.config["SQLALCHEMY_DATABASE_URI"] = env_db
 
     db.init_app(app)
     login_manager.init_app(app)

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import CheckConstraint, UniqueConstraint
-from ..application import db
+from ..db import db
 
 
 @dataclass

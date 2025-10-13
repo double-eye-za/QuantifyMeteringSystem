@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import CheckConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+import json
 
 from ..db import db
 
@@ -27,7 +27,7 @@ class Transaction(db.Model):
     payment_gateway: Optional[str]
     payment_gateway_ref: Optional[str]
     payment_gateway_status: Optional[str]
-    payment_metadata: Optional[dict]
+    payment_metadata: Optional[str]
     status: Optional[str]
     initiated_at: Optional[datetime]
     completed_at: Optional[datetime]
@@ -53,7 +53,7 @@ class Transaction(db.Model):
     payment_gateway = db.Column(db.String(50))
     payment_gateway_ref = db.Column(db.String(255))
     payment_gateway_status = db.Column(db.String(50))
-    payment_metadata = db.Column(JSONB)
+    payment_metadata = db.Column(db.Text)
     status = db.Column(db.String(20), default="pending")
     initiated_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
@@ -117,7 +117,7 @@ class Transaction(db.Model):
             balance_after=0,
             reference=reference,
             payment_method=payment_method,
-            payment_metadata=metadata or {},
+            payment_metadata=json.dumps(metadata or {}),
             status="pending"
             if transaction_type.startswith("purchase")
             or payment_method in ("eft", "card", "instant_eft")
