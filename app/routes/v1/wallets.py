@@ -26,6 +26,23 @@ def topup_wallet(wallet_id: int):
     reference = payload.get("reference")
     metadata = payload.get("metadata")
 
+    # Validate wallet exists
+    wallet = Wallet.get_by_id(wallet_id)
+    if not wallet:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    # Basic validation to avoid DB integrity errors
+    if amount is None or payment_method is None:
+        return (
+            jsonify(
+                {
+                    "error": "amount and payment_method are required",
+                    "code": 400,
+                }
+            ),
+            400,
+        )
+
     txn = Transaction.create(
         wallet_id=wallet_id,
         transaction_type="topup",

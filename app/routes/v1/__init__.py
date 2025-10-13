@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from flask import Blueprint
+from flask import Blueprint, jsonify
+from ...auth import login_manager
 
 
 api_v1 = Blueprint("api_v1", __name__, url_prefix="/api/v1")
@@ -16,3 +17,8 @@ from . import notifications  # noqa: F401
 from . import reports  # noqa: F401
 from . import system  # noqa: F401
 from . import auth  # noqa: F401
+
+
+@login_manager.unauthorized_handler
+def _unauthorized():
+    return jsonify({"error": "Unauthorized", "code": 401}), 401

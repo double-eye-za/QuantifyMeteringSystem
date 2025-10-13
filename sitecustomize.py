@@ -1,0 +1,4 @@
+# Ensure third-party pytest plugins are not auto-loaded (compat with Flask 3)
+import os
+
+os.environ.setdefault("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")

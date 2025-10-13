@@ -15,7 +15,8 @@ from .models import User
 
 
 login_manager = LoginManager()
-login_manager.login_view = "api_v1.login"
+login_manager.login_view = None
+login_manager.login_message = None
 
 
 @login_manager.user_loader
