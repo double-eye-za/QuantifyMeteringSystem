@@ -39,6 +39,7 @@ quantify-metering/
 ## Technology Stack
 
 ### Backend (Phase 1)
+
 - **Language**: Python 3.9+
 - **Framework**: Flask 3.0+
 - **Database**: PostgreSQL
@@ -46,6 +47,7 @@ quantify-metering/
 - **Authentication**: Basic Auth with role-based access
 
 ### Frontend (Prototype)
+
 - **HTML5/CSS3**: Responsive design
 - **Tailwind CSS**: Utility-first styling
 - **JavaScript**: Interactive components
@@ -54,6 +56,7 @@ quantify-metering/
 ## Development Phases
 
 ### Phase 1: Backend & Admin Portal (Current)
+
 - Database implementation
 - RESTful API development
 - Admin web portal
@@ -61,6 +64,7 @@ quantify-metering/
 - Basic authentication
 
 ### Phase 2: Mobile App & Meter Integration
+
 - Native mobile applications (iOS/Android)
 - Physical meter integration (E460, DC450)
 - Payment gateway integration
@@ -68,6 +72,7 @@ quantify-metering/
 - Real-time data collection
 
 ### Phase 3: Pilot Testing
+
 - User acceptance testing
 - Performance optimization
 - Production deployment
@@ -75,6 +80,7 @@ quantify-metering/
 ## Installation & Setup
 
 ### Prerequisites
+
 - Python 3.9+
 - PostgreSQL 14+
 - Git
@@ -82,17 +88,50 @@ quantify-metering/
 ### Quick Start
 
 1. Clone the repository:
+
 ```bash
 git clone git@github.com:willieprinsloo/QuantifyMeteringSystem.git
 cd QuantifyMeteringSystem
 ```
 
 2. Review documentation:
+
 - Start with `documents/Functional Specification v3 - Based on Prototype.md`
 - Review `documents/Database Schema Documentation.md` for database design
 - Check `documents/API Documentation.md` for API endpoints
 
-3. View the prototype:
+3. Backend development quickstart:
+
+```bash
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment (development)
+export FLASK_APP=application.py
+export FLASK_ENV=development
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/quantify
+
+# Initialize and upgrade database (Flask-Migrate)
+flask db init  # first time only
+flask db migrate -m "initial schema"
+flask db upgrade
+
+# Run the app
+python application.py
+```
+
+4. Run tests:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q
+```
+
+5. View the prototype:
+
 ```bash
 # Open prototype/index.html in your browser
 open prototype/index.html
@@ -101,20 +140,24 @@ open prototype/index.html
 ## Key Business Rules
 
 ### Electricity
+
 - Prepaid model with automatic disconnection at R0.00
 - Minimum R20.00 required for reconnection
 - Configurable markup (default 20%)
 
 ### Water
+
 - Prepaid tracking but no physical disconnection
 - Can accumulate debt (negative balance)
 - Minimum R20.00 to begin tracking
 
 ### Solar
+
 - 50 kWh free monthly allocation
 - Excess usage billed at standard rates
 
 ### Wallet Alerts
+
 - Configurable thresholds (fixed amount or days remaining)
 - Smart alerts based on consumption patterns
 - Frequency limiting to prevent spam
@@ -124,6 +167,7 @@ open prototype/index.html
 - **[Functional Specification](documents/Functional%20Specification%20v3%20-%20Based%20on%20Prototype.md)**: Complete system requirements and features
 - **[Database Schema](documents/Database%20Schema%20Documentation.md)**: PostgreSQL database design
 - **[API Documentation](documents/API%20Documentation.md)**: RESTful API endpoints and examples
+- **Installation Guide**: See `INSTALLATION.md` for a detailed setup walkthrough
 - **[Project Plan](documents/Project%20Plan%20-%20Phase%201%20Development.md)**: Development timeline and milestones
 - **[Unit Test Documentation](documents/Unit%20Test%20Documentation.md)**: Testing strategy and examples
 
