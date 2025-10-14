@@ -29,6 +29,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Chart canvas styling */
+        #dailyTrendChart, #monthlyChart {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -220,7 +227,7 @@
                     </div>
 
                     <!-- Estate Cards -->
-                    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Estate 1 -->
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                             <div class="flex items-start justify-between mb-4">
@@ -390,6 +397,87 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Estate 3 -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Sunset Ridge Estate</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">789 Ridge Road, Cape Town</p>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded-full">Active</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
+                                    <p class="text-lg font-semibold text-gray-900 dark:text-white">75</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
+                                    <p class="text-lg font-semibold text-gray-900 dark:text-white">220</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
+                                <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Meter Configuration</p>
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity Meters
+                                        </span>
+                                        <span class="font-medium text-gray-900 dark:text-white">75 unit + 1 bulk</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-tint text-blue-500 mr-1"></i> Water Meters
+                                        </span>
+                                        <span class="font-medium text-gray-900 dark:text-white">75 unit + 1 bulk</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-solar-panel text-orange-500 mr-1"></i> Solar Meters
+                                        </span>
+                                        <span class="font-medium text-gray-900 dark:text-white">75 unit</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-network-wired text-primary"></i>
+                                        <div>
+                                            <p class="text-xs font-medium text-blue-900 dark:text-blue-300">DC450 Data Concentrators</p>
+                                            <p class="text-xs text-blue-700 dark:text-blue-400">3 units deployed</p>
+                                        </div>
+                                    </div>
+                                    <span class="flex items-center text-xs text-success">
+                                        <i class="fas fa-circle mr-1" style="font-size: 8px;"></i> Online
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Manager:</span>
+                                    <span class="text-xs font-medium text-gray-900 dark:text-white">Peter Brown</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Contact:</span>
+                                    <span class="text-xs font-medium text-gray-900 dark:text-white">+27 21 555 0101</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 mt-4">
+                                <button onclick="viewEstateDetails()" class="flex-1 px-3 py-2 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                                    <i class="fas fa-eye mr-1"></i> View Details
+                                </button>
+                                <button onclick="editEstate()" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -497,13 +585,14 @@
                             </h2>
                             <div class="flex flex-wrap gap-2">
                                 <!-- Estate Selector -->
-                                <select id="estateSelect" onchange="updateReconciliation()" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                <select id="estateSelect" onchange="updateReconciliation()" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="willow">Willow Creek Estate</option>
                                     <option value="parkview">Parkview Gardens</option>
+                                    <option value="sunset">Sunset Ridge Estate</option>
                                 </select>
                                 
                                 <!-- View Type -->
-                                <select id="viewType" onchange="updateReconciliation()" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                <select id="viewType" onchange="updateReconciliation()" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option value="mtd">Month to Date</option>
                                     <option value="monthly">Monthly Comparison</option>
                                     <option value="yearly">Year Overview</option>
@@ -543,7 +632,7 @@
                                             <span class="text-sm font-semibold">4,212 kWh</span>
                                         </div>
                                         <div class="flex justify-between items-center pt-2 border-t">
-                                            <span class="text-sm font-medium text-red-700 dark:text-red-300">Unaccounted</span>
+                                            <span class="text-sm font-medium text-red-700 dark:text-red-300">Communal Usage</span>
                                             <span class="text-sm font-bold text-red-600">63 kWh (1.5%)</span>
                                         </div>
                                         <div class="flex justify-between items-center bg-yellow-50 dark:bg-yellow-900/20 -mx-2 px-2 py-2 rounded">
@@ -555,7 +644,7 @@
 
                                 <!-- Daily Trend Chart -->
                                 <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Daily Loss Trend</h4>
+                                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Daily Communal Usage Trend</h4>
                                     <div class="relative h-64">
                                         <canvas id="dailyTrendChart"></canvas>
                                     </div>
@@ -573,8 +662,8 @@
                                         <th class="px-4 py-3 text-center">Solar (kWh)</th>
                                         <th class="px-4 py-3 text-center">Net (kWh)</th>
                                         <th class="px-4 py-3 text-center">Units (kWh)</th>
-                                        <th class="px-4 py-3 text-center">Loss (kWh)</th>
-                                        <th class="px-4 py-3 text-center">Loss %</th>
+                                        <th class="px-4 py-3 text-center">Communal (kWh)</th>
+                                        <th class="px-4 py-3 text-center">Communal %</th>
                                         <th class="px-4 py-3 text-right">Daily Bill</th>
                                     </tr>
                                 </thead>
@@ -637,8 +726,8 @@
                                             <th class="px-4 py-3 text-center">Solar (kWh)</th>
                                             <th class="px-4 py-3 text-center">Net (kWh)</th>
                                             <th class="px-4 py-3 text-center">Units (kWh)</th>
-                                            <th class="px-4 py-3 text-center">Loss (kWh)</th>
-                                            <th class="px-4 py-3 text-center">Loss %</th>
+                                            <th class="px-4 py-3 text-center">Communal (kWh)</th>
+                                            <th class="px-4 py-3 text-center">Communal %</th>
                                             <th class="px-4 py-3 text-center">Efficiency</th>
                                             <th class="px-4 py-3 text-right">Estate Bill</th>
                                         </tr>
@@ -705,24 +794,24 @@
                             <!-- Key Metrics -->
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                                    <p class="text-xs text-blue-600 dark:text-blue-400">Avg Monthly Loss</p>
+                                    <p class="text-xs text-blue-600 dark:text-blue-400">Avg Monthly Communal</p>
                                     <p class="text-xl font-bold text-blue-800 dark:text-blue-200">194 kWh</p>
                                     <p class="text-xs text-blue-600 dark:text-blue-400">1.6% average</p>
                                 </div>
                                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
                                     <p class="text-xs text-green-600 dark:text-green-400">Best Month</p>
                                     <p class="text-xl font-bold text-green-800 dark:text-green-200">March</p>
-                                    <p class="text-xs text-green-600 dark:text-green-400">1.2% loss</p>
+                                    <p class="text-xs text-green-600 dark:text-green-400">1.2% communal</p>
                                 </div>
                                 <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
                                     <p class="text-xs text-red-600 dark:text-red-400">Worst Month</p>
                                     <p class="text-xl font-bold text-red-800 dark:text-red-200">July</p>
-                                    <p class="text-xs text-red-600 dark:text-red-400">2.1% loss</p>
+                                    <p class="text-xs text-red-600 dark:text-red-400">2.1% communal</p>
                                 </div>
                                 <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
                                     <p class="text-xs text-yellow-600 dark:text-yellow-400">YTD Estate Bill</p>
                                     <p class="text-xl font-bold text-yellow-800 dark:text-yellow-200">R 4,845</p>
-                                    <p class="text-xs text-yellow-600 dark:text-yellow-400">All losses</p>
+                                    <p class="text-xs text-yellow-600 dark:text-yellow-400">All communal usage</p>
                                 </div>
                             </div>
                         </div>
@@ -760,7 +849,28 @@
 
         // Estate Functions
         function showAddEstateModal() {
-            alert('Add Estate modal would open here');
+            document.getElementById('addEstateModal').classList.remove('hidden');
+        }
+
+        function closeAddEstateModal() {
+            document.getElementById('addEstateModal').classList.add('hidden');
+        }
+
+        function saveNewEstate(event) {
+            event.preventDefault();
+            // Get form data
+            const formData = new FormData(event.target);
+            const estateData = Object.fromEntries(formData);
+            console.log('New Estate Data:', estateData);
+            
+            // Show success message
+            alert('Estate "' + estateData.estate_name + '" would be created with ' + estateData.total_units + ' units');
+            
+            // Close modal
+            closeAddEstateModal();
+            
+            // Reset form
+            event.target.reset();
         }
 
         function viewEstateDetails() {
@@ -799,82 +909,732 @@
             }
         }
 
+        // Mock Data for Reconciliation
+        const reconciliationData = {
+            willow: {
+                name: "Willow Creek Estate",
+                mtd: {
+                    period: "October 2025 - Month to Date",
+                    daysElapsed: "9 of 31",
+                    totalBulk: 5625,
+                    solarOffset: -1350,
+                    unitsTotal: 4212,
+                    unaccounted: 63,
+                    unaccountedPercent: 1.5,
+                    estateBill: 157.50,
+                    dailyData: [
+                        { date: "Oct 1", bulk: 625, solar: 150, net: 475, units: 468, loss: 7, lossPercent: 1.5, bill: 17.50 },
+                        { date: "Oct 2", bulk: 642, solar: 148, net: 494, units: 485, loss: 9, lossPercent: 1.8, bill: 22.50 },
+                        { date: "Oct 3", bulk: 598, solar: 142, net: 456, units: 450, loss: 6, lossPercent: 1.3, bill: 15.00 },
+                        { date: "Oct 4", bulk: 634, solar: 155, net: 479, units: 472, loss: 7, lossPercent: 1.5, bill: 17.50 },
+                        { date: "Oct 5", bulk: 612, solar: 148, net: 464, units: 458, loss: 6, lossPercent: 1.3, bill: 15.00 },
+                        { date: "Oct 6", bulk: 648, solar: 156, net: 492, units: 486, loss: 6, lossPercent: 1.2, bill: 15.00 },
+                        { date: "Oct 7", bulk: 635, solar: 152, net: 483, units: 478, loss: 5, lossPercent: 1.0, bill: 12.50 },
+                        { date: "Oct 8", bulk: 621, solar: 149, net: 472, units: 467, loss: 5, lossPercent: 1.1, bill: 12.50 },
+                        { date: "Oct 9", bulk: 610, solar: 146, net: 464, units: 456, loss: 8, lossPercent: 1.7, bill: 20.00 }
+                    ]
+                },
+                monthly: {
+                    year: 2025,
+                    monthlyData: [
+                        { month: "January", bulk: 18750, solar: 4650, net: 14100, units: 13886, loss: 214, lossPercent: 1.5, efficiency: 98.5, bill: 535.00 },
+                        { month: "February", bulk: 16800, solar: 4200, net: 12600, units: 12411, loss: 189, lossPercent: 1.5, efficiency: 98.5, bill: 472.50 },
+                        { month: "March", bulk: 19200, solar: 4800, net: 14400, units: 14227, loss: 173, lossPercent: 1.2, efficiency: 98.8, bill: 432.50 },
+                        { month: "April", bulk: 17800, solar: 4450, net: 13350, units: 13184, loss: 166, lossPercent: 1.2, efficiency: 98.8, bill: 415.00 },
+                        { month: "May", bulk: 16500, solar: 4125, net: 12375, units: 12220, loss: 155, lossPercent: 1.3, efficiency: 98.7, bill: 387.50 },
+                        { month: "June", bulk: 15800, solar: 3950, net: 11850, units: 11703, loss: 147, lossPercent: 1.2, efficiency: 98.8, bill: 367.50 },
+                        { month: "July", bulk: 17200, solar: 4300, net: 12900, units: 12629, loss: 271, lossPercent: 2.1, efficiency: 97.9, bill: 677.50 },
+                        { month: "August", bulk: 18500, solar: 4625, net: 13875, units: 13689, loss: 186, lossPercent: 1.3, efficiency: 98.7, bill: 465.00 },
+                        { month: "September", bulk: 17900, solar: 4475, net: 13425, units: 13251, loss: 174, lossPercent: 1.3, efficiency: 98.7, bill: 435.00 },
+                        { month: "October (MTD)", bulk: 5625, solar: 1350, net: 4275, units: 4212, loss: 63, lossPercent: 1.5, efficiency: 98.5, bill: 157.50 }
+                    ],
+                    ytd: { bulk: 162375, solar: 39150, net: 123225, units: 121287, loss: 1938, lossPercent: 1.6, bill: 4845.00 },
+                    avgMonthlyLoss: 194,
+                    bestMonth: "March",
+                    worstMonth: "July"
+                }
+            },
+            parkview: {
+                name: "Parkview Gardens",
+                mtd: {
+                    period: "October 2025 - Month to Date",
+                    daysElapsed: "9 of 31",
+                    totalBulk: 4280,
+                    solarOffset: -980,
+                    unitsTotal: 3298,
+                    unaccounted: 98,
+                    unaccountedPercent: 3.0,
+                    estateBill: 245.00,
+                    dailyData: [
+                        { date: "Oct 1", bulk: 475, solar: 115, net: 360, units: 345, loss: 15, lossPercent: 4.2, bill: 37.50 },
+                        { date: "Oct 2", bulk: 488, solar: 112, net: 376, units: 362, loss: 14, lossPercent: 3.7, bill: 35.00 },
+                        { date: "Oct 3", bulk: 455, solar: 108, net: 347, units: 338, loss: 9, lossPercent: 2.6, bill: 22.50 },
+                        { date: "Oct 4", bulk: 482, solar: 118, net: 364, units: 348, loss: 16, lossPercent: 4.4, bill: 40.00 },
+                        { date: "Oct 5", bulk: 465, solar: 112, net: 353, units: 342, loss: 11, lossPercent: 3.1, bill: 27.50 },
+                        { date: "Oct 6", bulk: 492, solar: 119, net: 373, units: 358, loss: 15, lossPercent: 4.0, bill: 37.50 },
+                        { date: "Oct 7", bulk: 483, solar: 116, net: 367, units: 352, loss: 15, lossPercent: 4.1, bill: 37.50 },
+                        { date: "Oct 8", bulk: 472, solar: 113, net: 359, units: 345, loss: 14, lossPercent: 3.9, bill: 35.00 },
+                        { date: "Oct 9", bulk: 488, solar: 111, net: 377, units: 358, loss: 19, lossPercent: 5.0, bill: 47.50 }
+                    ]
+                },
+                monthly: {
+                    year: 2025,
+                    monthlyData: [
+                        { month: "January", bulk: 14250, solar: 3530, net: 10720, units: 10398, loss: 322, lossPercent: 3.0, efficiency: 97.0, bill: 805.00 },
+                        { month: "February", bulk: 12780, solar: 3195, net: 9585, units: 9298, loss: 287, lossPercent: 3.0, efficiency: 97.0, bill: 717.50 },
+                        { month: "March", bulk: 14590, solar: 3648, net: 10942, units: 10612, loss: 330, lossPercent: 3.0, efficiency: 97.0, bill: 825.00 },
+                        { month: "April", bulk: 13520, solar: 3380, net: 10140, units: 9836, loss: 304, lossPercent: 3.0, efficiency: 97.0, bill: 760.00 },
+                        { month: "May", bulk: 12540, solar: 3135, net: 9405, units: 9123, loss: 282, lossPercent: 3.0, efficiency: 97.0, bill: 705.00 },
+                        { month: "June", bulk: 12010, solar: 3003, net: 9007, units: 8737, loss: 270, lossPercent: 3.0, efficiency: 97.0, bill: 675.00 },
+                        { month: "July", bulk: 13080, solar: 3270, net: 9810, units: 9516, loss: 294, lossPercent: 3.0, efficiency: 97.0, bill: 735.00 },
+                        { month: "August", bulk: 14060, solar: 3515, net: 10545, units: 10229, loss: 316, lossPercent: 3.0, efficiency: 97.0, bill: 790.00 },
+                        { month: "September", bulk: 13610, solar: 3403, net: 10207, units: 9901, loss: 306, lossPercent: 3.0, efficiency: 97.0, bill: 765.00 },
+                        { month: "October (MTD)", bulk: 4280, solar: 980, net: 3300, units: 3298, loss: 98, lossPercent: 3.0, efficiency: 97.0, bill: 245.00 }
+                    ],
+                    ytd: { bulk: 123540, solar: 29780, net: 93760, units: 90949, loss: 2811, lossPercent: 3.0, bill: 7027.50 },
+                    avgMonthlyLoss: 281,
+                    bestMonth: "January",
+                    worstMonth: "July"
+                }
+            },
+            sunset: {
+                name: "Sunset Ridge Estate",
+                mtd: {
+                    period: "October 2025 - Month to Date",
+                    daysElapsed: "9 of 31",
+                    totalBulk: 6890,
+                    solarOffset: -1650,
+                    unitsTotal: 5238,
+                    unaccounted: 2,
+                    unaccountedPercent: 0.0,
+                    estateBill: 5.00,
+                    dailyData: [
+                        { date: "Oct 1", bulk: 765, solar: 185, net: 580, units: 580, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 2", bulk: 789, solar: 190, net: 599, units: 599, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 3", bulk: 742, solar: 178, net: 564, units: 564, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 4", bulk: 798, solar: 192, net: 606, units: 606, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 5", bulk: 776, solar: 186, net: 590, units: 590, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 6", bulk: 812, solar: 195, net: 617, units: 617, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 7", bulk: 798, solar: 191, net: 607, units: 607, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 8", bulk: 781, solar: 187, net: 594, units: 594, loss: 0, lossPercent: 0.0, bill: 0.00 },
+                        { date: "Oct 9", bulk: 789, solar: 189, net: 600, units: 600, loss: 2, lossPercent: 0.3, bill: 5.00 }
+                    ]
+                },
+                monthly: {
+                    year: 2025,
+                    monthlyData: [
+                        { month: "January", bulk: 23400, solar: 5620, net: 17780, units: 17780, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "February", bulk: 21080, solar: 5060, net: 16020, units: 16020, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "March", bulk: 24120, solar: 5789, net: 18331, units: 18331, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "April", bulk: 22340, solar: 5362, net: 16978, units: 16978, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "May", bulk: 20760, solar: 4982, net: 15778, units: 15778, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "June", bulk: 19880, solar: 4771, net: 15109, units: 15109, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "July", bulk: 21640, solar: 5194, net: 16446, units: 16446, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "August", bulk: 23280, solar: 5587, net: 17693, units: 17693, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "September", bulk: 22540, solar: 5410, net: 17130, units: 17130, loss: 0, lossPercent: 0.0, efficiency: 100.0, bill: 0.00 },
+                        { month: "October (MTD)", bulk: 6890, solar: 1650, net: 5240, units: 5238, loss: 2, lossPercent: 0.0, efficiency: 100.0, bill: 5.00 }
+                    ],
+                    ytd: { bulk: 209330, solar: 50225, net: 159105, units: 159103, loss: 2, lossPercent: 0.0, bill: 5.00 },
+                    avgMonthlyLoss: 0,
+                    bestMonth: "All Months",
+                    worstMonth: "October (MTD)"
+                }
+            }
+        };
+
         function updateMTDData(estate) {
-            console.log('Updating MTD data for:', estate);
-            drawDailyTrendChart();
+            const data = reconciliationData[estate].mtd;
+            
+            // Update period title
+            document.querySelector('#mtdView h3').textContent = data.period;
+            
+            // Update summary card
+            document.querySelector('#mtdView .space-y-2').innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Days Elapsed</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">${data.daysElapsed}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Total Bulk Reading</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">${data.totalBulk.toLocaleString()} kWh</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Solar Offset</span>
+                    <span class="text-sm font-semibold text-yellow-600">${data.solarOffset.toLocaleString()} kWh</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Units Total</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">${data.unitsTotal.toLocaleString()} kWh</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t">
+                    <span class="text-sm font-medium text-red-700 dark:text-red-300">Communal Usage</span>
+                    <span class="text-sm font-bold text-red-600">${data.unaccounted} kWh (${data.unaccountedPercent}%)</span>
+                </div>
+                <div class="flex justify-between items-center bg-yellow-50 dark:bg-yellow-900/20 -mx-2 px-2 py-2 rounded">
+                    <span class="text-sm font-medium text-yellow-700 dark:text-yellow-300">Estate Bill MTD</span>
+                    <span class="text-sm font-bold text-yellow-600">R ${data.estateBill.toFixed(2)}</span>
+                </div>
+            `;
+            
+            // Update daily table
+            const tbody = document.querySelector('#mtdView tbody');
+            tbody.innerHTML = '';
+            
+            data.dailyData.forEach(day => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-gray-900 dark:text-white">${day.date}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${day.bulk}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${day.solar}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${day.net}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${day.units}</td>
+                    <td class="px-4 py-3 text-center text-red-600">${day.loss}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${day.lossPercent}%</td>
+                    <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">R ${day.bill.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Add MTD total row
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'bg-gray-100 dark:bg-gray-700 font-semibold';
+            totalRow.innerHTML = `
+                <td class="px-4 py-3 text-gray-900 dark:text-white">MTD Total</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.totalBulk.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${Math.abs(data.solarOffset).toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${(data.totalBulk + data.solarOffset).toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.unitsTotal.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-red-600">${data.unaccounted}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.unaccountedPercent}%</td>
+                <td class="px-4 py-3 text-right text-lg text-gray-900 dark:text-white">R ${data.estateBill.toFixed(2)}</td>
+            `;
+            tbody.appendChild(totalRow);
+            
+            // Update chart
+            drawDailyTrendChart(data.dailyData);
         }
 
         function updateMonthlyData(estate, viewType) {
-            console.log('Updating monthly data for:', estate, viewType);
-            drawMonthlyChart();
+            const data = reconciliationData[estate].monthly;
+            
+            // Update title
+            if (viewType === 'yearly') {
+                document.querySelector('#monthlyView h3').textContent = `Year Overview - ${data.year}`;
+            } else {
+                document.querySelector('#monthlyView h3').textContent = `Monthly Comparison - ${data.year}`;
+            }
+            
+            // Update monthly table
+            const tbody = document.querySelector('#monthlyView tbody');
+            tbody.innerHTML = '';
+            
+            data.monthlyData.forEach(month => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+                if (month.month === 'October (MTD)') {
+                    row.className += ' text-gray-500';
+                }
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">${month.month}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${month.bulk.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${month.solar.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${month.net.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${month.units.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-center text-red-600">${month.loss}</td>
+                    <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${month.lossPercent}%</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded">${month.efficiency}%</span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">R ${month.bill.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Add YTD total row
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'bg-gray-100 dark:bg-gray-700 font-bold';
+            totalRow.innerHTML = `
+                <td class="px-4 py-3 text-gray-900 dark:text-white">YTD Total</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.ytd.bulk.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.ytd.solar.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.ytd.net.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.ytd.units.toLocaleString()}</td>
+                <td class="px-4 py-3 text-center text-red-600">${data.ytd.loss}</td>
+                <td class="px-4 py-3 text-center text-gray-900 dark:text-white">${data.ytd.lossPercent}%</td>
+                <td class="px-4 py-3 text-center">
+                    <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded">${(100 - data.ytd.lossPercent).toFixed(1)}%</span>
+                </td>
+                <td class="px-4 py-3 text-right text-lg text-gray-900 dark:text-white">R ${data.ytd.bill.toFixed(2)}</td>
+            `;
+            tbody.appendChild(totalRow);
+            
+            // Update key metrics
+            document.querySelector('#monthlyView .bg-blue-50 .text-xl').textContent = `${data.avgMonthlyLoss} kWh`;
+            document.querySelector('#monthlyView .bg-green-50 .text-xl').textContent = data.bestMonth;
+            document.querySelector('#monthlyView .bg-red-50 .text-xl').textContent = data.worstMonth;
+            document.querySelector('#monthlyView .bg-yellow-50 .text-xl').textContent = `R ${data.ytd.bill.toLocaleString()}`;
+            
+            // Update chart
+            drawMonthlyChart(data.monthlyData);
         }
 
         function exportData() {
             const viewType = document.getElementById('viewType').value;
             const estate = document.getElementById('estateSelect').value;
-            alert(`Exporting ${viewType} data for ${estate}...`);
+            const estateName = reconciliationData[estate].name;
+            alert(`Exporting ${viewType} data for ${estateName}...`);
         }
 
         // Chart Drawing Functions
-        function drawDailyTrendChart() {
+        function drawDailyTrendChart(dailyData = null) {
             const canvas = document.getElementById('dailyTrendChart');
-            if (canvas && canvas.getContext) {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!canvas || !canvas.getContext) return;
+            
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            
+            // Set canvas size to fill the container
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            
+            const data = dailyData ? dailyData.map(day => day.loss) : [7, 9, 6, 8, 5, 7, 8, 6, 7];
+            const dates = dailyData ? dailyData.map(day => day.date) : ['Oct 1', 'Oct 2', 'Oct 3', 'Oct 4', 'Oct 5', 'Oct 6', 'Oct 7', 'Oct 8', 'Oct 9'];
+            
+            if (data.length === 0) return;
+            
+            // Chart dimensions - adjusted for better fit
+            const padding = 30;
+            const chartWidth = rect.width - (padding * 2);
+            const chartHeight = rect.height - (padding * 2) - 20; // Extra space for title
+            const maxValue = Math.max(...data) * 1.1; // Add 10% padding
+            const minValue = Math.min(0, Math.min(...data) * 0.9);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
                 ctx.beginPath();
-                ctx.strokeStyle = '#ef4444';
-                ctx.lineWidth = 2;
-                
-                const data = [7, 9, 6, 8, 5, 7, 8, 6, 7];
-                const spacing = canvas.width / (data.length - 1);
-                
-                data.forEach((value, index) => {
-                    const x = index * spacing;
-                    const y = canvas.height - (value * 10 + 50);
-                    if (index === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                });
-                
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
                 ctx.stroke();
             }
+            
+            // Vertical grid lines
+            for (let i = 0; i < data.length; i++) {
+                const x = padding + (chartWidth / (data.length - 1)) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, padding + chartHeight);
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+            
+            // Draw axis labels
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Y-axis labels
+            for (let i = 0; i <= 5; i++) {
+                const value = maxValue - (maxValue / 5) * i;
+                const y = padding + (chartHeight / 5) * i;
+                ctx.fillText(Math.round(value).toString(), padding - 8, y + 3);
+            }
+            
+            // X-axis labels
+            ctx.textAlign = 'center';
+            for (let i = 0; i < data.length; i++) {
+                const x = padding + (chartWidth / (data.length - 1)) * i;
+                ctx.fillText(dates[i], x, rect.height - 8);
+            }
+            
+            // Draw the line chart
+            ctx.beginPath();
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            data.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.length - 1)) * index;
+                const y = padding + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw data points
+            ctx.fillStyle = '#ef4444';
+            data.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.length - 1)) * index;
+                const y = padding + chartHeight - ((value - minValue) / (maxValue - minValue)) * chartHeight;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Draw value labels above points
+                ctx.fillStyle = '#374151';
+                ctx.font = '8px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(value.toString(), x, y - 6);
+                ctx.fillStyle = '#ef4444';
+            });
+            
+            // Title is already provided in HTML, so we don't need to draw it
         }
 
-        function drawMonthlyChart() {
+        function drawMonthlyChart(monthlyData = null) {
             const canvas = document.getElementById('monthlyChart');
-            if (canvas && canvas.getContext) {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-                const losses = [214, 189, 156, 178, 195, 203, 245, 212, 198, 63];
-                
-                const barWidth = canvas.width / (months.length * 2);
-                const maxValue = Math.max(...losses);
-                
-                losses.forEach((value, index) => {
-                    const x = index * barWidth * 2 + barWidth / 2;
-                    const barHeight = (value / maxValue) * (canvas.height - 40);
-                    const y = canvas.height - barHeight - 20;
-                    
-                    ctx.fillStyle = value > 200 ? '#ef4444' : '#fbbf24';
-                    ctx.fillRect(x, y, barWidth, barHeight);
-                    
-                    ctx.fillStyle = '#666';
-                    ctx.font = '10px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(months[index], x + barWidth / 2, canvas.height - 5);
-                    ctx.fillText(value + ' kWh', x + barWidth / 2, y - 5);
-                });
+            if (!canvas || !canvas.getContext) return;
+            
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            
+            // Set canvas size to fill the container
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            
+            const data = monthlyData || [
+                { month: "January", loss: 214 },
+                { month: "February", loss: 189 },
+                { month: "March", loss: 156 },
+                { month: "April", loss: 178 },
+                { month: "May", loss: 195 },
+                { month: "June", loss: 203 },
+                { month: "July", loss: 245 },
+                { month: "August", loss: 212 },
+                { month: "September", loss: 198 },
+                { month: "October (MTD)", loss: 63 }
+            ];
+            
+            const months = data.map(item => item.month.substring(0, 3));
+            const losses = data.map(item => item.loss);
+            
+            if (losses.length === 0) return;
+            
+            // Chart dimensions - adjusted for better fit
+            const padding = 30;
+            const chartWidth = rect.width - (padding * 2);
+            const chartHeight = rect.height - (padding * 2) - 20; // Extra space for title
+            const barWidth = chartWidth / (months.length * 1.5);
+            const maxValue = Math.max(...losses) * 1.1;
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
             }
+            
+            ctx.setLineDash([]);
+            
+            // Draw axis labels
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Y-axis labels
+            for (let i = 0; i <= 5; i++) {
+                const value = maxValue - (maxValue / 5) * i;
+                const y = padding + (chartHeight / 5) * i;
+                ctx.fillText(Math.round(value).toString(), padding - 8, y + 3);
+            }
+            
+            // X-axis labels
+            for (let i = 0; i < months.length; i++) {
+                const x = padding + (chartWidth / (months.length - 1)) * i;
+                ctx.fillText(months[i], x, rect.height - 8);
+            }
+            
+            // Draw bars
+            losses.forEach((value, index) => {
+                const x = padding + (chartWidth / (months.length - 1)) * index - barWidth / 2;
+                const barHeight = (value / maxValue) * chartHeight;
+                const y = padding + chartHeight - barHeight;
+                
+                // Bar color based on value
+                ctx.fillStyle = value > 200 ? '#ef4444' : value > 100 ? '#f59e0b' : '#10b981';
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // Value label above bar
+                ctx.fillStyle = '#374151';
+                ctx.font = '8px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(value.toString(), x + barWidth / 2, y - 3);
+            });
+            
+            // Title is already provided in HTML, so we don't need to draw it
         }
 
         // Initialize on page load
         window.addEventListener('load', () => {
-            drawDailyTrendChart();
+            // Small delay to ensure DOM is fully rendered
+            setTimeout(() => {
+                // Initialize reconciliation with default estate (Willow Creek)
+                updateMTDData('willow');
+            }, 100);
+        });
+
+        // Handle window resize to redraw charts
+        window.addEventListener('resize', () => {
+            const viewType = document.getElementById('viewType').value;
+            const estate = document.getElementById('estateSelect').value;
+            
+            if (viewType === 'mtd') {
+                drawDailyTrendChart(reconciliationData[estate].mtd.dailyData);
+            } else if (viewType === 'monthly' || viewType === 'yearly') {
+                drawMonthlyChart(reconciliationData[estate].monthly.monthlyData);
+            }
+        });
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAddEstateModal();
+            }
         });
     </script>
+
+    <!-- Add Estate Modal -->
+    <div id="addEstateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Add New Estate</h2>
+                    <button onclick="closeAddEstateModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <form onsubmit="saveNewEstate(event)" class="p-6">
+                <!-- Estate Information -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Estate Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Estate Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="estate_name" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., Willow Creek Estate">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Address <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="address" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 123 Main Road, Johannesburg">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                City <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="city" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., Johannesburg">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Postal Code
+                            </label>
+                            <input type="text" name="postal_code"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 2000">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Total Units <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="total_units" required min="1"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 50">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Estate Code
+                            </label>
+                            <input type="text" name="estate_code"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., WC001">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Manager Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="manager_name" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., John Smith">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Contact Number <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" name="contact_number" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., +27 11 123 4567">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Email Address
+                            </label>
+                            <input type="email" name="manager_email"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., manager@estate.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing Configuration -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Billing Configuration</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Electricity Markup (%)
+                            </label>
+                            <input type="number" name="electricity_markup" step="0.01" min="0" max="100" value="20"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 20">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Markup on electricity tariff</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Water Markup (%)
+                            </label>
+                            <input type="number" name="water_markup" step="0.01" min="0" max="100" value="0"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 0">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Markup on water tariff</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Solar Free Allocation (kWh)
+                            </label>
+                            <input type="number" name="solar_free_kwh" step="0.01" min="0" value="50"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Free kWh per unit per month</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Low Balance Threshold (ZAR)
+                            </label>
+                            <input type="number" name="low_balance_threshold" step="0.01" min="0" value="50"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="e.g., 50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Alert when balance drops below</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Table Assignment -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Rate Tables</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Electricity Rate Table
+                            </label>
+                            <select name="electricity_rate_table"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">Select rate table...</option>
+                                <option value="residential_tiered">Residential Electricity - Tiered</option>
+                                <option value="residential_tou">Residential Electricity - TOU</option>
+                                <option value="commercial">Commercial Electricity</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Water Rate Table
+                            </label>
+                            <select name="water_rate_table"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">Select rate table...</option>
+                                <option value="residential_water">Residential Water - Tiered</option>
+                                <option value="commercial_water">Commercial Water</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Notes -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Notes / Comments
+                    </label>
+                    <textarea name="notes" rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Any additional information about this estate..."></textarea>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeAddEstateModal()"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        <i class="fas fa-plus mr-2"></i> Create Estate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>

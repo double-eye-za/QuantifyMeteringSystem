@@ -176,6 +176,7 @@
                             <option>All Estates</option>
                             <option>Willow Creek Residential</option>
                             <option>Parkview Gardens</option>
+                            <option>Sunset Ridge Estate</option>
                         </select>
                         <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                     </div>
@@ -196,7 +197,7 @@
                             <option>Low Credit</option>
                             <option>Disconnected</option>
                             <option>Offline</option>
-                            <option>Bottleneck</option>
+                            <option>Low Warning</option>
                         </select>
                         <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                     </div>
@@ -403,8 +404,8 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
-                                    <i class="fas fa-faucet mr-1"></i>Bottleneck
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Low Warning
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -515,13 +516,13 @@
                         Showing <span class="font-medium">1</span> to <span class="font-medium">8</span> of <span class="font-medium">304</span> results
                     </span>
                     <div class="flex space-x-1">
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                             Previous
                         </button>
                         <button class="px-3 py-2 text-sm bg-primary text-white rounded-lg">1</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">2</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">3</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">2</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">3</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                             Next
                         </button>
                     </div>
@@ -555,12 +556,12 @@
                     <button class="text-sm text-primary hover:text-blue-700">View All</button>
                 </div>
 
-                <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                     <div class="flex items-center">
-                        <i class="fas fa-faucet text-orange-500 mr-3"></i>
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
                         <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">Water Bottleneck Active - Unit B205</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Flow restricted due to zero credit</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">Water Low Warning Active - Unit B205</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Low credit warning</p>
                         </div>
                     </div>
                     <button class="text-sm text-primary hover:text-blue-700">Top Up</button>

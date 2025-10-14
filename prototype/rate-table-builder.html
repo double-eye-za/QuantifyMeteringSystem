@@ -302,14 +302,14 @@
                         <div id="tieredRates" class="space-y-3">
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-20">Tier 1:</span>
-                                <input type="number" placeholder="From" class="w-24 px-2 py-1 border rounded" value="0" disabled>
+                                <input type="number" placeholder="From" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="0" disabled>
                                 <span>-</span>
-                                <input type="number" placeholder="To" class="w-24 px-2 py-1 border rounded" value="50">
+                                <input type="number" placeholder="To" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="50">
                                 <span class="text-sm">kWh</span>
                                 <span class="text-sm">@</span>
                                 <span class="text-sm">R</span>
-                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="1.50">
-                                <span class="text-sm">/kWh</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="1.50">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                             </div>
                         </div>
                         <button onclick="addTier()" class="mt-3 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
@@ -326,35 +326,35 @@
                             <!-- Peak Hours -->
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-24">Peak Hours:</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="06:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="06:00">
                                 <span>to</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="10:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="10:00">
                                 <span class="text-sm">@</span>
                                 <span class="text-sm">R</span>
-                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="3.50">
-                                <span class="text-sm">/kWh</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="3.50">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                             </div>
                             <!-- Standard Hours -->
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-24">Standard:</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="10:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="10:00">
                                 <span>to</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="18:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="18:00">
                                 <span class="text-sm">@</span>
                                 <span class="text-sm">R</span>
-                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="2.50">
-                                <span class="text-sm">/kWh</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="2.50">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                             </div>
                             <!-- Off-Peak -->
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-24">Off-Peak:</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="18:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="18:00">
                                 <span>to</span>
-                                <input type="time" class="px-2 py-1 border rounded" value="06:00">
+                                <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="06:00">
                                 <span class="text-sm">@</span>
                                 <span class="text-sm">R</span>
-                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="1.50">
-                                <span class="text-sm">/kWh</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="1.50">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                             </div>
                         </div>
                         <button onclick="addTimeSlot()" class="mt-3 px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700">
@@ -372,16 +372,16 @@
                                 <label class="block text-sm font-medium mb-2">Summer (Dec - Feb)</label>
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm">R</span>
-                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border rounded" value="2.80">
-                                    <span class="text-sm">/kWh</span>
+                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="2.80">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                                 </div>
                             </div>
                             <div class="p-3 border border-green-200 dark:border-green-700 rounded">
                                 <label class="block text-sm font-medium mb-2">Winter (Jun - Aug)</label>
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm">R</span>
-                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border rounded" value="3.20">
-                                    <span class="text-sm">/kWh</span>
+                                    <input type="number" step="0.01" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="3.20">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                                 </div>
                             </div>
                         </div>
@@ -395,8 +395,8 @@
                         <div class="flex items-center gap-3">
                             <span class="text-sm font-medium">Rate:</span>
                             <span class="text-sm">R</span>
-                            <input type="number" step="0.01" placeholder="Rate" class="w-32 px-2 py-1 border rounded" value="2.50">
-                            <select class="px-2 py-1 border rounded">
+                            <input type="number" step="0.01" placeholder="Rate" class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="2.50">
+                            <select class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option>/kWh</option>
                                 <option>/kL</option>
                                 <option>/unit</option>
@@ -412,8 +412,8 @@
                         <div class="flex items-center gap-3">
                             <span class="text-sm font-medium">Charge:</span>
                             <span class="text-sm">R</span>
-                            <input type="number" step="0.01" placeholder="Amount" class="w-32 px-2 py-1 border rounded" value="150.00">
-                            <select class="px-2 py-1 border rounded">
+                            <input type="number" step="0.01" placeholder="Amount" class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="150.00">
+                            <select class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option>per month</option>
                                 <option>per day</option>
                                 <option>per year</option>
@@ -430,12 +430,12 @@
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-32">Demand Charge:</span>
                                 <span class="text-sm">R</span>
-                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded" value="50.00">
-                                <span class="text-sm">per kW of peak demand</span>
+                                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="50.00">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">per kW of peak demand</span>
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="text-sm font-medium w-32">Measurement:</span>
-                                <select class="px-2 py-1 border rounded">
+                                <select class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                     <option>15-minute peak</option>
                                     <option>30-minute peak</option>
                                     <option>Monthly peak</option>
@@ -461,7 +461,7 @@
                                         <label class="text-sm">Apply Markup</label>
                                         <div class="flex items-center gap-2">
                                             <input type="checkbox" id="applyMarkup" checked class="rounded">
-                                            <input type="number" value="20" class="w-16 px-2 py-1 border rounded text-sm">
+                                            <input type="number" value="20" class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                             <span class="text-sm">%</span>
                                         </div>
                                     </div>
@@ -482,8 +482,8 @@
                                     <div class="flex items-center justify-between">
                                         <label class="text-sm">Free Units</label>
                                         <div class="flex items-center gap-2">
-                                            <input type="number" value="0" class="w-20 px-2 py-1 border rounded text-sm">
-                                            <select class="px-2 py-1 border rounded text-sm">
+                                            <input type="number" value="0" class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                            <select class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                                 <option>kWh/month</option>
                                                 <option>kL/month</option>
                                                 <option>units/month</option>
@@ -492,7 +492,7 @@
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <label class="text-sm">Applies to</label>
-                                        <select class="px-2 py-1 border rounded text-sm">
+                                        <select class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                             <option>All units</option>
                                             <option>Specific category</option>
                                             <option>Custom selection</option>
@@ -612,14 +612,14 @@
             newTier.className = 'flex items-center gap-3';
             newTier.innerHTML = `
                 <span class="text-sm font-medium w-20">Tier ${tierCount}:</span>
-                <input type="number" placeholder="From" class="w-24 px-2 py-1 border rounded">
+                <input type="number" placeholder="From" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <span>-</span>
-                <input type="number" placeholder="To" class="w-24 px-2 py-1 border rounded">
+                <input type="number" placeholder="To" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <span class="text-sm">kWh</span>
                 <span class="text-sm">@</span>
                 <span class="text-sm">R</span>
-                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border rounded">
-                <span class="text-sm">/kWh</span>
+                <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
                 <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
                     <i class="fas fa-trash"></i>
                 </button>
