@@ -22,7 +22,6 @@ class Unit(db.Model):
     size_sqm: Optional[float]
     occupancy_status: Optional[str]
     resident_id: Optional[int]
-    wallet_id: Optional[int]
     electricity_meter_id: Optional[int]
     water_meter_id: Optional[int]
     solar_meter_id: Optional[int]
@@ -42,7 +41,12 @@ class Unit(db.Model):
     size_sqm = db.Column(db.Numeric(10, 2))
     occupancy_status = db.Column(db.String(20), default="vacant")
     resident_id = db.Column(db.Integer, db.ForeignKey("residents.id"))
-    wallet_id = db.Column(db.Integer, db.ForeignKey("wallets.id"))
+    wallet = db.relationship(
+        "Wallet",
+        uselist=False,
+        backref="unit",
+        primaryjoin="Unit.id==Wallet.unit_id",
+    )
     electricity_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     solar_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
@@ -140,7 +144,7 @@ class Unit(db.Model):
             "size_sqm": float(self.size_sqm) if self.size_sqm is not None else None,
             "occupancy_status": self.occupancy_status,
             "resident_id": self.resident_id,
-            "wallet_id": self.wallet_id,
+            "wallet_id": self.wallet.id if getattr(self, "wallet", None) else None,
             "electricity_meter_id": self.electricity_meter_id,
             "water_meter_id": self.water_meter_id,
             "solar_meter_id": self.solar_meter_id,
