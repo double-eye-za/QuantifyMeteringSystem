@@ -168,6 +168,24 @@ open prototype/index.html
 - **[Database Schema](documents/Database%20Schema%20Documentation.md)**: PostgreSQL database design
 - **[API Documentation](documents/API%20Documentation.md)**: RESTful API endpoints and examples
 - **Installation Guide**: See `INSTALLATION.md` for a detailed setup walkthrough
+
+## Seeding Sample Data
+
+Create prototype-inspired data for estates, units, meters, wallets, rate tables, and an admin user:
+
+```bash
+export FLASK_APP=application.py
+python scripts/seed.py
+```
+
+Defaults:
+
+- Admin user: username `admin`, password `password`
+- Estates: Willow Creek, Parkview Gardens, Sunset Ridge
+- Units: A-101, A-102 (Willow Creek), B-201 (Parkview)
+- Units (added): B-202 (Parkview), C-301/C-302 (Sunset Ridge), D-101/D-102 (Riverside Meadows)
+- Meters: E460-001/002/051/052/050/075/E460-RV-001/E460-RV-002, WTR-001/002/051/050/075/WTR-RV-001/WTR-RV-002, SOL-001/002/051/050/075/SOL-RV-001/SOL-RV-002, BULK-E-001, WAT-025
+- Rate tables: Standard Residential, Pensioner Subsidized, Commercial Standard
 - **[Project Plan](documents/Project%20Plan%20-%20Phase%201%20Development.md)**: Development timeline and milestones
 - **[Unit Test Documentation](documents/Unit%20Test%20Documentation.md)**: Testing strategy and examples
 
