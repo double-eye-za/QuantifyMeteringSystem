@@ -5,6 +5,7 @@ from app.db import db
 from app.routes.v1 import api_v1
 from app.auth import login_manager
 import os
+from flask_migrate import Migrate
 
 
 def create_app() -> Flask:
@@ -17,6 +18,7 @@ def create_app() -> Flask:
         app.config["SQLALCHEMY_DATABASE_URI"] = env_db
 
     db.init_app(app)
+    Migrate(app, db)
     login_manager.init_app(app)
 
     with app.app_context():
