@@ -22,6 +22,9 @@ from app.models import (
     Meter,
     Wallet,
     RateTable,
+    MeterReading,
+    MeterAlert,
+    Resident,
 )
 from sqlalchemy import text
 
@@ -48,7 +51,7 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
     tables: dict[str, RateTable] = {}
     created_count = 0
 
-    # Standard Residential
+    # Electricity: Standard Residential
     if "Standard Residential" not in existing:
         rt = RateTable(
             name="Standard Residential",
@@ -60,12 +63,6 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
                         {"up_to": 350, "rate": 1.60},
                         {"up_to": 600, "rate": 2.10},
                         {"up_to": None, "rate": 2.40},
-                    ],
-                    "water": [
-                        {"up_to": 6, "rate": 10.00},
-                        {"up_to": 15, "rate": 15.00},
-                        {"up_to": 30, "rate": 20.00},
-                        {"up_to": None, "rate": 25.00},
                     ],
                 }
             ),
@@ -80,7 +77,7 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
     else:
         tables["Standard Residential"] = existing["Standard Residential"]
 
-    # Pensioner Subsidized
+    # Electricity: Pensioner Subsidized
     if "Pensioner Subsidized" not in existing:
         rt = RateTable(
             name="Pensioner Subsidized",
@@ -90,10 +87,6 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
                     "electricity": [
                         {"up_to": 100, "rate": 0.70},
                         {"up_to": None, "rate": 1.00},
-                    ],
-                    "water": [
-                        {"up_to": 10, "rate": 7.00},
-                        {"up_to": None, "rate": 12.00},
                     ],
                 }
             ),
@@ -108,7 +101,7 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
     else:
         tables["Pensioner Subsidized"] = existing["Pensioner Subsidized"]
 
-    # Commercial Standard
+    # Electricity: Commercial Standard
     if "Commercial Standard" not in existing:
         rt = RateTable(
             name="Commercial Standard",
@@ -119,11 +112,6 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
                         {"up_to": 200, "rate": 2.00},
                         {"up_to": 1000, "rate": 2.60},
                         {"up_to": None, "rate": 3.20},
-                    ],
-                    "water": [
-                        {"up_to": 30, "rate": 18.00},
-                        {"up_to": 100, "rate": 22.00},
-                        {"up_to": None, "rate": 28.00},
                     ],
                 }
             ),
@@ -137,6 +125,79 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
         created_count += 1
     else:
         tables["Commercial Standard"] = existing["Commercial Standard"]
+
+    # WATER rate tables (separate utility_type='water')
+    if "Standard Residential Water" not in existing:
+        rt = RateTable(
+            name="Standard Residential Water",
+            utility_type="water",
+            rate_structure=json.dumps(
+                {
+                    "water": [
+                        {"up_to": 6, "rate": 10.00},
+                        {"up_to": 15, "rate": 15.00},
+                        {"up_to": 30, "rate": 20.00},
+                        {"up_to": None, "rate": 25.00},
+                    ]
+                }
+            ),
+            is_default=True,
+            effective_from=date.today(),
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(rt)
+        tables[rt.name] = rt
+        created_count += 1
+    else:
+        tables["Standard Residential Water"] = existing["Standard Residential Water"]
+
+    if "Pensioner Subsidized Water" not in existing:
+        rt = RateTable(
+            name="Pensioner Subsidized Water",
+            utility_type="water",
+            rate_structure=json.dumps(
+                {
+                    "water": [
+                        {"up_to": 10, "rate": 7.00},
+                        {"up_to": None, "rate": 12.00},
+                    ]
+                }
+            ),
+            is_default=False,
+            effective_from=date.today(),
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(rt)
+        tables[rt.name] = rt
+        created_count += 1
+    else:
+        tables["Pensioner Subsidized Water"] = existing["Pensioner Subsidized Water"]
+
+    if "Commercial Standard Water" not in existing:
+        rt = RateTable(
+            name="Commercial Standard Water",
+            utility_type="water",
+            rate_structure=json.dumps(
+                {
+                    "water": [
+                        {"up_to": 30, "rate": 18.00},
+                        {"up_to": 100, "rate": 22.00},
+                        {"up_to": None, "rate": 28.00},
+                    ]
+                }
+            ),
+            is_default=False,
+            effective_from=date.today(),
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(rt)
+        tables[rt.name] = rt
+        created_count += 1
+    else:
+        tables["Commercial Standard Water"] = existing["Commercial Standard Water"]
 
     db.session.commit()
     logging.info(
@@ -154,47 +215,67 @@ def create_estates_and_units(
     estates_data = [
         {
             "code": "WCRK",
-            "name": "Willow Creek",
+            "name": "Willow Creek Estate",
+            "address": "123 Main Road",
             "city": "Johannesburg",
+            "postal_code": "2000",
+            "contact_name": "John Smith",
+            "contact_phone": "+27 11 123 4567",
+            "contact_email": "manager.willow@example.com",
             "total_units": 50,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
-            "water_rate_table_id": rate_tables["Standard Residential"].id,
+            "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
             "code": "PKVG",
             "name": "Parkview Gardens",
-            "city": "Johannesburg",
+            "address": "456 Park Avenue",
+            "city": "Pretoria",
+            "postal_code": "0083",
+            "contact_name": "Jane Doe",
+            "contact_phone": "+27 12 345 6789",
+            "contact_email": "manager.parkview@example.com",
             "total_units": 50,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
-            "water_rate_table_id": rate_tables["Standard Residential"].id,
+            "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
             "code": "SNSR",
-            "name": "Sunset Ridge",
-            "city": "Johannesburg",
+            "name": "Sunset Ridge Estate",
+            "address": "789 Ridge Road",
+            "city": "Cape Town",
+            "postal_code": "7441",
+            "contact_name": "Peter Brown",
+            "contact_phone": "+27 21 555 0101",
+            "contact_email": "manager.sunset@example.com",
             "total_units": 75,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
-            "water_rate_table_id": rate_tables["Standard Residential"].id,
+            "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
             "code": "RVMD",
             "name": "Riverside Meadows",
+            "address": "12 River Close",
             "city": "Johannesburg",
+            "postal_code": "2191",
+            "contact_name": "Sarah Johnson",
+            "contact_phone": "+27 10 555 0000",
+            "contact_email": "manager.riverside@example.com",
             "total_units": 20,
             "electricity_markup_percentage": 15.0,
             "water_markup_percentage": 10.0,
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
-            "water_rate_table_id": rate_tables["Standard Residential"].id,
+            "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
     ]
 
@@ -222,7 +303,16 @@ def create_estates_and_units(
         meters_created += 1
         return m
 
-    # Willow Creek examples
+    # Willow Creek examples + bulk meters
+    blk_e_wcrk = ensure_meter("BULK-E-WCRK", "bulk_electricity")
+    blk_w_wcrk = ensure_meter("BULK-W-WCRK", "bulk_water")
+    wcrk = estates["WCRK"]
+    if not wcrk.bulk_electricity_meter_id:
+        wcrk.bulk_electricity_meter_id = blk_e_wcrk.id
+    if not wcrk.bulk_water_meter_id:
+        wcrk.bulk_water_meter_id = blk_w_wcrk.id
+    db.session.commit()
+
     e_e460_001 = ensure_meter("E460-001", "electricity")
     e_wtr_001 = ensure_meter("WTR-001", "water")
     e_sol_001 = ensure_meter("SOL-001", "solar")
@@ -264,6 +354,16 @@ def create_estates_and_units(
         )
         units_created += 1
 
+    # Parkview + bulk
+    blk_e_pkvg = ensure_meter("BULK-E-PKVG", "bulk_electricity")
+    blk_w_pkvg = ensure_meter("BULK-W-PKVG", "bulk_water")
+    pkvg = estates["PKVG"]
+    if not pkvg.bulk_electricity_meter_id:
+        pkvg.bulk_electricity_meter_id = blk_e_pkvg.id
+    if not pkvg.bulk_water_meter_id:
+        pkvg.bulk_water_meter_id = blk_w_pkvg.id
+    db.session.commit()
+
     # Vacant example in Parkview
     pk_e460_051 = ensure_meter("E460-051", "electricity")
     pk_wtr_051 = ensure_meter("WTR-051", "water")
@@ -304,9 +404,18 @@ def create_estates_and_units(
         )
         units_created += 1
 
-    # Bulk meters
-    ensure_meter("BULK-E-001", "bulk_electricity")
+    # Additional meters
     ensure_meter("WAT-025", "water")
+
+    # Sunset Ridge + bulk
+    blk_e_snsr = ensure_meter("BULK-E-SNSR", "bulk_electricity")
+    blk_w_snsr = ensure_meter("BULK-W-SNSR", "bulk_water")
+    snsr = estates["SNSR"]
+    if not snsr.bulk_electricity_meter_id:
+        snsr.bulk_electricity_meter_id = blk_e_snsr.id
+    if not snsr.bulk_water_meter_id:
+        snsr.bulk_water_meter_id = blk_w_snsr.id
+    db.session.commit()
 
     # Sunset Ridge two units
     sn_e460_050 = ensure_meter("E460-050", "electricity")
@@ -346,6 +455,16 @@ def create_estates_and_units(
             }
         )
         units_created += 1
+
+    # Riverside Meadows + bulk
+    blk_e_rvmd = ensure_meter("BULK-E-RVMD", "bulk_electricity")
+    blk_w_rvmd = ensure_meter("BULK-W-RVMD", "bulk_water")
+    rvmd = estates["RVMD"]
+    if not rvmd.bulk_electricity_meter_id:
+        rvmd.bulk_electricity_meter_id = blk_e_rvmd.id
+    if not rvmd.bulk_water_meter_id:
+        rvmd.bulk_water_meter_id = blk_w_rvmd.id
+    db.session.commit()
 
     # New estate Riverside Meadows with two units
     rv_e460_001 = ensure_meter("E460-RV-001", "electricity")
@@ -412,6 +531,55 @@ def create_estates_and_units(
     }
 
 
+def create_readings_and_alerts() -> dict[str, int]:
+    from datetime import datetime, timedelta
+
+    readings_created = 0
+    alerts_created = 0
+
+    # Create last 7 days readings per meter
+    for meter in Meter.query.all():
+        base = 1000.0
+        for i in range(7, 0, -1):
+            ts = datetime.utcnow() - timedelta(days=i)
+            value = base + (7 - i) * 50 + (meter.id % 5) * 10
+            if not MeterReading.query.filter_by(
+                meter_id=meter.id, reading_date=ts
+            ).first():
+                mr = MeterReading(
+                    meter_id=meter.id,
+                    reading_value=value,
+                    reading_date=ts,
+                    reading_type="automatic",
+                    is_validated=True,
+                    validation_date=ts,
+                )
+                db.session.add(mr)
+                readings_created += 1
+        db.session.commit()
+
+    # Create a few alerts
+    some_meter = Meter.query.first()
+    if some_meter and not MeterAlert.query.first():
+        alert = MeterAlert(
+            meter_id=some_meter.id,
+            alert_type="communication_loss",
+            severity="warning",
+            message="Intermittent communication detected",
+            is_resolved=False,
+        )
+        db.session.add(alert)
+        alerts_created += 1
+        db.session.commit()
+
+    logging.info(
+        "Seeding readings and alerts done (readings=%d, alerts=%d)",
+        readings_created,
+        alerts_created,
+    )
+    return {"readings_created": readings_created, "alerts_created": alerts_created}
+
+
 def reset_database_data() -> None:
     engine_name = db.engine.name
     logging.info("Resetting database data using engine='%s'", engine_name)
@@ -458,6 +626,7 @@ def main():
         logging.info("Admin user ensured: id=%s", admin_user.id)
         rate_tables = create_rate_tables(admin_user)
         counts = create_estates_and_units(admin_user, rate_tables)
+        ra_counts = create_readings_and_alerts()
         summary = {
             "users_total": User.query.count(),
             "estates_total": Estate.query.count(),
@@ -481,7 +650,7 @@ def main():
         )
         print(
             "Seed complete: "
-            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}) | "
+            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}) | "
             f"totals(users={summary['users_total']}, estates={summary['estates_total']}, units={summary['units_total']}, meters={summary['meters_total']}, wallets={summary['wallets_total']}, rate_tables={summary['rate_tables_total']})"
         )
 
