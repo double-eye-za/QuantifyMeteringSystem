@@ -87,6 +87,10 @@ class Estate(db.Model):
             contact_phone=payload.get("contact_phone"),
             contact_email=payload.get("contact_email"),
             total_units=payload.get("total_units", 0),
+            electricity_rate_table_id=payload.get("electricity_rate_table_id"),
+            water_rate_table_id=payload.get("water_rate_table_id"),
+            bulk_electricity_meter_id=payload.get("bulk_electricity_meter_id"),
+            bulk_water_meter_id=payload.get("bulk_water_meter_id"),
             electricity_markup_percentage=payload.get(
                 "electricity_markup_percentage", 0.00
             ),
@@ -109,6 +113,10 @@ class Estate(db.Model):
             "contact_phone",
             "contact_email",
             "total_units",
+            "electricity_rate_table_id",
+            "water_rate_table_id",
+            "bulk_electricity_meter_id",
+            "bulk_water_meter_id",
             "electricity_markup_percentage",
             "water_markup_percentage",
             "solar_free_allocation_kwh",
@@ -122,6 +130,10 @@ class Estate(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    @staticmethod
+    def count_all() -> int:
+        return Estate.query.count()
 
     def to_dict(self):
         return {

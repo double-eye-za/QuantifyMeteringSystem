@@ -25,7 +25,9 @@ block breadcrumb %}
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
           Total Estates
         </p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">2</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.estates }}
+        </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Active</p>
       </div>
       <div
@@ -42,7 +44,9 @@ block breadcrumb %}
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Units</p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">100</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.units }}
+        </p>
         <p class="text-xs text-success mt-2">All connected</p>
       </div>
       <div
@@ -61,7 +65,9 @@ block breadcrumb %}
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
           Total Meters
         </p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">304</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.meters }}
+        </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
           300 unit + 4 bulk
         </p>
@@ -82,7 +88,9 @@ block breadcrumb %}
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
           Active DC450s
         </p>
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">4</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.dc450s }}
+        </p>
         <p class="text-xs text-success mt-2">All online</p>
       </div>
       <div
@@ -114,88 +122,37 @@ block breadcrumb %}
 
   <!-- Estate Cards -->
   <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Estate 1 -->
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+    {% for estate in estates %}
+    <div
+      class="border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      data-estate='{{ estate | tojson }}'
+    >
       <div class="flex items-start justify-between mb-4">
         <div>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Willow Creek Estate
+            {{ estate.name }}
           </h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            123 Main Road, Johannesburg
+            {{ estate.address or '' }}{% if estate.city %}, {{ estate.city }}{%
+            endif %}
           </p>
         </div>
         <span
           class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded-full"
-          >Active</span
+          >{{ 'Active' if estate.is_active else 'Inactive' }}</span
         >
       </div>
 
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">50</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ estate.total_units or 0 }}
+          </p>
         </div>
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">152</p>
-        </div>
-      </div>
-
-      <!-- Meter Breakdown -->
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
-        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Meter Configuration
-        </p>
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-tint text-blue-500 mr-1"></i> Water Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-solar-panel text-orange-500 mr-1"></i> Solar
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit</span
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- DC450 Status -->
-      <div
-        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-network-wired text-primary"></i>
-            <div>
-              <p class="text-xs font-medium text-blue-900 dark:text-blue-300">
-                DC450 Data Concentrators
-              </p>
-              <p class="text-xs text-blue-700 dark:text-blue-400">
-                2 units deployed
-              </p>
-            </div>
-          </div>
-          <span class="flex items-center text-xs text-success">
-            <i class="fas fa-circle mr-1" style="font-size: 8px"></i> Online
-          </span>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">—</p>
         </div>
       </div>
 
@@ -204,246 +161,13 @@ block breadcrumb %}
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-gray-500 dark:text-gray-400">Manager:</span>
           <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >John Smith</span
+            >{{ estate.contact_name or '' }}</span
           >
         </div>
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-500 dark:text-gray-400">Contact:</span>
           <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >+27 11 123 4567</span
-          >
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex items-center gap-2 mt-4">
-        <button
-          onclick="viewEstateDetails()"
-          class="flex-1 px-3 py-2 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-        >
-          <i class="fas fa-eye mr-1"></i> View Details
-        </button>
-        <button
-          onclick="editEstate()"
-          class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
-        >
-          <i class="fas fa-edit"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Estate 2 -->
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Parkview Gardens
-          </h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            456 Park Avenue, Pretoria
-          </p>
-        </div>
-        <span
-          class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded-full"
-          >Active</span
-        >
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">50</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">152</p>
-        </div>
-      </div>
-
-      <!-- Meter Breakdown -->
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
-        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Meter Configuration
-        </p>
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-tint text-blue-500 mr-1"></i> Water Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-solar-panel text-orange-500 mr-1"></i> Solar
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >50 unit</span
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- DC450 Status -->
-      <div
-        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-network-wired text-primary"></i>
-            <div>
-              <p class="text-xs font-medium text-blue-900 dark:text-blue-300">
-                DC450 Data Concentrators
-              </p>
-              <p class="text-xs text-blue-700 dark:text-blue-400">
-                2 units deployed
-              </p>
-            </div>
-          </div>
-          <span class="flex items-center text-xs text-success">
-            <i class="fas fa-circle mr-1" style="font-size: 8px"></i> Online
-          </span>
-        </div>
-      </div>
-
-      <!-- Contact Info -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Manager:</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >Jane Doe</span
-          >
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Contact:</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >+27 12 345 6789</span
-          >
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex items-center gap-2 mt-4">
-        <button
-          onclick="viewEstateDetails()"
-          class="flex-1 px-3 py-2 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-        >
-          <i class="fas fa-eye mr-1"></i> View Details
-        </button>
-        <button
-          onclick="editEstate()"
-          class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
-        >
-          <i class="fas fa-edit"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Estate 3 -->
-    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Sunset Ridge Estate
-          </h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            789 Ridge Road, Cape Town
-          </p>
-        </div>
-        <span
-          class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded-full"
-          >Active</span
-        >
-      </div>
-
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">75</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">220</p>
-        </div>
-      </div>
-
-      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4">
-        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Meter Configuration
-        </p>
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >75 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-tint text-blue-500 mr-1"></i> Water Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >75 unit + 1 bulk</span
-            >
-          </div>
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-gray-600 dark:text-gray-400">
-              <i class="fas fa-solar-panel text-orange-500 mr-1"></i> Solar
-              Meters
-            </span>
-            <span class="font-medium text-gray-900 dark:text-white"
-              >75 unit</span
-            >
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-network-wired text-primary"></i>
-            <div>
-              <p class="text-xs font-medium text-blue-900 dark:text-blue-300">
-                DC450 Data Concentrators
-              </p>
-              <p class="text-xs text-blue-700 dark:text-blue-400">
-                3 units deployed
-              </p>
-            </div>
-          </div>
-          <span class="flex items-center text-xs text-success">
-            <i class="fas fa-circle mr-1" style="font-size: 8px"></i> Online
-          </span>
-        </div>
-      </div>
-
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Manager:</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >Peter Brown</span
-          >
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Contact:</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white"
-            >+27 21 555 0101</span
+            >{{ estate.contact_phone or '' }}</span
           >
         </div>
       </div>
@@ -456,13 +180,14 @@ block breadcrumb %}
           <i class="fas fa-eye mr-1"></i> View Details
         </button>
         <button
-          onclick="editEstate()"
+          onclick="editEstate(this)"
           class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
         >
           <i class="fas fa-edit"></i>
         </button>
       </div>
     </div>
+    {% endfor %}
   </div>
 </div>
 
@@ -1154,6 +879,7 @@ block breadcrumb %}
               Electricity Markup (%)
             </label>
             <input
+              id="edit_electricity_markup"
               type="number"
               name="electricity_markup"
               step="0.01"
@@ -1175,6 +901,7 @@ block breadcrumb %}
               Water Markup (%)
             </label>
             <input
+              id="edit_water_markup"
               type="number"
               name="water_markup"
               step="0.01"
@@ -1196,6 +923,7 @@ block breadcrumb %}
               Solar Free Allocation (kWh)
             </label>
             <input
+              id="edit_solar_free_kwh"
               type="number"
               name="solar_free_kwh"
               step="0.01"
@@ -1248,13 +976,9 @@ block breadcrumb %}
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select rate table...</option>
-              <option value="residential_tiered">
-                Residential Electricity - Tiered
-              </option>
-              <option value="residential_tou">
-                Residential Electricity - TOU
-              </option>
-              <option value="commercial">Commercial Electricity</option>
+              {% for rt in electricity_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
             </select>
           </div>
 
@@ -1269,10 +993,9 @@ block breadcrumb %}
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select rate table...</option>
-              <option value="residential_water">
-                Residential Water - Tiered
-              </option>
-              <option value="commercial_water">Commercial Water</option>
+              {% for rt in water_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
             </select>
           </div>
         </div>
@@ -1291,292 +1014,6 @@ block breadcrumb %}
           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
           placeholder="Any additional information about this estate..."
         ></textarea>
-      </div>
-
-      <!-- Billing Configuration (Edit) -->
-      <div class="mb-6">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
-          Billing Configuration
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Electricity Markup (%)
-            </label>
-            <input
-              id="edit_electricity_markup"
-              type="number"
-              name="electricity_markup"
-              step="0.01"
-              min="0"
-              max="100"
-              value="20"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 20"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Markup on electricity tariff
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Water Markup (%)
-            </label>
-            <input
-              id="edit_water_markup"
-              type="number"
-              name="water_markup"
-              step="0.01"
-              min="0"
-              max="100"
-              value="0"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 0"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Markup on water tariff
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Solar Free Allocation (kWh)
-            </label>
-            <input
-              id="edit_solar_free_kwh"
-              type="number"
-              name="solar_free_kwh"
-              step="0.01"
-              min="0"
-              value="50"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 50"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Free kWh per unit per month
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Low Balance Threshold (ZAR)
-            </label>
-            <input
-              id="edit_low_balance_threshold"
-              type="number"
-              name="low_balance_threshold"
-              step="0.01"
-              min="0"
-              value="50"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 50"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Alert when balance drops below
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rate Table Assignment (Edit) -->
-      <div class="mb-6">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
-          Rate Tables
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Electricity Rate Table
-            </label>
-            <select
-              id="edit_electricity_rate_table"
-              name="electricity_rate_table"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">Select rate table...</option>
-              <option value="residential_tiered" selected>
-                Residential Electricity - Tiered
-              </option>
-              <option value="residential_tou">
-                Residential Electricity - TOU
-              </option>
-              <option value="commercial">Commercial Electricity</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Water Rate Table
-            </label>
-            <select
-              id="edit_water_rate_table"
-              name="water_rate_table"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">Select rate table...</option>
-              <option value="residential_water" selected>
-                Residential Water - Tiered
-              </option>
-              <option value="commercial_water">Commercial Water</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Billing Configuration (Edit) -->
-      <div class="mb-6">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
-          Billing Configuration
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Electricity Markup (%)
-            </label>
-            <input
-              id="edit_electricity_markup"
-              type="number"
-              name="electricity_markup"
-              step="0.01"
-              min="0"
-              max="100"
-              value="20"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 20"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Markup on electricity tariff
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Water Markup (%)
-            </label>
-            <input
-              id="edit_water_markup"
-              type="number"
-              name="water_markup"
-              step="0.01"
-              min="0"
-              max="100"
-              value="0"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 0"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Markup on water tariff
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Solar Free Allocation (kWh)
-            </label>
-            <input
-              id="edit_solar_free_kwh"
-              type="number"
-              name="solar_free_kwh"
-              step="0.01"
-              min="0"
-              value="50"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 50"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Free kWh per unit per month
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Low Balance Threshold (ZAR)
-            </label>
-            <input
-              id="edit_low_balance_threshold"
-              type="number"
-              name="low_balance_threshold"
-              step="0.01"
-              min="0"
-              value="50"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 50"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Alert when balance drops below
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rate Table Assignment (Edit) -->
-      <div class="mb-6">
-        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
-          Rate Tables
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Electricity Rate Table
-            </label>
-            <select
-              id="edit_electricity_rate_table"
-              name="electricity_rate_table"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">Select rate table...</option>
-              <option value="residential_tiered" selected>
-                Residential Electricity - Tiered
-              </option>
-              <option value="residential_tou">
-                Residential Electricity - TOU
-              </option>
-              <option value="commercial">Commercial Electricity</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Water Rate Table
-            </label>
-            <select
-              id="edit_water_rate_table"
-              name="water_rate_table"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">Select rate table...</option>
-              <option value="residential_water" selected>
-                Residential Water - Tiered
-              </option>
-              <option value="commercial_water">Commercial Water</option>
-            </select>
-          </div>
-        </div>
       </div>
 
       <!-- Modal Footer -->
@@ -1898,17 +1335,14 @@ block breadcrumb %}
               Electricity Rate Table
             </label>
             <select
+              id="edit_electricity_rate_table"
               name="electricity_rate_table"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select rate table...</option>
-              <option value="residential_tiered">
-                Residential Electricity - Tiered
-              </option>
-              <option value="residential_tou">
-                Residential Electricity - TOU
-              </option>
-              <option value="commercial">Commercial Electricity</option>
+              {% for rt in electricity_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
             </select>
           </div>
 
@@ -1919,14 +1353,14 @@ block breadcrumb %}
               Water Rate Table
             </label>
             <select
+              id="edit_water_rate_table"
               name="water_rate_table"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select rate table...</option>
-              <option value="residential_water">
-                Residential Water - Tiered
-              </option>
-              <option value="commercial_water">Commercial Water</option>
+              {% for rt in water_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
             </select>
           </div>
         </div>
@@ -1964,37 +1398,85 @@ block breadcrumb %}
     document.getElementById("addEstateModal").classList.add("hidden");
   }
 
-  function saveNewEstate(event) {
+  async function saveNewEstate(event) {
     event.preventDefault();
-    // Get form data
     const formData = new FormData(event.target);
-    const estateData = Object.fromEntries(formData);
-    console.log("New Estate Data:", estateData);
-
-    // Show success message
-    alert(
-      'Estate "' +
-        estateData.estate_name +
-        '" would be created with ' +
-        estateData.total_units +
-        " units"
-    );
-
-    // Close modal
-    closeAddEstateModal();
-
-    // Reset form
-    event.target.reset();
+    const d = Object.fromEntries(formData);
+    const BASE_URL = "/api/v1";
+    try {
+      const res = await fetch(`${BASE_URL}/estates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: d.estate_name,
+          code: d.estate_code,
+          address: d.address,
+          city: d.city,
+          postal_code: d.postal_code,
+          contact_name: d.manager_name,
+          contact_phone: d.contact_number,
+          contact_email: d.manager_email,
+          total_units: Number(d.total_units || 0),
+          electricity_markup_percentage: Number(d.electricity_markup || 0),
+          water_markup_percentage: Number(d.water_markup || 0),
+          solar_free_allocation_kwh: Number(d.solar_free_kwh || 0),
+          electricity_rate_table_id: d.electricity_rate_table || null,
+          water_rate_table_id: d.water_rate_table || null,
+        }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      await res.json();
+      window.location.reload();
+    } catch (e) {
+      alert("Failed to create estate");
+    }
   }
 
   function viewEstateDetails() {
     window.location.href = "{{ url_for('api_v1.units_page') }}";
   }
 
-  function editEstate() {
-    // In a real app, populate fields based on the selected estate
+  function editEstate(buttonEl) {
+    const card = buttonEl.closest("[data-estate]");
+    if (!card) {
+      showEditEstateModal();
+      return;
+    }
+    const estate = JSON.parse(card.getAttribute("data-estate"));
+    // Populate edit form
+    document.getElementById("edit_estate_name").value = estate.name || "";
+    document.getElementById("edit_address").value = estate.address || "";
+    document.getElementById("edit_city").value = estate.city || "";
+    document.getElementById("edit_postal_code").value =
+      estate.postal_code || "";
+    document.getElementById("edit_total_units").value = estate.total_units || 0;
+    document.getElementById("edit_estate_code").value = estate.code || "";
+    document.getElementById("edit_manager_name").value =
+      estate.contact_name || "";
+    document.getElementById("edit_contact_number").value =
+      estate.contact_phone || "";
+    document.getElementById("edit_manager_email").value =
+      estate.contact_email || "";
+    // Billing/rates
+    const em = document.getElementById("edit_electricity_markup");
+    if (em) em.value = estate.electricity_markup_percentage ?? 0;
+    const wm = document.getElementById("edit_water_markup");
+    if (wm) wm.value = estate.water_markup_percentage ?? 0;
+    const sf = document.getElementById("edit_solar_free_kwh");
+    if (sf) sf.value = estate.solar_free_allocation_kwh ?? 50;
+    const rtE = document.getElementById("edit_electricity_rate_table");
+    if (rtE && estate.electricity_rate_table_id)
+      rtE.value = estate.electricity_rate_table_id;
+    const rtW = document.getElementById("edit_water_rate_table");
+    if (rtW && estate.water_rate_table_id)
+      rtW.value = estate.water_rate_table_id;
+    // Store id on form for submit
+    document
+      .getElementById("editEstateModal")
+      .setAttribute("data-estate-id", estate.id);
     showEditEstateModal();
   }
+
   function showEditEstateModal() {
     document.getElementById("editEstateModal").classList.remove("hidden");
   }
@@ -2003,13 +1485,43 @@ block breadcrumb %}
     document.getElementById("editEstateModal").classList.add("hidden");
   }
 
-  function saveEditedEstate(event) {
+  async function saveEditedEstate(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
     const updatedData = Object.fromEntries(formData);
-    console.log("Updated Estate Data:", updatedData);
-    alert('Estate "' + updatedData.estate_name + '" has been updated.');
-    closeEditEstateModal();
+    const estateId = document
+      .getElementById("editEstateModal")
+      .getAttribute("data-estate-id");
+    const BASE_URL = "/api/v1";
+    try {
+      const res = await fetch(`${BASE_URL}/estates/${estateId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: updatedData.estate_name,
+          code: updatedData.estate_code,
+          address: updatedData.address,
+          city: updatedData.city,
+          postal_code: updatedData.postal_code,
+          contact_name: updatedData.manager_name,
+          contact_phone: updatedData.contact_number,
+          contact_email: updatedData.manager_email,
+          total_units: Number(updatedData.total_units || 0),
+          electricity_markup_percentage: Number(
+            updatedData.electricity_markup || 0
+          ),
+          water_markup_percentage: Number(updatedData.water_markup || 0),
+          solar_free_allocation_kwh: Number(updatedData.solar_free_kwh || 0),
+          electricity_rate_table_id: updatedData.electricity_rate_table || null,
+          water_rate_table_id: updatedData.water_rate_table || null,
+        }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      await res.json();
+      window.location.reload();
+    } catch (e) {
+      alert("Failed to update estate");
+    }
   }
 
   // Reconciliation View Functions

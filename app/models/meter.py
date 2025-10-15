@@ -103,3 +103,13 @@ class Meter(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    @staticmethod
+    def count_all() -> int:
+        return Meter.query.count()
+
+    @staticmethod
+    def count_active_dc450s() -> int:
+        return Meter.query.filter(
+            Meter.communication_type == "plc", Meter.communication_status == "online"
+        ).count()

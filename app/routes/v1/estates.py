@@ -11,13 +11,7 @@ from . import api_v1
 @api_v1.route("/estates", methods=["GET"])
 @login_required
 def estates_page():
-    """Render the estates page"""
-    return render_template("estates/estates.html")
-
-
-@api_v1.get("/api/estates")
-@login_required
-def list_estates():
+    """Render the estates page with paginated estates and summary counts"""
     q = request.args.get("q")
     is_active = request.args.get("is_active")
     is_active_bool = None
@@ -26,7 +20,40 @@ def list_estates():
 
     query = Estate.get_all(search=q, is_active=is_active_bool)
     items, meta = paginate_query(query)
-    return jsonify({"data": [e.to_dict() for e in items], **meta})
+
+    # Summary counts via model statics
+    total_estates = Estate.count_all()
+    from ...models import (
+        Unit,
+        Meter,
+        RateTable,
+    )  # local import to avoid circulars at module import
+
+    total_units = Unit.count_all()
+    total_meters = Meter.count_all()
+    active_dc450s = Meter.count_active_dc450s()
+
+    estates = [e.to_dict() for e in items]
+    # Rate tables for dropdowns
+    electricity_rate_tables = [
+        rt.to_dict() for rt in RateTable.list_filtered(utility_type="electricity").all()
+    ]
+    water_rate_tables = [
+        rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
+    ]
+    return render_template(
+        "estates/estates.html",
+        estates=estates,
+        pagination=meta,
+        totals={
+            "estates": total_estates,
+            "units": total_units,
+            "meters": total_meters,
+            "dc450s": active_dc450s,
+        },
+        electricity_rate_tables=electricity_rate_tables,
+        water_rate_tables=water_rate_tables,
+    )
 
 
 @api_v1.get("/estates/<int:estate_id>")

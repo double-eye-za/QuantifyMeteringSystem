@@ -152,3 +152,7 @@ class Unit(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    @staticmethod
+    def count_all() -> int:
+        return Unit.query.count()
