@@ -755,6 +755,365 @@ block breadcrumb %}
     </div>
   </div>
 </div>
+
+<!-- Add Unit Modal (prototype structure) -->
+<div
+  id="addUnitModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Add New Unit
+      </h3>
+    </div>
+    <div class="p-6">
+      <form class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Unit Number <span class="text-red-600 dark:text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="e.g., A-101"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate <span class="text-red-600 dark:text-red-400">*</span>
+            </label>
+            <select
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option>Willow Creek Estate</option>
+              <option>Parkview Gardens</option>
+              <option>Sunset Ridge Estate</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <h4
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          >
+            Meter Assignment (3 meters required per unit)
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                <i class="fas fa-bolt text-yellow-500 mr-1"></i>
+                Electricity Meter (E460)
+                <span class="text-red-600 dark:text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="E460-XXX"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                <i class="fas fa-tint text-blue-500 mr-1"></i>
+                Water Meter
+                <span class="text-red-600 dark:text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="WTR-XXX"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                <i class="fas fa-solar-panel text-orange-500 mr-1"></i>
+                Solar Meter (E460)
+                <span class="text-red-600 dark:text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="SOL-XXX"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Floor/Location
+          </label>
+          <input
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="e.g., Ground Floor"
+          />
+        </div>
+      </form>
+    </div>
+    <div
+      class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3"
+    >
+      <button
+        onclick="hideAddUnitModal()"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveUnit()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Add Unit
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Unit Modal (same structure) -->
+<div
+  id="editUnitModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Edit Unit
+      </h3>
+    </div>
+    <div class="p-6">
+      <form class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >Unit Number
+              <span class="text-red-600 dark:text-red-400">*</span></label
+            >
+            <input
+              id="edit_unit_number"
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="e.g., A-101"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >Estate
+              <span class="text-red-600 dark:text-red-400">*</span></label
+            >
+            <select
+              id="edit_unit_estate"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option>Willow Creek Estate</option>
+              <option>Parkview Gardens</option>
+              <option>Sunset Ridge Estate</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <h4
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
+          >
+            Meter Assignment (3 meters required per unit)
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                ><i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity
+                Meter (E460)
+                <span class="text-red-600 dark:text-red-400">*</span></label
+              >
+              <input
+                id="edit_unit_emeter"
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="E460-XXX"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                ><i class="fas fa-tint text-blue-500 mr-1"></i>Water Meter
+                <span class="text-red-600 dark:text-red-400">*</span></label
+              >
+              <input
+                id="edit_unit_wmeter"
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="WTR-XXX"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                ><i class="fas fa-solar-panel text-orange-500 mr-1"></i>Solar
+                Meter (E460)
+                <span class="text-red-600 dark:text-red-400">*</span></label
+              >
+              <input
+                id="edit_unit_smeter"
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="SOL-XXX"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Floor/Location</label
+          >
+          <input
+            id="edit_unit_floor"
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="e.g., Ground Floor"
+          />
+        </div>
+      </form>
+    </div>
+    <div
+      class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3"
+    >
+      <button
+        onclick="hideEditUnitModal()"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveEditedUnit()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+<!-- Add Unit Modal -->
+<div
+  id="addUnitModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <div
+      class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+    >
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Add New Unit
+      </h3>
+      <button
+        onclick="hideAddUnitModal()"
+        class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form onsubmit="event.preventDefault(); saveUnit();" class="p-6 space-y-4">
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >Unit Number</label
+        >
+        <input
+          type="text"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+          placeholder="e.g., A-101"
+          required
+        />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Floor</label
+          >
+          <input
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="e.g., Ground Floor"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Building</label
+          >
+          <input
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="e.g., Block A"
+          />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Electricity Meter</label
+          >
+          <input
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="Serial e.g., E460-010"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Water Meter</label
+          >
+          <input
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="Serial e.g., WTR-010"
+          />
+        </div>
+      </div>
+      <div
+        class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+      >
+        <button
+          type="button"
+          onclick="hideAddUnitModal()"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <i class="fas fa-plus mr-2"></i>Create Unit
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %} {% block extra_js %}
 <script>
   // Unit Functions
@@ -775,8 +1134,54 @@ block breadcrumb %}
     window.location.href = "meters.html";
   }
 
-  function editUnit() {
-    alert("Edit unit modal would open here");
+  function showEditUnitModal() {
+    const modal = document.getElementById("editUnitModal");
+    if (modal) modal.classList.remove("hidden");
+  }
+
+  function hideEditUnitModal() {
+    const modal = document.getElementById("editUnitModal");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function editUnit(buttonEl) {
+    // Optionally populate fields from the row
+    const row = buttonEl ? buttonEl.closest("tr") : null;
+    if (row) {
+      const unitLink = row.querySelector("td:nth-child(2) a");
+      const floorText = row.querySelector("td:nth-child(2) p");
+      const estateCell = row.querySelector("td:nth-child(3)");
+      const emeter = row.querySelector("td:nth-child(5) span.font-mono");
+      const wmeter = row.querySelector("td:nth-child(6) span.font-mono");
+      const smeter = row.querySelector("td:nth-child(7) span.font-mono");
+
+      const unitNumber = unitLink
+        ? unitLink.textContent.trim().replace(/^Unit\s+/i, "")
+        : "";
+      const floor = floorText ? floorText.textContent.trim() : "";
+      const estate = estateCell ? estateCell.textContent.trim() : "";
+
+      const editUnitNumber = document.getElementById("edit_unit_number");
+      const editUnitFloor = document.getElementById("edit_unit_floor");
+      const editUnitEstate = document.getElementById("edit_unit_estate");
+      const editEmeter = document.getElementById("edit_unit_emeter");
+      const editWmeter = document.getElementById("edit_unit_wmeter");
+      const editSmeter = document.getElementById("edit_unit_smeter");
+
+      if (editUnitNumber) editUnitNumber.value = unitNumber || "";
+      if (editUnitFloor) editUnitFloor.value = floor || "";
+      if (editUnitEstate) {
+        // naive selection by text match
+        Array.from(editUnitEstate.options).forEach((opt) => {
+          opt.selected = opt.textContent.trim() === estate;
+        });
+      }
+      if (editEmeter && emeter) editEmeter.value = emeter.textContent.trim();
+      if (editWmeter && wmeter) editWmeter.value = wmeter.textContent.trim();
+      if (editSmeter && smeter) editSmeter.value = smeter.textContent.trim();
+    }
+
+    showEditUnitModal();
   }
 
   function assignResident() {
