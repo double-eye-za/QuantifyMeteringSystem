@@ -505,15 +505,45 @@ def create_estates_and_units(
         )
         units_created += 1
 
-    # Create one wallet per unit if missing (1:1 via wallets.unit_id)
+    # Create/ensure one wallet per unit and seed varied balances
+    from random import randint, choice
+
     wallets_created = 0
     for unit in Unit.query.all():
-        existing = Wallet.query.filter_by(unit_id=unit.id).first()
-        if not existing:
+        # Ensure vacant units do not have wallets
+        if unit.occupancy_status == "vacant":
+            existing = Wallet.query.filter_by(unit_id=unit.id).first()
+            if existing:
+                db.session.delete(existing)
+                db.session.commit()
+            continue
+        wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+        if not wallet:
             wallet = Wallet(unit_id=unit.id)
             db.session.add(wallet)
-            db.session.commit()
             wallets_created += 1
+
+        # Assign a balance profile: empty, low, or healthy
+        profile = unit.id % 3  # deterministic variety across units
+        if profile == 0:
+            elec, water, solar = 0.00, 0.00, 0.00
+        elif profile == 1:
+            elec = round(choice([10.0, 25.0, 35.0, 49.0]), 2)
+            water = round(choice([5.0, 12.5, 20.0, 30.0]), 2)
+            solar = round(choice([2.0, 8.5, 15.0, 22.0]), 2)
+        else:
+            elec = round(choice([100.0, 150.0, 200.0, 350.0]), 2)
+            water = round(choice([80.0, 120.0, 160.0, 220.0]), 2)
+            solar = round(choice([60.0, 110.0, 140.0, 180.0]), 2)
+
+        wallet.electricity_balance = elec
+        wallet.water_balance = water
+        wallet.solar_balance = solar
+        # Also set aggregate balance as sum
+        wallet.balance = (elec or 0) + (water or 0) + (solar or 0)
+
+        # Persist
+        db.session.commit()
 
     logging.info(
         "Seeding estates and units done (estates_created=%d, units_created=%d, meters_created=%d, wallets_created=%d)",
@@ -580,6 +610,86 @@ def create_readings_and_alerts() -> dict[str, int]:
     return {"readings_created": readings_created, "alerts_created": alerts_created}
 
 
+def create_residents_and_assign(admin_user: User) -> dict[str, int]:
+    from random import randint
+    from datetime import date, timedelta
+
+    created = 0
+    assigned = 0
+
+    first_names = [
+        "John",
+        "Sarah",
+        "Mike",
+        "Jane",
+        "Peter",
+        "Anna",
+        "David",
+        "Emily",
+        "Tom",
+        "Grace",
+    ]
+    last_names = [
+        "Smith",
+        "Johnson",
+        "Chen",
+        "Doe",
+        "Brown",
+        "Williams",
+        "Maseva",
+        "Khan",
+        "Naidoo",
+        "Botha",
+    ]
+
+    def ensure_resident(email: str, data: dict) -> Resident:
+        r = Resident.query.filter_by(email=email).first()
+        if r:
+            return r
+        r = Resident(
+            id_number=data.get("id_number"),
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=email,
+            phone=data["phone"],
+            lease_start_date=data.get("lease_start_date"),
+            lease_end_date=data.get("lease_end_date"),
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(r)
+        db.session.commit()
+        nonlocal created
+        created += 1
+        return r
+
+    for unit in Unit.query.all():
+        if unit.occupancy_status == "occupied" and not unit.resident_id:
+            fn = first_names[unit.id % len(first_names)]
+            ln = last_names[unit.id % len(last_names)]
+            email = f"{fn.lower()}.{ln.lower()}{unit.id}@example.com"
+            phone = f"+27 10 {randint(100, 999)} {randint(1000, 9999)}"
+            res = ensure_resident(
+                email,
+                {
+                    "id_number": f"800101{unit.id:04d}0080",
+                    "first_name": fn,
+                    "last_name": ln,
+                    "phone": phone,
+                    "lease_start_date": date.today() - timedelta(days=randint(30, 365)),
+                    "lease_end_date": None,
+                },
+            )
+            unit.resident_id = res.id
+            db.session.commit()
+            assigned += 1
+
+    logging.info(
+        "Seeding residents done (created=%d, assigned_to_units=%d)", created, assigned
+    )
+    return {"residents_created": created, "assigned": assigned}
+
+
 def reset_database_data() -> None:
     engine_name = db.engine.name
     logging.info("Resetting database data using engine='%s'", engine_name)
@@ -626,6 +736,7 @@ def main():
         logging.info("Admin user ensured: id=%s", admin_user.id)
         rate_tables = create_rate_tables(admin_user)
         counts = create_estates_and_units(admin_user, rate_tables)
+        res_counts = create_residents_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
         summary = {
             "users_total": User.query.count(),
@@ -651,7 +762,8 @@ def main():
         print(
             "Seed complete: "
             + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}) | "
-            f"totals(users={summary['users_total']}, estates={summary['estates_total']}, units={summary['units_total']}, meters={summary['meters_total']}, wallets={summary['wallets_total']}, rate_tables={summary['rate_tables_total']})"
+            f"totals(users={summary['users_total']}, estates={summary['estates_total']}, units={summary['units_total']}, meters={summary['meters_total']}, wallets={summary['wallets_total']}, rate_tables={summary['rate_tables_total']}) | "
+            f"residents(created={res_counts['residents_created']}, assigned={res_counts['assigned']})"
         )
 
 

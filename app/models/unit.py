@@ -144,7 +144,13 @@ class Unit(db.Model):
             "size_sqm": float(self.size_sqm) if self.size_sqm is not None else None,
             "occupancy_status": self.occupancy_status,
             "resident_id": self.resident_id,
+            "resident": {
+                "id": self.resident_id,
+            }
+            if self.resident_id
+            else None,
             "wallet_id": self.wallet.id if getattr(self, "wallet", None) else None,
+            "wallet": self.wallet.to_dict() if getattr(self, "wallet", None) else None,
             "electricity_meter_id": self.electricity_meter_id,
             "water_meter_id": self.water_meter_id,
             "solar_meter_id": self.solar_meter_id,
