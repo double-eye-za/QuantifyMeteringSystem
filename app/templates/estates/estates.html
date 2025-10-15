@@ -1293,6 +1293,292 @@ block breadcrumb %}
         ></textarea>
       </div>
 
+      <!-- Billing Configuration (Edit) -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Billing Configuration
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Markup (%)
+            </label>
+            <input
+              id="edit_electricity_markup"
+              type="number"
+              name="electricity_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="20"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 20"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on electricity tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Markup (%)
+            </label>
+            <input
+              id="edit_water_markup"
+              type="number"
+              name="water_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 0"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on water tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Solar Free Allocation (kWh)
+            </label>
+            <input
+              id="edit_solar_free_kwh"
+              type="number"
+              name="solar_free_kwh"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Free kWh per unit per month
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Low Balance Threshold (ZAR)
+            </label>
+            <input
+              id="edit_low_balance_threshold"
+              type="number"
+              name="low_balance_threshold"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Alert when balance drops below
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Table Assignment (Edit) -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Rate Tables
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Rate Table
+            </label>
+            <select
+              id="edit_electricity_rate_table"
+              name="electricity_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_tiered" selected>
+                Residential Electricity - Tiered
+              </option>
+              <option value="residential_tou">
+                Residential Electricity - TOU
+              </option>
+              <option value="commercial">Commercial Electricity</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Rate Table
+            </label>
+            <select
+              id="edit_water_rate_table"
+              name="water_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_water" selected>
+                Residential Water - Tiered
+              </option>
+              <option value="commercial_water">Commercial Water</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Configuration (Edit) -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Billing Configuration
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Markup (%)
+            </label>
+            <input
+              id="edit_electricity_markup"
+              type="number"
+              name="electricity_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="20"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 20"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on electricity tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Markup (%)
+            </label>
+            <input
+              id="edit_water_markup"
+              type="number"
+              name="water_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 0"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on water tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Solar Free Allocation (kWh)
+            </label>
+            <input
+              id="edit_solar_free_kwh"
+              type="number"
+              name="solar_free_kwh"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Free kWh per unit per month
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Low Balance Threshold (ZAR)
+            </label>
+            <input
+              id="edit_low_balance_threshold"
+              type="number"
+              name="low_balance_threshold"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Alert when balance drops below
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Table Assignment (Edit) -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Rate Tables
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Rate Table
+            </label>
+            <select
+              id="edit_electricity_rate_table"
+              name="electricity_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_tiered" selected>
+                Residential Electricity - Tiered
+              </option>
+              <option value="residential_tou">
+                Residential Electricity - TOU
+              </option>
+              <option value="commercial">Commercial Electricity</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Rate Table
+            </label>
+            <select
+              id="edit_water_rate_table"
+              name="water_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_water" selected>
+                Residential Water - Tiered
+              </option>
+              <option value="commercial_water">Commercial Water</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal Footer -->
       <div
         class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
@@ -1309,6 +1595,359 @@ block breadcrumb %}
           class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
         >
           <i class="fas fa-plus mr-2"></i> Create Estate
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Estate Modal -->
+<div
+  id="editEstateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <!-- Modal Header -->
+    <div
+      class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+          Edit Estate
+        </h2>
+        <button
+          onclick="closeEditEstateModal()"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <form onsubmit="saveEditedEstate(event)" class="p-6">
+      <!-- Estate Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Estate Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_estate_name"
+              type="text"
+              name="estate_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Willow Creek Estate"
+              value="Willow Creek Estate"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Address <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_address"
+              type="text"
+              name="address"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 123 Main Road, Johannesburg"
+              value="123 Main Road, Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              City <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_city"
+              type="text"
+              name="city"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Johannesburg"
+              value="Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Postal Code
+            </label>
+            <input
+              id="edit_postal_code"
+              type="text"
+              name="postal_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 2000"
+              value="2000"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Total Units <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_total_units"
+              type="number"
+              name="total_units"
+              required
+              min="1"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+              value="50"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Code
+            </label>
+            <input
+              id="edit_estate_code"
+              type="text"
+              name="estate_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., WC001"
+              value="WC001"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Contact Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Manager Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_manager_name"
+              type="text"
+              name="manager_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., John Smith"
+              value="John Smith"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Contact Number <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_contact_number"
+              type="tel"
+              name="contact_number"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., +27 11 123 4567"
+              value="+27 11 123 4567"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Email Address
+            </label>
+            <input
+              id="edit_manager_email"
+              type="email"
+              name="manager_email"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., manager@estate.com"
+              value="manager@estate.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Configuration -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Billing Configuration
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Markup (%)
+            </label>
+            <input
+              type="number"
+              name="electricity_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="20"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 20"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on electricity tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Markup (%)
+            </label>
+            <input
+              type="number"
+              name="water_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              value="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 0"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on water tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Solar Free Allocation (kWh)
+            </label>
+            <input
+              type="number"
+              name="solar_free_kwh"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Free kWh per unit per month
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Low Balance Threshold (ZAR)
+            </label>
+            <input
+              type="number"
+              name="low_balance_threshold"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Alert when balance drops below
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Table Assignment -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Rate Tables
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Rate Table
+            </label>
+            <select
+              name="electricity_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_tiered">
+                Residential Electricity - Tiered
+              </option>
+              <option value="residential_tou">
+                Residential Electricity - TOU
+              </option>
+              <option value="commercial">Commercial Electricity</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Rate Table
+            </label>
+            <select
+              name="water_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              <option value="residential_water">
+                Residential Water - Tiered
+              </option>
+              <option value="commercial_water">Commercial Water</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div
+        class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+      >
+        <button
+          type="button"
+          onclick="closeEditEstateModal()"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <i class="fas fa-save mr-2"></i> Save Changes
         </button>
       </div>
     </form>
@@ -1353,7 +1992,24 @@ block breadcrumb %}
   }
 
   function editEstate() {
-    alert("Edit Estate modal would open here");
+    // In a real app, populate fields based on the selected estate
+    showEditEstateModal();
+  }
+  function showEditEstateModal() {
+    document.getElementById("editEstateModal").classList.remove("hidden");
+  }
+
+  function closeEditEstateModal() {
+    document.getElementById("editEstateModal").classList.add("hidden");
+  }
+
+  function saveEditedEstate(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const updatedData = Object.fromEntries(formData);
+    console.log("Updated Estate Data:", updatedData);
+    alert('Estate "' + updatedData.estate_name + '" has been updated.');
+    closeEditEstateModal();
   }
 
   // Reconciliation View Functions
@@ -2534,6 +3190,7 @@ block breadcrumb %}
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeAddEstateModal();
+      closeEditEstateModal();
     }
   });
 </script>
