@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import jsonify, request, render_template
 from flask_login import login_required
 
-from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert
+from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Resident
 from ...utils.pagination import paginate_query, parse_pagination_params
 from . import api_v1
 
@@ -166,8 +166,78 @@ def meters_page():
 @api_v1.route("/meters/<meter_id>/details", methods=["GET"])
 @login_required
 def meter_details_page(meter_id: str):
-    """Render the meter details page"""
-    return render_template("meters/meter-details.html", meter_id=meter_id)
+    """Render the meter details page with enriched data for the selected meter."""
+    # Lookup by serial_number first, fallback to numeric id
+    meter = Meter.query.filter_by(serial_number=meter_id).first()
+    if meter is None and meter_id.isdigit():
+        meter = Meter.get_by_id(int(meter_id))
+    if meter is None:
+        return render_template(
+            "meters/meter-details.html",
+            meter=None,
+            error="Meter not found",
+            meter_id=meter_id,
+        )
+
+    # Assigned unit (any of three FKs)
+    unit = Unit.query.filter(
+        (Unit.electricity_meter_id == meter.id)
+        | (Unit.water_meter_id == meter.id)
+        | (Unit.solar_meter_id == meter.id)
+    ).first()
+    estate = Estate.query.get(unit.estate_id) if unit else None
+    resident = (
+        Resident.query.get(unit.resident_id) if unit and unit.resident_id else None
+    )
+    wallet = Wallet.query.filter_by(unit_id=unit.id).first() if unit else None
+
+    def typed_balance(w: Wallet | None, m: Meter) -> float:
+        if not w:
+            return 0.0
+        if m.meter_type == "electricity":
+            return float(w.electricity_balance)
+        if m.meter_type == "water":
+            return float(w.water_balance)
+        if m.meter_type == "solar":
+            return float(w.solar_balance)
+        return float(w.balance or 0)
+
+    balance_value = typed_balance(wallet, meter)
+    low_threshold = (
+        float(wallet.low_balance_threshold)
+        if wallet and wallet.low_balance_threshold is not None
+        else 50.0
+    )
+    credit_status = (
+        "disconnected"
+        if balance_value <= 0
+        else ("low" if balance_value < low_threshold else "ok")
+    )
+
+    # Recent readings (latest 20)
+    readings_query = MeterReading.list_for_meter(meter.id)
+    readings_items, _ = paginate_query(readings_query)
+    recent_readings = [r.to_dict() for r in readings_items]
+
+    meter_dict = meter.to_dict()
+    return render_template(
+        "meters/meter-details.html",
+        meter_id=meter.serial_number,
+        meter=meter_dict,
+        unit={
+            "unit_number": unit.unit_number,
+            "estate_name": estate.name if estate else None,
+            "resident_name": (
+                f"{resident.first_name} {resident.last_name}" if resident else None
+            ),
+        }
+        if unit
+        else None,
+        wallet=wallet.to_dict() if wallet else None,
+        balance_value=balance_value,
+        credit_status=credit_status,
+        recent_readings=recent_readings,
+    )
 
 
 # Removed separate list endpoint; logic consolidated into meters_page
