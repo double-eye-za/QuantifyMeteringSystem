@@ -48,5 +48,27 @@ class User(UserMixin, db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
 
-    def get_id(self) -> str:
+    def get_id(self):
         return str(self.id)
+
+    @staticmethod
+    def update_profile(user, payload):
+        if not user or not payload:
+            return user
+        for field in ("first_name", "last_name", "email", "phone"):
+            if field in payload and payload[field] is not None:
+                setattr(user, field, payload[field])
+        db.session.commit()
+        return user
+
+    @staticmethod
+    def change_password(user, current_password, new_password, confirm_password):
+        if not current_password or not new_password or not confirm_password:
+            return False, "All password fields are required"
+        if new_password != confirm_password:
+            return False, "New passwords do not match"
+        if not user.check_password(current_password):
+            return False, "Current password is incorrect"
+        user.set_password(new_password)
+        db.session.commit()
+        return True, None

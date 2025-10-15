@@ -270,13 +270,14 @@
                 class="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-700"
               >
                 <img
-                  src="https://ui-avatars.com/api/?name=Admin&background=1A73E8&color=fff"
-                  alt="Admin"
+                  src="https://ui-avatars.com/api/?name={{ (current_user.first_name ~ '+' ~ current_user.last_name) if current_user.is_authenticated else 'User' }}&background=1A73E8&color=fff"
+                  alt="{{ (current_user.first_name ~ ' ' ~ current_user.last_name) if current_user.is_authenticated else 'User' }}"
                   class="w-8 h-8 rounded-full"
                 />
                 <span
                   class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >Admin</span
+                  >{{ (current_user.first_name ~ ' ' ~ current_user.last_name)
+                  if current_user.is_authenticated else '' }}</span
                 >
                 <button
                   id="logoutButtonHeader"
