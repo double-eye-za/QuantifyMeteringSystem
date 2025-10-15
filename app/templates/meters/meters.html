@@ -5,651 +5,285 @@ block breadcrumb %}
 <span class="mx-1">/</span>
 <span>Meters</span>
 {% endblock %} {% block content %}
-<!-- Real-time Status Overview -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <div class="flex items-center justify-between mb-2">
+        <!-- Real-time Status Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
         >Total Meters</span
       >
-      <i class="fas fa-tachometer-alt text-primary"></i>
-    </div>
-    <div class="text-2xl font-bold text-gray-900 dark:text-white">304</div>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-      100 units + 2 bulk
-    </p>
-  </div>
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">&nbsp;</p>
+            </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <div class="flex items-center justify-between mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
         >Active</span
       >
-      <i class="fas fa-circle text-green-500"></i>
-    </div>
-    <div class="text-2xl font-bold text-gray-900 dark:text-white">285</div>
-    <p class="text-xs text-green-600 dark:text-green-400 mt-1">93.8% online</p>
-  </div>
+                    <i class="fas fa-circle text-green-500"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.active }}</div>
+    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Active</p>
+            </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <div class="flex items-center justify-between mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
         >Low Credit</span
       >
-      <i class="fas fa-exclamation-triangle text-warning"></i>
-    </div>
-    <div class="text-2xl font-bold text-gray-900 dark:text-white">15</div>
-    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Below R50</p>
-  </div>
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.low_credit }}</div>
+    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Below threshold</p>
+            </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <div class="flex items-center justify-between mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
       <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
         >Alerts</span
       >
-      <i class="fas fa-bell text-danger"></i>
-    </div>
-    <div class="text-2xl font-bold text-gray-900 dark:text-white">4</div>
+                    <i class="fas fa-bell text-red-600"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.alerts }}</div>
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">
       Requires attention
     </p>
-  </div>
-</div>
+            </div>
+        </div>
 
-<!-- Filters and Actions -->
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <!-- Filters and Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
   <div
     class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0"
   >
-    <div
-      class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4"
-    >
+    <form id="meterFilters" method="get" action="{{ url_for('api_v1.meters_page') }}" class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="relative">
+        <select name="estate_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
+          <option value="">All Estates</option>
+          {% for e in estates %}
+          <option value="{{ e.id }}" {% if current_filters.estate_id==e.id %}selected{% endif %}>{{ e.name }}</option>
+          {% endfor %}
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    <div class="relative">
+        <select name="meter_type" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
+          <option value="">All Types</option>
+          {% for t in meter_types %}
+          <option value="{{ t.value }}" {% if current_filters.meter_type==t.value %}selected{% endif %}>{{ t.label }}</option>
+          {% endfor %}
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    <div class="relative">
+        <select name="communication_status" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
+          <option value="">All Comm</option>
+          <option value="online" {% if current_filters.communication_status=='online' %}selected{% endif %}>Online</option>
+          <option value="offline" {% if current_filters.communication_status=='offline' %}selected{% endif %}>Offline</option>
+          <option value="error" {% if current_filters.communication_status=='error' %}selected{% endif %}>Error</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
       <div class="relative">
-        <select
-          class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
-        >
-          <option>All Estates</option>
-          <option>Willow Creek Residential</option>
-          <option>Parkview Gardens</option>
-          <option>Sunset Ridge Estate</option>
+        <select name="credit_status" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
+          <option value="">All Credit</option>
+          <option value="ok" {% if current_filters.credit_status=='ok' %}selected{% endif %}>Active</option>
+          <option value="low" {% if current_filters.credit_status=='low' %}selected{% endif %}>Low Credit</option>
+          <option value="disconnected" {% if current_filters.credit_status=='disconnected' %}selected{% endif %}>Disconnected</option>
         </select>
-        <i
-          class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"
-        ></i>
-      </div>
-      <div class="relative">
-        <select
-          class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
-        >
-          <option>All Types</option>
-          <option>Electricity (E460)</option>
-          <option>Water</option>
-          <option>Solar (E460)</option>
-          <option>Bulk Meters</option>
-        </select>
-        <i
-          class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"
-        ></i>
-      </div>
-      <div class="relative">
-        <select
-          class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
-        >
-          <option>All Status</option>
-          <option>Active</option>
-          <option>Low Credit</option>
-          <option>Disconnected</option>
-          <option>Offline</option>
-          <option>Low Warning</option>
-        </select>
-        <i
-          class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"
-        ></i>
-      </div>
-    </div>
-    <div class="flex space-x-2">
-      <button
-        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
-      >
-        <i class="fas fa-sync mr-2"></i>Refresh All
-      </button>
-      <button
-        class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-      >
-        <i class="fas fa-download mr-2"></i>Export
-      </button>
-    </div>
-  </div>
-</div>
+        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                </div>
+    </form>
+                <div class="flex space-x-2">
+                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-sync mr-2"></i>Refresh All
+                    </button>
+                    <button class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
 
-<!-- Real-time Meters Grid -->
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-    <div class="flex items-center justify-between">
+        <!-- Real-time Meters Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
         Live Meter Readings
       </h2>
-      <span class="text-sm text-gray-500 dark:text-gray-400">
-        <i class="fas fa-circle text-green-500 text-xs mr-1 animate-pulse"></i>
-        Last update: 14:32:45
-      </span>
-    </div>
-  </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-circle text-green-500 text-xs mr-1 animate-pulse"></i>
+        Live
+                    </span>
+                </div>
+            </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
       <thead
         class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
       >
-        <tr>
-          <th scope="col" class="px-6 py-3">Meter ID</th>
-          <th scope="col" class="px-6 py-3">Unit/Location</th>
-          <th scope="col" class="px-6 py-3">Type</th>
-          <th scope="col" class="px-6 py-3">Status</th>
-          <th scope="col" class="px-6 py-3">Credit</th>
-          <th scope="col" class="px-6 py-3">Consumption</th>
-          <th scope="col" class="px-6 py-3">Last Reading</th>
-          <th scope="col" class="px-6 py-3">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">E460-001</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit A101
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Serial Number</th>
+                            <th scope="col" class="px-6 py-3">Unit/Location</th>
+                            <th scope="col" class="px-6 py-3">Type</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Credit</th>
+                            <th scope="col" class="px-6 py-3">Consumption</th>
+                            <th scope="col" class="px-6 py-3">Last Reading</th>
+                            <th scope="col" class="px-6 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        {% for m in meters %}
+        {% set unit = m.unit %}
+        {% set est_name = '' %}
+        {% for e in estates %}{% if unit and e.id==unit.estate_id %}{% set est_name = e.name %}{% endif %}{% endfor %}
+        {% set balance = 0 %}
+        {% if m.wallet %}
+          {% if m.meter_type=='electricity' %}{% set balance = m.wallet.electricity_balance %}
+          {% elif m.meter_type=='water' %}{% set balance = m.wallet.water_balance %}
+          {% elif m.meter_type=='solar' %}{% set balance = m.wallet.solar_balance %}
+          {% endif %}
+        {% endif %}
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+          <td class="px-6 py-4 font-mono text-xs">{{ m.serial_number }}</td>
+                            <td class="px-6 py-4">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else 'Unassigned' }}</div>
+            <div class="text-xs text-gray-500">{{ unit.estate_name if unit else '' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if m.meter_type=='electricity' else ('bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' if m.meter_type=='water' else 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300') }}">
+              <i class="fas {{ 'fa-bolt' if m.meter_type=='electricity' else ('fa-tint' if m.meter_type=='water' else 'fa-solar-panel') }} mr-1"></i>{{ m.meter_type|capitalize }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+            {% set cs = m.credit_status %}
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if cs=='ok' else ('bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if cs=='low' else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300') }}">
+              <i class="fas {{ 'fa-circle' if cs=='ok' else ('fa-exclamation-triangle' if cs=='low' else 'fa-times-circle') }} mr-1"></i>{{ 'Active' if cs=='ok' else ('Low' if cs=='low' else 'Disconnected') }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+            <div class="text-sm font-semibold {{ 'text-gray-900 dark:text-white' if cs=='ok' else ('text-yellow-600 dark:text-yellow-400' if cs=='low' else 'text-red-600') }}">R {{ '%.2f'|format((balance or 0)|float) }}</div>
+            <div class="text-xs text-gray-500">&nbsp;</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-500">--</div>
+            <div class="text-xs text-gray-500">&nbsp;</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <div class="text-sm text-gray-900 dark:text-white">{{ m.last_reading_date or '--' }}</div>
+            <div class="text-xs {{ 'text-green-600' if m.communication_status=='online' else 'text-gray-500' }}">{{ m.communication_status|capitalize }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.serial_number) }}"><i class="fas fa-eye"></i></a>
+            <button class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white" title="Configure"><i class="fas fa-cog"></i></button>
+                            </td>
+                        </tr>
+        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="text-xs text-gray-500">Willow Creek</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-            >
-              <i class="fas fa-bolt mr-1"></i>Electricity
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            >
-              <i class="fas fa-circle mr-1"></i>Active
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">
-              R 250.00
-            </div>
-            <div class="text-xs text-gray-500">150.5 kWh</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">12.5 kWh</div>
-            <div class="text-xs text-gray-500">Today</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='E460-001') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
 
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">WAT-001</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit A101
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> results
+                    </span>
+                    <div class="flex space-x-1">
+        <a href="{{ url_for('api_v1.meters_page', page=(pagination.prev_page or 1), per_page=20, estate_id=current_filters.estate_id, meter_type=current_filters.meter_type, communication_status=current_filters.communication_status, credit_status=current_filters.credit_status) }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">Previous</a>
+        <span class="px-3 py-2 text-sm bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.meters_page', page=(pagination.next_page or pagination.page), per_page=20, estate_id=current_filters.estate_id, meter_type=current_filters.meter_type, communication_status=current_filters.communication_status, credit_status=current_filters.credit_status) }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">Next</a>
+                    </div>
+                </div>
             </div>
-            <div class="text-xs text-gray-500">Willow Creek</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-            >
-              <i class="fas fa-tint mr-1"></i>Water
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-            >
-              <i class="fas fa-exclamation-triangle mr-1"></i>Low
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-yellow-600">R 32.50</div>
-            <div class="text-xs text-gray-500">325 L</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">450 L</div>
-            <div class="text-xs text-gray-500">Today</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='WAT-001') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
+        </div>
 
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">E460-002</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit A101
-            </div>
-            <div class="text-xs text-gray-500">Willow Creek</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            >
-              <i class="fas fa-solar-panel mr-1"></i>Solar
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            >
-              <i class="fas fa-circle mr-1"></i>Active
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">
-              R 180.00
-            </div>
-            <div class="text-xs text-gray-500">90 kWh</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">8.2 kWh</div>
-            <div class="text-xs text-gray-500">Today</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='E460-002') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">BULK-E-001</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Main Supply
-            </div>
-            <div class="text-xs text-gray-500">Willow Creek Estate</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-            >
-              <i class="fas fa-industry mr-1"></i>Bulk Elec
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            >
-              <i class="fas fa-circle mr-1"></i>Active
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">
-              N/A
-            </div>
-            <div class="text-xs text-gray-500">Monitoring</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">625 kWh</div>
-            <div class="text-xs text-gray-500">Today Total</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='BULK-E-001') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">WAT-025</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit B205
-            </div>
-            <div class="text-xs text-gray-500">Parkview Gardens</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-            >
-              <i class="fas fa-tint mr-1"></i>Water
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-            >
-              <i class="fas fa-exclamation-triangle mr-1"></i>Low Warning
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-red-600">R 0.00</div>
-            <div class="text-xs text-gray-500">0 L</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">120 L</div>
-            <div class="text-xs text-orange-600">Restricted</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='WAT-025') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">E460-050</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit C310
-            </div>
-            <div class="text-xs text-gray-500">Parkview Gardens</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-            >
-              <i class="fas fa-bolt mr-1"></i>Electricity
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-            >
-              <i class="fas fa-times-circle mr-1"></i>Disconnected
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-red-600">R 0.00</div>
-            <div class="text-xs text-gray-500">0 kWh</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">0 kWh</div>
-            <div class="text-xs text-red-600">Inactive</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">14:31:22</div>
-            <div class="text-xs text-green-600">Online</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='E460-050') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr
-          class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <td class="px-6 py-4 font-mono text-xs">E460-075</td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              Unit D402
-            </div>
-            <div class="text-xs text-gray-500">Parkview Gardens</div>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-            >
-              <i class="fas fa-solar-panel mr-1"></i>Solar
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-            >
-              <i class="fas fa-wifi-slash mr-1"></i>Offline
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm font-semibold text-gray-900 dark:text-white">
-              R 120.00
-            </div>
-            <div class="text-xs text-gray-500">60 kWh</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-500">--</div>
-            <div class="text-xs text-gray-500">No data</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-900 dark:text-white">12:15:33</div>
-            <div class="text-xs text-gray-500">2h ago</div>
-          </td>
-          <td class="px-6 py-4">
-            <a
-              class="text-primary hover:text-blue-700 mr-3"
-              title="View Details"
-              href="{{ url_for('api_v1.meter_details_page', meter_id='E460-075') }}"
-            >
-              <i class="fas fa-eye"></i>
-            </a>
-            <button
-              class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              title="Configure"
-            >
-              <i class="fas fa-cog"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-    <div class="flex items-center justify-between">
-      <span class="text-sm text-gray-700 dark:text-gray-400">
-        Showing <span class="font-medium">1</span> to
-        <span class="font-medium">8</span> of
-        <span class="font-medium">304</span> results
-      </span>
-      <div class="flex space-x-1">
-        <button
-          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          Previous
-        </button>
-        <button class="px-3 py-2 text-sm bg-primary text-white rounded-lg">
-          1
-        </button>
-        <button
-          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          2
-        </button>
-        <button
-          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          3
-        </button>
-        <button
-          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Alerts Section -->
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+        <!-- Alerts Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
   <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
     Active Alerts
   </h3>
-  <div class="space-y-3">
+            <div class="space-y-3">
     <div
       class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
     >
-      <div class="flex items-center">
-        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-        <div>
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                        <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">
             Communication Lost - Unit D402
           </p>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             Solar meter offline for 2 hours
           </p>
-        </div>
-      </div>
+                        </div>
+                    </div>
       <button class="text-sm text-primary hover:text-blue-700">
         Investigate
       </button>
-    </div>
+                </div>
 
     <div
       class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
     >
-      <div class="flex items-center">
-        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
-        <div>
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                        <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">
             Low Credit Alert - Multiple Units
           </p>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             15 units below R50 threshold
           </p>
-        </div>
-      </div>
-      <button class="text-sm text-primary hover:text-blue-700">View All</button>
-    </div>
+                        </div>
+                    </div>
+                    <button class="text-sm text-primary hover:text-blue-700">View All</button>
+                </div>
 
     <div
       class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
     >
-      <div class="flex items-center">
-        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
-        <div>
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                        <div>
           <p class="text-sm font-medium text-gray-900 dark:text-white">
             Water Low Warning Active - Unit B205
           </p>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             Low credit warning
           </p>
+                        </div>
+                    </div>
+                    <button class="text-sm text-primary hover:text-blue-700">Top Up</button>
+                </div>
+            </div>
         </div>
-      </div>
-      <button class="text-sm text-primary hover:text-blue-700">Top Up</button>
-    </div>
-  </div>
-</div>
 {% endblock %} {% block extra_js %}
-<script>
-  // Auto-refresh simulation (updates last reading times)
-  setInterval(() => {
+    <script>
+        // Auto-refresh simulation (updates last reading times)
+        setInterval(() => {
     const timeElements = document.querySelectorAll("td div.text-sm");
-    const now = new Date();
+            const now = new Date();
     const timeString = now.toTimeString().split(" ")[0];
-
-    // Update some random meter readings to simulate real-time updates
-    if (Math.random() > 0.7) {
-      const randomIndex = Math.floor(Math.random() * timeElements.length);
+            
+            // Update some random meter readings to simulate real-time updates
+            if (Math.random() > 0.7) {
+                const randomIndex = Math.floor(Math.random() * timeElements.length);
       if (
         timeElements[randomIndex] &&
         timeElements[randomIndex].textContent.includes(":")
       ) {
-        timeElements[randomIndex].textContent = timeString;
-      }
-    }
-  }, 5000);
-</script>
+                    timeElements[randomIndex].textContent = timeString;
+                }
+            }
+        }, 5000);
+    </script>
 {% endblock %}
