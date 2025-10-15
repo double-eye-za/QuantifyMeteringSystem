@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Consumption Reports - Quantify Metering System{% endblock %}
+
+{% block page_title %}Consumption Reports{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Reports</span>
+{% endblock %}
+
+{% block content %}
+
+        <!-- Report Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Consumption</span>
+                    <i class="fas fa-chart-line text-primary"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">18,750 kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</span>
+                    <i class="fas fa-rand-sign text-green-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">R 31,250</div>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-1">+12% from last month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Water Usage</span>
+                    <i class="fas fa-tint text-blue-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">45,000 L</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Solar Generation</span>
+                    <i class="fas fa-solar-panel text-yellow-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">8,200 kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+            </div>
+        </div>
+
+        <!-- Report Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Report Type</label>
+                    <div class="relative">
+                        <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-10 cursor-pointer">
+                            <option>Monthly Consumption Trend</option>
+                            <option>Estate Comparison</option>
+                            <option>Detailed Consumption Report</option>
+                            <option>Quick Insights</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Period</label>
+                    <div class="relative">
+                        <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-10 cursor-pointer">
+                            <option>Today</option>
+                            <option>Yesterday</option>
+                            <option>Last 7 Days</option>
+                            <option>This Month</option>
+                            <option>Month to Date</option>
+                            <option>Last Month</option>
+                            <option>Last 3 Months</option>
+                            <option>Last 6 Months</option>
+                            <option>Year to Date</option>
+                            <option>Custom Range</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estate</label>
+                    <div class="relative">
+                        <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-10 cursor-pointer">
+                            <option>All Estates</option>
+                            <option>Willow Creek Residential</option>
+                            <option>Parkview Gardens</option>
+                            <option>Sunset Ridge Estate</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Meter Type</label>
+                    <div class="relative">
+                        <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-10 cursor-pointer">
+                            <option>All Types</option>
+                            <option>Electricity</option>
+                            <option>Water</option>
+                            <option>Solar</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+                <div class="flex items-end">
+                    <button class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-filter mr-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Monthly Consumption Trend -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Monthly Consumption Trend</h3>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Estate Comparison -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Estate Comparison</h3>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="estateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Report Table -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Detailed Consumption Report</h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </button>
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-file-excel mr-2"></i>Excel
+                        </button>
+                        <button class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Unit</th>
+                            <th scope="col" class="px-6 py-3">Estate</th>
+                            <th scope="col" class="px-6 py-3">Electricity (kWh)</th>
+                            <th scope="col" class="px-6 py-3">Water (L)</th>
+                            <th scope="col" class="px-6 py-3">Solar (kWh)</th>
+                            <th scope="col" class="px-6 py-3">Total Cost</th>
+                            <th scope="col" class="px-6 py-3">Payments</th>
+                            <th scope="col" class="px-6 py-3">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A101</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">450</td>
+                            <td class="px-6 py-4">12,500</td>
+                            <td class="px-6 py-4">180</td>
+                            <td class="px-6 py-4 font-semibold">R 1,250.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,500.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 250.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A102</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">380</td>
+                            <td class="px-6 py-4">10,200</td>
+                            <td class="px-6 py-4">150</td>
+                            <td class="px-6 py-4 font-semibold">R 1,050.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,200.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B201</td>
+                            <td class="px-6 py-4">Parkview Gardens</td>
+                            <td class="px-6 py-4">520</td>
+                            <td class="px-6 py-4">15,800</td>
+                            <td class="px-6 py-4">200</td>
+                            <td class="px-6 py-4 font-semibold">R 1,450.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,400.00</td>
+                            <td class="px-6 py-4 font-semibold text-red-600">-R 50.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B202</td>
+                            <td class="px-6 py-4">Parkview Gardens</td>
+                            <td class="px-6 py-4">290</td>
+                            <td class="px-6 py-4">8,500</td>
+                            <td class="px-6 py-4">120</td>
+                            <td class="px-6 py-4 font-semibold">R 850.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,000.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">C301</td>
+                            <td class="px-6 py-4">Willow Creek</td>
+                            <td class="px-6 py-4">410</td>
+                            <td class="px-6 py-4">11,200</td>
+                            <td class="px-6 py-4">165</td>
+                            <td class="px-6 py-4 font-semibold">R 1,150.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,300.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">S101</td>
+                            <td class="px-6 py-4">Sunset Ridge</td>
+                            <td class="px-6 py-4">560</td>
+                            <td class="px-6 py-4">18,900</td>
+                            <td class="px-6 py-4">240</td>
+                            <td class="px-6 py-4 font-semibold">R 1,980.00</td>
+                            <td class="px-6 py-4 text-green-600">R 2,100.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 120.00</td>
+                        </tr>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">S102</td>
+                            <td class="px-6 py-4">Sunset Ridge</td>
+                            <td class="px-6 py-4">430</td>
+                            <td class="px-6 py-4">15,100</td>
+                            <td class="px-6 py-4">210</td>
+                            <td class="px-6 py-4 font-semibold">R 1,520.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,600.00</td>
+                            <td class="px-6 py-4 font-semibold text-green-600">R 80.00</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-700">
+                        <tr class="font-semibold text-gray-900 dark:text-white">
+                            <td class="px-6 py-4">Total</td>
+                            <td class="px-6 py-4">-</td>
+                            <td class="px-6 py-4">3,570</td>
+                            <td class="px-6 py-4">92,100</td>
+                            <td class="px-6 py-4">1,630</td>
+                            <td class="px-6 py-4">R 9,400.00</td>
+                            <td class="px-6 py-4 text-green-600">R 10,400.00</td>
+                            <td class="px-6 py-4 text-green-600">R 1,000.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">
+                        Showing <span class="font-medium">1</span> to <span class="font-medium">5</span> of <span class="font-medium">100</span> results
+                    </span>
+                    <div class="flex space-x-1">
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Previous
+                        </button>
+                        <button class="px-3 py-2 text-sm bg-primary text-white rounded-lg">1</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">2</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">3</button>
+                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Insights -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Insights</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <i class="fas fa-chart-line text-blue-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Peak consumption time</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">18:00 - 21:00 daily</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <i class="fas fa-award text-green-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Most efficient unit</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B202 - 290 kWh/month</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">High consumption alert</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B201 - 20% above average</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <i class="fas fa-solar-panel text-purple-500 text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">Solar contribution</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">28% of total electricity usage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+        // Monthly Consumption Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                datasets: [{
+                    label: 'Electricity (kWh)',
+                    data: [15200, 14800, 16500, 17200, 18100, 19500, 20200, 19800, 18500, 18750],
+                    borderColor: '#FBBC04',
+                    backgroundColor: 'rgba(251, 188, 4, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Water (L x100)',
+                    data: [380, 360, 420, 440, 460, 480, 490, 470, 450, 450],
+                    borderColor: '#1A73E8',
+                    backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Solar (kWh)',
+                    data: [7200, 7500, 8100, 8300, 8500, 8800, 9000, 8700, 8400, 8200],
+                    borderColor: '#34A853',
+                    backgroundColor: 'rgba(52, 168, 83, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Estate Comparison Chart
+        const estateCtx = document.getElementById('estateChart').getContext('2d');
+        new Chart(estateCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Electricity', 'Water', 'Solar'],
+                datasets: [{
+                    label: 'Willow Creek',
+                    data: [9500, 22500, 4100],
+                    backgroundColor: '#1A73E8'
+                }, {
+                    label: 'Parkview Gardens',
+                    data: [9250, 22500, 4100],
+                    backgroundColor: '#34A853'
+                }, {
+                    label: 'Sunset Ridge',
+                    data: [11800, 27800, 5200],
+                    backgroundColor: '#FBBC04'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Admin System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1A73E8",
+              secondary: "#F9FAFB",
+              neutral: "#212121",
+              success: "#28A745",
+              warning: "#FFC107",
+              error: "#DC3545",
+              info: "#17A2B8",
+            },
+            fontFamily: {
+              sans: [
+                "Inter",
+                "Roboto",
+                "system-ui",
+                "-apple-system",
+                "sans-serif",
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+    </style>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  </head>
+  <body
+    class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
+  >
+    <!-- Theme Toggle Button -->
+    <button
+      id="themeToggle"
+      class="fixed top-4 right-4 p-3 rounded-lg bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg"
+    >
+      <i class="fas fa-moon dark:hidden text-gray-700"></i>
+      <i class="fas fa-sun hidden dark:inline text-yellow-400"></i>
+    </button>
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <!-- Logo and Title -->
+        <div class="text-center mb-8">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-lg shadow-lg mb-4"
+          >
+            <span class="text-white text-2xl font-bold">A</span>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            Administration System
+          </h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">
+            Sign in to continue
+          </p>
+        </div>
+
+        <!-- Login Form Card -->
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-8"
+        >
+          <form id="loginForm" class="space-y-6">
+            <!-- Email Field -->
+            <div>
+              <label
+                for="email"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Email Address <span class="text-error">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  class="w-full h-10 px-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200 placeholder-gray-400"
+                  placeholder="admin@example.com"
+                />
+                <div
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                >
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </div>
+              </div>
+              <p class="mt-1 text-sm text-error hidden" id="emailError">
+                Please enter a valid email address
+              </p>
+            </div>
+
+            <!-- Password Field -->
+            <div>
+              <label
+                for="password"
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Password <span class="text-error">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  required
+                  class="w-full h-10 px-4 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200 placeholder-gray-400"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  id="togglePassword"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  <i
+                    class="fas fa-eye text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    id="toggleIcon"
+                  ></i>
+                </button>
+              </div>
+              <p class="mt-1 text-sm text-error hidden" id="passwordError">
+                Password is required
+              </p>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <input
+                  id="remember"
+                  name="remember"
+                  type="checkbox"
+                  class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                />
+                <label
+                  for="remember"
+                  class="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                >
+                  Remember me
+                </label>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              class="w-full h-10 bg-primary hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span id="buttonText">Sign in</span>
+              <i
+                class="fas fa-spinner fa-spin ml-2 hidden"
+                id="loadingIcon"
+              ></i>
+            </button>
+
+            <!-- Error Message -->
+            <div
+              id="errorMessage"
+              class="hidden bg-red-50 dark:bg-red-900/20 border border-error/20 text-error px-4 py-3 rounded-lg"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="errorText"
+                  >Invalid credentials. Please try again.</span
+                >
+              </div>
+            </div>
+
+            <!-- Success Message -->
+            <div
+              id="successMessage"
+              class="hidden bg-green-50 dark:bg-green-900/20 border border-success/20 text-success px-4 py-3 rounded-lg"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span>Login successful! Redirecting...</span>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Demo Credentials -->
+        <div
+          class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-6"
+        >
+          <p class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+            Demo Credentials:
+          </p>
+          <div class="space-y-1">
+            <p class="text-sm text-blue-800 dark:text-blue-400">
+              <span class="font-medium">Email:</span> admin@example.com
+            </p>
+            <p class="text-sm text-blue-800 dark:text-blue-400">
+              <span class="font-medium">Password:</span> password
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-sm text-gray-500 dark:text-gray-400">
+          <p>&copy; 2025 Admin System. Version 1.0.0</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Theme Toggle
+      const themeToggle = document.getElementById("themeToggle");
+      const html = document.documentElement;
+
+      // Check for saved theme or default to light
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if (savedTheme === "dark") {
+        html.classList.add("dark");
+      }
+
+      themeToggle.addEventListener("click", () => {
+        html.classList.toggle("dark");
+        const currentTheme = html.classList.contains("dark") ? "dark" : "light";
+        localStorage.setItem("theme", currentTheme);
+      });
+
+      // Password Toggle
+      const togglePassword = document.getElementById("togglePassword");
+      const passwordInput = document.getElementById("password");
+      const toggleIcon = document.getElementById("toggleIcon");
+
+      togglePassword.addEventListener("click", () => {
+        const type =
+          passwordInput.getAttribute("type") === "password"
+            ? "text"
+            : "password";
+        passwordInput.setAttribute("type", type);
+
+        if (type === "text") {
+          toggleIcon.classList.remove("fa-eye");
+          toggleIcon.classList.add("fa-eye-slash");
+        } else {
+          toggleIcon.classList.remove("fa-eye-slash");
+          toggleIcon.classList.add("fa-eye");
+        }
+      });
+
+      // Email validation
+      const emailInput = document.getElementById("email");
+      const emailError = document.getElementById("emailError");
+
+      emailInput.addEventListener("blur", () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailInput.value)) {
+          emailError.classList.remove("hidden");
+          emailInput.classList.add("border-error");
+        } else {
+          emailError.classList.add("hidden");
+          emailInput.classList.remove("border-error");
+        }
+      });
+    </script>
+  </body>
+</html>

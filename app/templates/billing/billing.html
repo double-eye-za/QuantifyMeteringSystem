@@ -1,0 +1,367 @@
+{% extends "base.html" %} {% block title %}Billing Management - Quantify
+Metering System{% endblock %} {% block page_title %}Billing Management{%
+endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Billing</span>
+{% endblock %} {% block content %}
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-wallet text-green-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Total</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R 145,230</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">All Wallet Balances</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-arrow-up text-primary text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Today</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R 28,500</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Today's Top-ups</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-arrow-down text-purple-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Today</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R 12,845</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Today's Usage</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-exclamation text-yellow-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Alert</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">47</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Low Balance Units</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-power-off text-red-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Critical</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">12</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Zero Balance</p>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
+  <div class="border-b border-gray-200 dark:border-gray-700">
+    <nav class="flex space-x-8 px-6" aria-label="Tabs">
+      <button
+        class="py-4 px-1 border-b-2 border-primary text-primary font-medium text-sm"
+      >
+        Wallet Overview
+      </button>
+      <button
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Recent Transactions
+      </button>
+      <button
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Top-up History
+      </button>
+      <button
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Invoices
+      </button>
+      <button
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
+      >
+        Payments
+      </button>
+    </nav>
+  </div>
+
+  <!-- Wallet Overview Content -->
+  <div class="p-6">
+    <!-- Search and Filters -->
+    <div class="flex gap-4 mb-6">
+      <div class="flex-1">
+        <div class="relative">
+          <i
+            class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+          ></i>
+          <input
+            type="text"
+            placeholder="Search by unit, estate, or tenant..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+      <select
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+      >
+        <option>All Estates</option>
+        <option>Willow Creek</option>
+        <option>Parkview Gardens</option>
+        <option>Sunset Ridge</option>
+      </select>
+      <select
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+      >
+        <option>All Status</option>
+        <option>Active</option>
+        <option>Low Balance</option>
+        <option>Zero Balance</option>
+        <option>Credit</option>
+      </select>
+    </div>
+
+    <!-- Wallet Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Unit
+            </th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Estate
+            </th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Tenant
+            </th>
+            <th class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+              Balance
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Status
+            </th>
+            <th class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+              Daily Avg
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Days Left
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Last Top-up
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              A-101
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              Willow Creek
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">John Smith</td>
+            <td class="px-4 py-3 text-right font-semibold text-green-600">
+              R 450.00
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span
+                class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                >Active</span
+              >
+            </td>
+            <td class="px-4 py-3 text-right">R 32.50</td>
+            <td class="px-4 py-3 text-center">14</td>
+            <td class="px-4 py-3 text-center text-xs">Oct 5, 2025</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button
+                  class="p-1 text-primary hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  <i class="fas fa-plus"></i>
+                </button>
+                <a
+                  href="{{ url_for('api_v1.wallet_statement_page', unit_id='A-101') }}"
+                  class="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  <i class="fas fa-file-invoice"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              B-205
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              Parkview Gardens
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              Mary Johnson
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-yellow-600">
+              R 45.00
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span
+                class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+                >Low</span
+              >
+            </td>
+            <td class="px-4 py-3 text-right">R 28.00</td>
+            <td class="px-4 py-3 text-center text-yellow-600">2</td>
+            <td class="px-4 py-3 text-center text-xs">Oct 2, 2025</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button
+                  class="p-1 text-primary hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  <i class="fas fa-plus"></i>
+                </button>
+                <button
+                  class="p-1 text-yellow-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  <i class="fas fa-bell"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              C-310
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              Willow Creek
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">Peter Brown</td>
+            <td class="px-4 py-3 text-right font-semibold text-red-600">
+              R 0.00
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span
+                class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                >Disconnected</span
+              >
+            </td>
+            <td class="px-4 py-3 text-right">R 35.00</td>
+            <td class="px-4 py-3 text-center text-red-600">0</td>
+            <td class="px-4 py-3 text-center text-xs">Sep 28, 2025</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button
+                  class="p-1 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                >
+                  <i class="fas fa-plus"></i>
+                </button>
+                <button class="p-1 text-gray-600 hover:bg-gray-100 rounded">
+                  <i class="fas fa-phone"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <!-- Top-up Multiple Units (temporarily disabled)
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-plus-circle text-green-500 mr-2"></i>Quick Top-up
+                        </h3>
+                        <div class="space-y-3">
+                            <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                <option>Select Unit</option>
+                                <option>A-101 - John Smith</option>
+                                <option>B-205 - Mary Johnson</option>
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">R</span>
+                                <input type="number" placeholder="Amount" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            </div>
+                            <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                                Process Top-up
+                            </button>
+                        </div>
+                    </div> -->
+
+  <!-- Send Notifications -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-bell text-yellow-500 mr-2"></i>Bulk Notifications
+    </h3>
+    <div class="space-y-3">
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+        <option>Low Balance Units (47)</option>
+        <option>Zero Balance Units (12)</option>
+        <option>All Units</option>
+      </select>
+      <textarea
+        placeholder="Message..."
+        rows="2"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      ></textarea>
+      <button
+        class="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+      >
+        Send Notifications
+      </button>
+    </div>
+  </div>
+
+  <!-- Generate Statements -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-file-invoice text-blue-500 mr-2"></i>Bulk Statements
+    </h3>
+    <div class="space-y-3">
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+        <option>October 2025</option>
+        <option>September 2025</option>
+      </select>
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+        <option>All Estates</option>
+        <option>Willow Creek</option>
+        <option>Parkview Gardens</option>
+        <option>Sunset Ridge</option>
+      </select>
+      <button
+        class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
+      >
+        Generate & Email
+      </button>
+    </div>
+  </div>
+  {% endblock %}
+</div>

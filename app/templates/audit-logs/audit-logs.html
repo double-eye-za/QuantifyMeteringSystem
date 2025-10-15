@@ -1,0 +1,1025 @@
+{% extends "base.html" %} {% block title %}Audit Log - Admin System{% endblock
+%} {% block page_title %}Audit Log{% endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Audit Log</span>
+{% endblock %} {% block content %}
+<main class="flex-1 overflow-y-auto p-6">
+  <!-- Filters Bar -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6"
+  >
+    <div
+      class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+    >
+      <!-- Filters -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Date Range -->
+        <div class="flex items-center gap-2">
+          <input
+            type="date"
+            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+          <span class="text-gray-500 dark:text-gray-400">to</span>
+          <input
+            type="date"
+            class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+        </div>
+
+        <!-- Action Type -->
+        <select
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option>All Actions</option>
+          <option>User Created</option>
+          <option>User Updated</option>
+          <option>User Deleted</option>
+          <option>Login</option>
+          <option>Logout</option>
+          <option>Password Changed</option>
+          <option>Role Changed</option>
+          <option>Settings Updated</option>
+          <option>Permission Changed</option>
+        </select>
+
+        <!-- User Filter -->
+        <select
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option>All Users</option>
+          <option>John Admin</option>
+          <option>Sarah Johnson</option>
+          <option>Mike Chen</option>
+        </select>
+
+        <!-- Severity -->
+        <select
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option>All Severity</option>
+          <option>Info</option>
+          <option>Warning</option>
+          <option>Critical</option>
+        </select>
+
+        <!-- Search -->
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Search logs..."
+            class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-3">
+        <button
+          class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 text-sm transition-colors"
+        >
+          <i class="fas fa-download mr-2"></i> Export
+        </button>
+        <button
+          onclick="refreshLogs()"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+        >
+          <i class="fas fa-sync-alt mr-2"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Log Table -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+  >
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead
+          class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
+        >
+          <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              Timestamp
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              User
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              Action
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              Resource
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              IP Address
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              Status
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+            >
+              Details
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Log Entry 1 -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:32:15
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                2 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >JA</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    John Admin
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Super Admin
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >User Updated</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >users/sarah.johnson</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              192.168.1.1
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+              >
+                <i class="fas fa-check-circle mr-1"></i>
+                Success
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 2 -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:28:45
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                5 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span class="text-white text-xs font-medium">SJ</span>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    Sarah Johnson
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Administrator
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Login</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >auth/login</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              192.168.1.15
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+              >
+                <i class="fas fa-check-circle mr-1"></i>
+                Success
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 3 - Failed -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:25:12
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                8 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >?</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    Unknown
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Anonymous
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Login Attempt</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >auth/login</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              203.0.113.42
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
+              >
+                <i class="fas fa-times-circle mr-1"></i>
+                Failed
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 4 -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:20:33
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                12 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >JA</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    John Admin
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Super Admin
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Role Created</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >roles/manager</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              192.168.1.1
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+              >
+                <i class="fas fa-check-circle mr-1"></i>
+                Success
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 5 - Warning -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:15:22
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                17 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span class="text-white text-xs font-medium">MC</span>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    Mike Chen
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Standard User
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Access Denied</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >admin/settings</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              192.168.1.22
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400"
+              >
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                Warning
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 6 -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:10:45
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                22 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >JA</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    John Admin
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Super Admin
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Settings Updated</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >settings/security</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              192.168.1.1
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+              >
+                <i class="fas fa-check-circle mr-1"></i>
+                Success
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 7 - Critical -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors bg-red-50/50 dark:bg-red-900/10"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:05:12
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                27 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >SYS</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    System
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Automated
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Multiple Failed Logins</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >auth/security</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              203.0.113.42
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
+              >
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                Critical
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+
+          <!-- Log Entry 8 -->
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-gray-300">
+                2025-01-15 14:00:00
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                32 minutes ago
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div
+                  class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3"
+                >
+                  <span
+                    class="text-gray-600 dark:text-gray-300 text-xs font-medium"
+                    >SYS</span
+                  >
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    System
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Scheduled Task
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >Backup Completed</span
+              >
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-900 dark:text-gray-300"
+                >system/backup</span
+              >
+            </td>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300"
+            >
+              127.0.0.1
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400"
+              >
+                <i class="fas fa-info-circle mr-1"></i>
+                Info
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                onclick="showDetails()"
+                class="text-primary hover:underline text-sm"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          Showing <span class="font-medium">1</span> to
+          <span class="font-medium">8</span> of
+          <span class="font-medium">2,348</span> entries
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button class="px-3 py-1 bg-primary text-white rounded-lg">1</button>
+          <button
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            2
+          </button>
+          <button
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            3
+          </button>
+          <span class="px-2 text-gray-500">...</span>
+          <button
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            294
+          </button>
+          <button
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div
+    id="detailsModal"
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+  >
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+    >
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            Audit Log Details
+          </h3>
+          <button
+            onclick="hideDetails()"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <div>
+            <h4
+              class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Event Information
+            </h4>
+            <div
+              class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2"
+            >
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >Event ID:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >LOG-2025-0115-0001</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >Timestamp:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >2025-01-15 14:32:15 UTC</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >Action:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >User Updated</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >Status:</span
+                >
+                <span class="text-sm font-medium text-success">Success</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4
+              class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
+              User Information
+            </h4>
+            <div
+              class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2"
+            >
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >User:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >John Admin</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >Role:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >Super Administrator</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >IP Address:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >192.168.1.1</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600 dark:text-gray-400"
+                  >User Agent:</span
+                >
+                <span class="text-sm font-medium text-gray-900 dark:text-white"
+                  >Chrome/120.0 (Windows)</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4
+              class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Changes Made
+            </h4>
+            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
+              <pre
+                class="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto"
+              >
+{
+  "resource": "users/sarah.johnson",
+  "changes": {
+    "role": {
+      "old": "Standard User",
+      "new": "Administrator"
+    },
+    "status": {
+      "old": "active",
+      "new": "active"
+    }
+  }
+}
+             </pre
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end"
+      >
+        <button
+          onclick="hideDetails()"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+<!-- Details Modal -->
+<div
+  id="detailsModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Audit Log Details
+        </h3>
+        <button
+          onclick="hideDetails()"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="space-y-4">
+        <div>
+          <h4
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Event Information
+          </h4>
+          <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >Event ID:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >LOG-2025-0115-0001</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >Timestamp:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >2025-01-15 14:32:15 UTC</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >Action:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >User Updated</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >Status:</span
+              >
+              <span class="text-sm font-medium text-success">Success</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          >
+            User Information
+          </h4>
+          <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >User:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >John Admin</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >Role:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >Super Administrator</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >IP Address:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >192.168.1.1</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400"
+                >User Agent:</span
+              >
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >Chrome/120.0 (Windows)</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4
+            class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Changes Made
+          </h4>
+          <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
+            <pre
+              class="text-xs text-gray-700 dark:text-gray-300 overflow-x-auto"
+            >
+{
+  "resource": "users/sarah.johnson",
+  "changes": {
+    "role": {
+      "old": "Standard User",
+      "new": "Administrator"
+    },
+    "status": {
+      "old": "active",
+      "new": "active"
+    }
+  }
+}</pre
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end"
+    >
+      <button
+        onclick="hideDetails()"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  // Refresh Logs
+  function refreshLogs() {
+    // Simulate refreshing logs
+    const button = event.target.closest("button");
+    const icon = button.querySelector("i");
+    icon.classList.add("fa-spin");
+
+    setTimeout(() => {
+      icon.classList.remove("fa-spin");
+      alert("Logs refreshed successfully!");
+    }, 1000);
+  }
+
+  // Show Details Modal
+  function showDetails() {
+    document.getElementById("detailsModal").classList.remove("hidden");
+  }
+
+  // Hide Details Modal
+  function hideDetails() {
+    document.getElementById("detailsModal").classList.add("hidden");
+  }
+</script>
+{% endblock %}
