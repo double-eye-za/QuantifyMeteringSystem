@@ -16,6 +16,11 @@ from . import rate_tables  # noqa: F401
 from . import notifications  # noqa: F401
 from . import reports  # noqa: F401
 from . import system  # noqa: F401
+from . import users  # noqa: F401
+from . import roles  # noqa: F401
+from . import audit_logs  # noqa: F401
+from . import profile  # noqa: F401
+from . import settings  # noqa: F401
 from . import auth  # noqa: F401
 
 

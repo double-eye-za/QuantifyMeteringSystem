@@ -1,11 +1,18 @@
 from __future__ import annotations
 
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from flask_login import login_required
 
 from ...models import Wallet, Transaction
 from ...utils.pagination import paginate_query
 from . import api_v1
+
+
+@api_v1.route("/billing", methods=["GET"])
+@login_required
+def billing_page():
+    """Render the billing page"""
+    return render_template("billing/billing.html")
 
 
 @api_v1.get("/wallets/<int:wallet_id>")

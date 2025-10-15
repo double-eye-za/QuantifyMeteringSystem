@@ -9,7 +9,7 @@ from flask_migrate import Migrate
 
 
 def create_app() -> Flask:
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
     app.config.from_object(Config)
     # Allow runtime override of DB via env for tests
 
@@ -52,4 +52,4 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)

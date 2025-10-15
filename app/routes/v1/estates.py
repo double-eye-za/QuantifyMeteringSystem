@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from flask_login import login_required
 
 from ...models import Estate
@@ -8,7 +8,14 @@ from ...utils.pagination import paginate_query
 from . import api_v1
 
 
-@api_v1.get("/estates")
+@api_v1.route("/estates", methods=["GET"])
+@login_required
+def estates_page():
+    """Render the estates page"""
+    return render_template("estates/estates.html")
+
+
+@api_v1.get("/api/estates")
 @login_required
 def list_estates():
     q = request.args.get("q")

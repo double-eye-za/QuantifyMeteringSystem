@@ -1,11 +1,34 @@
 from __future__ import annotations
 
-from flask import jsonify, request, current_app, session
+from flask import (
+    jsonify,
+    request,
+    current_app,
+    session,
+    render_template,
+    redirect,
+    url_for,
+)
 from flask_login import login_user, logout_user, login_required, current_user
 
 from ...models import User
 from ...db import db
 from . import api_v1
+
+
+@api_v1.route("/login", methods=["GET"])
+def login_page():
+    """Render the login page"""
+    if current_user.is_authenticated:
+        return redirect(url_for("api_v1.dashboard"))
+    return render_template("auth/login.html")
+
+
+@api_v1.route("/dashboard", methods=["GET"])
+@login_required
+def dashboard():
+    """Render the dashboard page"""
+    return render_template("dashboard/index.html")
 
 
 @api_v1.post("/auth/login")
@@ -30,14 +53,23 @@ def login():
     if current_app.config.get("TESTING"):
         session["_user_id"] = str(user.id)
         session["_fresh"] = True
-    return jsonify({"message": "Logged in", "data": {"user_id": user.id}})
+
+    # Check if this is a web request (HTML form) or API request (JSON)
+    if request.headers.get("Content-Type") == "application/json":
+        return jsonify({"message": "Logged in", "data": {"user_id": user.id}})
+    else:
+        return redirect(url_for("api_v1.dashboard"))
 
 
-@api_v1.post("/auth/logout")
+@api_v1.route("/auth/logout", methods=["POST", "GET"])
 @login_required
 def logout():
     logout_user()
-    return jsonify({"message": "Logged out"})
+    # Check if this is a web request or API request
+    if request.headers.get("Content-Type") == "application/json":
+        return jsonify({"message": "Logged out"})
+    else:
+        return redirect(url_for("api_v1.login_page"))
 
 
 @api_v1.post("/auth/change-password")

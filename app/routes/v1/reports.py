@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from flask_login import login_required
 
 from . import api_v1
+
+
+@api_v1.route("/reports", methods=["GET"])
+@login_required
+def reports_page():
+    """Render the reports page"""
+    return render_template("reports/reports.html")
 
 
 @api_v1.get("/reports/estate-consumption")

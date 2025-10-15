@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from flask_login import login_required
 
 from ...models import Unit
@@ -8,7 +8,14 @@ from ...utils.pagination import paginate_query
 from . import api_v1
 
 
-@api_v1.get("/units")
+@api_v1.route("/units", methods=["GET"])
+@login_required
+def units_page():
+    """Render the units page"""
+    return render_template("units/units.html")
+
+
+@api_v1.get("/api/units")
 @login_required
 def list_units():
     estate_id = request.args.get("estate_id", type=int)
@@ -21,7 +28,28 @@ def list_units():
     return jsonify({"data": [u.to_dict() for u in items], **meta})
 
 
-@api_v1.get("/units/<int:unit_id>")
+@api_v1.route("/units/<unit_id>/wallet-statement", methods=["GET"])
+@login_required
+def wallet_statement_page(unit_id: str):
+    """Render the wallet statement page"""
+    return render_template("wallets/wallet-statement.html", unit_id=unit_id)
+
+
+@api_v1.route("/units/<unit_id>/visual", methods=["GET"])
+@login_required
+def unit_visual_page(unit_id: str):
+    """Render the unit visual diagram page"""
+    return render_template("units/unit-visual.html", unit_id=unit_id)
+
+
+@api_v1.route("/units/<unit_id>", methods=["GET"])
+@login_required
+def unit_details_page(unit_id: str):
+    """Render the unit details page"""
+    return render_template("units/unit-details.html", unit_id=unit_id)
+
+
+@api_v1.get("/api/units/<int:unit_id>")
 @login_required
 def get_unit(unit_id: int):
     unit = Unit.get_by_id(unit_id)
