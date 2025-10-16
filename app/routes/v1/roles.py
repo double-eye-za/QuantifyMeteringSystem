@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from app.models.role import Role
 from app.models.permissions import Permission
 from app.utils.decorators import requires_permissions
+from app.utils.audit import log_action
 from app.utils.pagination import paginate_query
 
 from . import api_v1
@@ -91,7 +92,9 @@ def create_role():
             permissions_data=data.get("permissions", {}),
             permission_id=data.get("permission_id"),
         )
-
+        log_action(
+            "role.create", entity_type="role", entity_id=role.id, new_values=data
+        )
         return jsonify(
             {
                 "success": True,
@@ -118,6 +121,9 @@ def update_role(role_id):
             permissions_data=data.get("permissions"),
             permission_id=data.get("permission_id"),
         )
+        log_action(
+            "role.update", entity_type="role", entity_id=role_id, new_values=data
+        )
         return jsonify({"success": True, "message": "Role updated successfully"}), 200
 
     except Exception as e:
@@ -130,6 +136,7 @@ def update_role(role_id):
 def delete_role(role_id):
     try:
         Role.delete_role(role_id)
+        log_action("role.delete", entity_type="role", entity_id=role_id)
         return jsonify({"success": True, "message": "Role deleted successfully"}), 200
 
     except Exception as e:

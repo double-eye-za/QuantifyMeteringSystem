@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 
 from ...models import Unit, Estate, Resident, Meter
 from ...utils.pagination import paginate_query
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -144,6 +145,7 @@ def get_unit(unit_id: int):
 def create_unit():
     payload = request.get_json(force=True) or {}
     unit = Unit.create_from_payload(payload, user_id=getattr(current_user, "id", None))
+    log_action("unit.create", entity_type="unit", entity_id=unit.id, new_values=payload)
     return jsonify({"data": unit.to_dict()}), 201
 
 
@@ -154,7 +156,15 @@ def update_unit(unit_id: int):
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
+    before = unit.to_dict()
     unit.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    log_action(
+        "unit.update",
+        entity_type="unit",
+        entity_id=unit_id,
+        old_values=before,
+        new_values=payload,
+    )
     return jsonify({"data": unit.to_dict()})
 
 
@@ -165,4 +175,5 @@ def delete_unit(unit_id: int):
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     unit.delete()
+    log_action("unit.delete", entity_type="unit", entity_id=unit_id)
     return jsonify({"message": "Deleted"})

@@ -4,6 +4,7 @@ from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
 from ...models import Estate
+from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
 from . import api_v1
 
@@ -72,6 +73,9 @@ def create_estate():
     estate = Estate.create_from_payload(
         payload, user_id=getattr(current_user, "id", None)
     )
+    log_action(
+        "estate.create", entity_type="estate", entity_id=estate.id, new_values=payload
+    )
     return jsonify({"data": estate.to_dict()}), 201
 
 
@@ -82,7 +86,15 @@ def update_estate(estate_id: int):
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
+    before = estate.to_dict()
     estate.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    log_action(
+        "estate.update",
+        entity_type="estate",
+        entity_id=estate_id,
+        old_values=before,
+        new_values=payload,
+    )
     return jsonify({"data": estate.to_dict()})
 
 
@@ -93,4 +105,5 @@ def delete_estate(estate_id: int):
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
     estate.delete()
+    log_action("estate.delete", entity_type="estate", entity_id=estate_id)
     return jsonify({"message": "Deleted"}), 200

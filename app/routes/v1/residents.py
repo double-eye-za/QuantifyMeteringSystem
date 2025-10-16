@@ -4,6 +4,7 @@ from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
 from ...models import Resident, Unit, Estate
+from ...utils.audit import log_action
 from ...utils.pagination import paginate_query, parse_pagination_params
 from . import api_v1
 
@@ -63,6 +64,9 @@ def create_resident():
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
     r = Resident.create_from_payload(payload, user_id=getattr(current_user, "id", None))
+    log_action(
+        "resident.create", entity_type="resident", entity_id=r.id, new_values=payload
+    )
     return jsonify({"data": r.to_dict()}), 201
 
 
@@ -73,7 +77,15 @@ def update_resident(resident_id: int):
     if not r:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
+    before = r.to_dict()
     r.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    log_action(
+        "resident.update",
+        entity_type="resident",
+        entity_id=resident_id,
+        old_values=before,
+        new_values=payload,
+    )
     return jsonify({"data": r.to_dict()})
 
 
@@ -86,4 +98,5 @@ def delete_resident(resident_id: int):
     ok, err = r.delete()
     if not ok:
         return jsonify({"error": "Conflict", **err}), err.get("code", 409)
+    log_action("resident.delete", entity_type="resident", entity_id=resident_id)
     return jsonify({"message": "Deleted"})

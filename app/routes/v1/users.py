@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from app.models.user import User
 from app.models.role import Role
 from app.utils.decorators import requires_permissions
+from app.utils.audit import log_action
 from app.utils.pagination import paginate_query
 
 from . import api_v1
@@ -104,6 +105,14 @@ def create_user():
             is_active=data.get("is_active", True),
         )
 
+        # audit
+        log_action(
+            "user.create",
+            entity_type="user",
+            entity_id=user.id,
+            new_values={k: v for k, v in data.items() if k != "password"},
+        )
+
         return jsonify(
             {
                 "success": True,
@@ -123,7 +132,16 @@ def update_user(user_id):
     data = request.get_json()
 
     try:
+        before = User.get_by_id(user_id)
+        before_dict = before.to_dict() if hasattr(before, "to_dict") and before else {}
         User.update_user(user_id, data)
+        log_action(
+            "user.update",
+            entity_type="user",
+            entity_id=user_id,
+            old_values=before_dict,
+            new_values=data,
+        )
         return jsonify({"success": True, "message": "User updated successfully"}), 200
 
     except Exception as e:
@@ -136,6 +154,7 @@ def update_user(user_id):
 def delete_user(user_id):
     try:
         User.delete_user(user_id)
+        log_action("user.delete", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User deleted successfully"}), 200
 
     except Exception as e:
@@ -148,6 +167,7 @@ def delete_user(user_id):
 def enable_user(user_id):
     try:
         User.set_active_status(user_id, True)
+        log_action("user.enable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User enabled successfully"}), 200
 
     except Exception as e:
@@ -160,6 +180,7 @@ def enable_user(user_id):
 def disable_user(user_id):
     try:
         User.set_active_status(user_id, False)
+        log_action("user.disable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User disabled successfully"}), 200
 
     except Exception as e:
