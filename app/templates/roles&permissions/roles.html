@@ -41,7 +41,7 @@ Roles & Permissions
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
-            </div>
+                </div>
       <input
         name="search"
         id="search"
@@ -50,14 +50,14 @@ Roles & Permissions
         aria-label="Search by name or description"
         value="{{ current_filters.search }}"
       />
-          </div>
-    </div>
+                    </div>
+                </div>
     <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
       <i class="fa-solid fa-search mr-2"></i>
       Search
     </button>
   </form>
-  </div>
+            </div>
 
   <!-- Desktop View - Table -->
     <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
@@ -81,7 +81,7 @@ Roles & Permissions
                     <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                       <i class="fa-solid fa-user-shield text-blue-600 dark:text-blue-400"></i>
                     </div>
-                  </div>
+                        </div>
                   <div class="ml-4">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ role.name }}</div>
                     </div>
@@ -194,7 +194,7 @@ Roles & Permissions
     {% endfor %}
     <div id="no-results-card" class="hidden col-span-full p-6 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-600">
       No results found
-    </div>
+                        </div>
                     </div>
 
     <!-- Edit Role Modal -->
@@ -256,7 +256,7 @@ Roles & Permissions
             <div class="space-y-4">
                 </div>
           </form>
-        </div>
+                                </div>
 
         <!-- Modal Footer -->
         <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
@@ -274,9 +274,9 @@ Roles & Permissions
           >
             Save Changes
           </button>
-        </div>
-        </div>
-    </div>
+                            </div>
+                        </div>
+                    </div>
 
     <!-- Create Role Modal -->
     <div
@@ -285,17 +285,17 @@ Roles & Permissions
     >
       <div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl relative max-h-[90vh] overflow-hidden p-6 transition-colors duration-200">
         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          <div>
+                                <div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Role</h2>
-          </div>
+                                </div>
           <button
             id="create-close"
             class="p-2 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200"
             aria-label="Close"
           >
             <i class="fa-solid fa-xmark text-gray-500 dark:text-gray-400"></i>
-          </button>
-        </div>
+                                </button>
+                            </div>
         <div class="p-2 overflow-y-auto max-h-[calc(90vh-200px)]">
           <form id="create-form" class="space-y-6">
             
@@ -316,8 +316,8 @@ Roles & Permissions
                   placeholder="Enter role name"
                   required
                 />
-              </div>
-              
+                            </div>
+
               <div>
                 <label for="create-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
@@ -328,14 +328,14 @@ Roles & Permissions
                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
                   placeholder="Enter role description"
                 ></textarea>
-              </div>
-            </div>
-            
+                        </div>
+                    </div>
+
             <!-- Permissions Section -->
             
           </form>
-        </div>
-        
+                            </div>
+
         <!-- Modal Footer -->
         <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
           <button
@@ -352,55 +352,30 @@ Roles & Permissions
           >
             Create Role
                 </button>
-            </div>
-        </div>
-    </div>
-  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
   <!-- Pagination -->
-  <div class="mt-4 flex items-center justify-between">
-    <div class="text-sm text-gray-600">
-      Page {{ pagination.page }} of {{ pagination.total_pages }} • {{ pagination.total }}
-      total
-    </div>
-    <div class="flex gap-1">
-      {% set prev_page = pagination.page - 1 %} {% set next_page = pagination.page + 1 %}
-      <!-- First page -->
-      <a
-        href="?page=1&per_page={{ pagination.per_page }}&search={{ current_filters.search }}"
-        class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page <= 1 else '' }}"
-        title="First page"
-      >
-        <i class="fa-solid fa-angles-left"></i>
+  <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+    <div class="text-sm text-gray-700 dark:text-gray-300">
+      Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+      to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+      of <span class="font-medium">{{ pagination.total }}</span> roles
+                                </div>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('api_v1.roles_page', page=(pagination.prev_page or 1), per_page=pagination.per_page, search=current_filters.search) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+        <i class="fas fa-chevron-left"></i>
       </a>
-      <!-- Previous page -->
-      <a
-        href="?page={{ prev_page }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}"
-        class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page <= 1 else '' }}"
-        title="Previous page"
-      >
-        <i class="fa-solid fa-chevron-left"></i>
+      <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+      <a href="{{ url_for('api_v1.roles_page', page=(pagination.next_page or pagination.page), per_page=pagination.per_page, search=current_filters.search) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+        <i class="fas fa-chevron-right"></i>
       </a>
-      <!-- Next page -->
-      <a
-        href="?page={{ next_page }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}"
-        class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page >= pagination.total_pages else '' }}"
-        title="Next page"
-      >
-        <i class="fa-solid fa-chevron-right"></i>
-      </a>
-      <!-- Last page -->
-      <a
-        href="?page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}"
-        class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page >= pagination.total_pages else '' }}"
-        title="Last page"
-      >
-        <i class="fa-solid fa-angles-right"></i>
-      </a>
-    </div>
-  </div>
+                                </div>
+                            </div>
 
-</div>
+                </div>
 
 <!-- Role Delete Confirmation Modal -->
 <div id="role-confirm-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -410,8 +385,8 @@ Roles & Permissions
       <div class="flex items-center space-x-3">
         <div class="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
           <i class="fa-solid fa-trash text-red-600 dark:text-red-400"></i>
-        </div>
-        <div>
+                    </div>
+                            <div>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete Role</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
         </div>
@@ -426,7 +401,7 @@ Roles & Permissions
     </div>
 
     <!-- Modal Content -->
-    <div class="p-6">
+            <div class="p-6">
       <p class="text-gray-700 dark:text-gray-300 mb-4">
         Are you sure you want to delete this role? All users with this role will lose their permissions.
       </p>
@@ -434,14 +409,14 @@ Roles & Permissions
         <div class="flex items-center space-x-3">
           <div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <i class="fa-solid fa-shield-halved text-purple-600 dark:text-purple-400"></i>
-          </div>
-          <div>
+                    </div>
+                    <div>
             <p id="confirm-role-name" class="font-medium text-gray-900 dark:text-gray-100">Role Name</p>
             <p id="confirm-role-description" class="text-sm text-gray-500 dark:text-gray-400">Role description</p>
-          </div>
-        </div>
-      </div>
-    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
     <!-- Modal Footer -->
     <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
@@ -450,18 +425,18 @@ Roles & Permissions
         type="button"
         class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
       >
-        Cancel
-      </button>
+                    Cancel
+                </button>
       <button
         id="role-confirm-action"
         type="button"
         class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
       >
         Delete Role
-      </button>
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
 <!-- Tailwind safelist for dynamic toggle classes injected via JS -->
 <div class="hidden">
