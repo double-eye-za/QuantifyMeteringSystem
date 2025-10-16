@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+from flask import jsonify, request, render_template
+from flask_login import login_required, current_user
+
+from ...models import Resident, Unit, Estate
+from ...utils.pagination import paginate_query, parse_pagination_params
+from . import api_v1
+
+
+@api_v1.route("/residents", methods=["GET"])
+@login_required
+def residents_page():
+    search = request.args.get("q") or None
+    is_active = request.args.get("is_active")
+    if is_active == "true":
+        is_active_val = True
+    elif is_active == "false":
+        is_active_val = False
+    else:
+        is_active_val = None
+
+    query = Resident.get_all(search=search, is_active=is_active_val)
+    items, meta = paginate_query(query)
+
+    residents = []
+    for r in items:
+        rd = r.to_dict()
+        unit = Unit.query.filter_by(resident_id=r.id).first()
+        if unit:
+            estate = Estate.query.get(unit.estate_id)
+            rd["unit"] = {
+                "id": unit.id,
+                "unit_number": unit.unit_number,
+                "estate_name": estate.name if estate else None,
+            }
+        else:
+            rd["unit"] = None
+        residents.append(rd)
+
+    return render_template(
+        "residents/residents.html",
+        residents=residents,
+        pagination=meta,
+        current_filters={"q": search, "is_active": is_active},
+    )
+
+
+@api_v1.get("/api/residents")
+@login_required
+def list_residents():
+    search = request.args.get("q") or None
+    items, meta = paginate_query(Resident.get_all(search=search))
+    return jsonify({"data": [r.to_dict() for r in items], **meta})
+
+
+@api_v1.post("/residents")
+@login_required
+def create_resident():
+    payload = request.get_json(force=True) or {}
+    required = ["first_name", "last_name", "email", "phone"]
+    missing = [f for f in required if not payload.get(f)]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+    r = Resident.create_from_payload(payload, user_id=getattr(current_user, "id", None))
+    return jsonify({"data": r.to_dict()}), 201
+
+
+@api_v1.put("/residents/<int:resident_id>")
+@login_required
+def update_resident(resident_id: int):
+    r = Resident.get_by_id(resident_id)
+    if not r:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+    payload = request.get_json(force=True) or {}
+    r.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    return jsonify({"data": r.to_dict()})
+
+
+@api_v1.delete("/residents/<int:resident_id>")
+@login_required
+def delete_resident(resident_id: int):
+    r = Resident.get_by_id(resident_id)
+    if not r:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+    ok, err = r.delete()
+    if not ok:
+        return jsonify({"error": "Conflict", **err}), err.get("code", 409)
+    return jsonify({"message": "Deleted"})
