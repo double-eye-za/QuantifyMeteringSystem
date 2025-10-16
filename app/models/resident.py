@@ -65,7 +65,11 @@ class Resident(db.Model):
             )
         if is_active is not None:
             query = query.filter(Resident.is_active == is_active)
-        return query
+        return query.order_by(Resident.first_name.asc(), Resident.last_name.asc())
+
+    @staticmethod
+    def get_all_for_dropdown():
+        return Resident.get_all().all()
 
     @staticmethod
     def get_by_id(resident_id: int):
