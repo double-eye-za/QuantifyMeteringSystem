@@ -1,6 +1,6 @@
-{% extends "base.html" %} {% block title %}Unit A-101 Details - Quantify
-Metering System{% endblock %} {% block page_title %}Unit A-101 Details{%
-endblock %} {% block breadcrumb %}
+{% extends "base.html" %} {% block title %}Unit {{ unit.unit_number or unit.id
+}} Details - Quantify Metering System{% endblock %} {% block page_title %}Unit
+{{ unit.unit_number or unit.id }} Details{% endblock %} {% block breadcrumb %}
 
 <a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
 <span class="mx-1">/</span>
@@ -12,9 +12,10 @@ endblock %} {% block breadcrumb %}
   >Units</a
 >
 <span class="mx-1">/</span>
-<span>Unit A-101</span>
+<span>Unit {{ unit.unit_number or unit.id }}</span>
 {% endblock %} {% block content %}
-<!-- Critical Alert if Low/No Balance -->
+<!-- Critical Alert if Low/No Balance (example placeholder; hide if not applicable) -->
+{% if unit.wallet_low_balance %}
 <div
   class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-6"
 >
@@ -25,8 +26,7 @@ endblock %} {% block breadcrumb %}
         Low Wallet Balance Warning
       </p>
       <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-        This unit has only R 32.50 remaining. Electricity will be disconnected
-        when balance reaches R 0.00
+        This unit has only R {{ unit.wallet_balance | default(0) }} remaining.
       </p>
     </div>
     <button
@@ -36,6 +36,7 @@ endblock %} {% block breadcrumb %}
     </button>
   </div>
 </div>
+{% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <!-- Left Column - Unit & Resident Info -->
@@ -53,7 +54,7 @@ endblock %} {% block breadcrumb %}
             >Unit Number</span
           >
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >A-101</span
+            >{{ unit.unit_number or '-' }}</span
           >
         </div>
         <div
@@ -61,7 +62,7 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Estate</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >Willow Creek Residential</span
+            >{{ estate.name if estate else '-' }}</span
           >
         </div>
         <div
@@ -69,7 +70,7 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Floor</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >Ground Floor</span
+            >{{ unit.floor or '-' }}</span
           >
         </div>
         <div
@@ -77,7 +78,7 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Size</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >85 m²</span
+            >{{ (unit.size_sqm ~ ' m²') if unit.size_sqm else '-' }}</span
           >
         </div>
         <div class="flex justify-between py-2">
@@ -85,9 +86,12 @@ endblock %} {% block breadcrumb %}
             >Occupancy Status</span
           >
           <span
-            class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+            class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if unit.occupancy_status=='occupied' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}"
           >
-            <i class="fas fa-check-circle mr-1"></i>Occupied
+            <i
+              class="fas {{ 'fa-check-circle' if unit.occupancy_status=='occupied' else 'fa-circle' }} mr-1"
+            ></i
+            >{{ unit.occupancy_status or '-' }}
           </span>
         </div>
       </div>
@@ -104,7 +108,8 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Name</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >John Smith</span
+            >{{ (resident.first_name ~ ' ' ~ resident.last_name) if resident
+            else '-' }}</span
           >
         </div>
         <div
@@ -114,7 +119,8 @@ endblock %} {% block breadcrumb %}
             >ID Number</span
           >
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >850512****</span
+            >{{ resident.id_number if resident and resident.id_number else '-'
+            }}</span
           >
         </div>
         <div
@@ -122,10 +128,12 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Mobile</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white">
-            +27 82 123 4567
+            {{ resident.phone if resident and resident.phone else '-' }} {% if
+            resident and resident.phone %}
             <button class="ml-2 text-primary hover:text-blue-700">
               <i class="fas fa-phone text-xs"></i>
             </button>
+            {% endif %}
           </span>
         </div>
         <div
@@ -133,42 +141,38 @@ endblock %} {% block breadcrumb %}
         >
           <span class="text-sm text-gray-600 dark:text-gray-400">Email</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white">
-            john.smith@email.com
+            {{ resident.email if resident and resident.email else '-' }} {% if
+            resident and resident.email %}
             <button class="ml-2 text-primary hover:text-blue-700">
               <i class="fas fa-envelope text-xs"></i>
             </button>
+            {% endif %}
           </span>
         </div>
-        <div
-          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-        >
+        <div class="flex justify-between py-2">
           <span class="text-sm text-gray-600 dark:text-gray-400"
             >Move-in Date</span
           >
           <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >15 Jan 2024</span
-          >
-        </div>
-        <div class="flex justify-between py-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Emergency Contact</span
-          >
-          <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >Jane Smith (Wife)</span
+            >{{ resident.move_in_date if resident and resident.move_in_date else
+            '-' }}</span
           >
         </div>
       </div>
+
+      {% if resident %}
       <button
         class="w-full mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
       >
         <i class="fas fa-message mr-2"></i>Send SMS Notification
       </button>
+      {% endif %}
     </div>
   </div>
 
   <!-- Center Column - Wallet & Meters -->
   <div class="lg:col-span-2 space-y-6">
-    <!-- Prepaid Wallet Status -->
+    <!-- Prepaid Wallet Status (static placeholders until backend data exists) -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -182,8 +186,8 @@ endblock %} {% block breadcrumb %}
         </button>
       </div>
 
+      <!-- Placeholder metrics -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Wallet Balance -->
         <div
           class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800"
         >
@@ -193,23 +197,11 @@ endblock %} {% block breadcrumb %}
             >
             <i class="fas fa-exclamation-triangle text-yellow-500"></i>
           </div>
-          <div class="text-2xl font-bold text-yellow-600 animate-pulse">
-            R 32.50
+          <div class="text-2xl font-bold text-yellow-600">
+            {{ unit.wallet_balance | default('R 0.00') }}
           </div>
-          <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div
-              class="bg-yellow-500 h-2 rounded-full animate-pulse"
-              style="width: 6%"
-            ></div>
-          </div>
-          <p
-            class="text-xs text-yellow-600 dark:text-yellow-400 mt-2 font-semibold"
-          >
-            ⚠️ Low Balance - 1.5 days left
-          </p>
         </div>
 
-        <!-- Free Solar Balance -->
         <div
           class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800"
         >
@@ -219,16 +211,11 @@ endblock %} {% block breadcrumb %}
             >
             <i class="fas fa-solar-panel text-green-500"></i>
           </div>
-          <div class="text-2xl font-bold text-green-600">12 kWh</div>
-          <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-green-500 h-2 rounded-full" style="width: 24%"></div>
+          <div class="text-2xl font-bold text-green-600">
+            {{ unit.solar_free_allocation_kwh or 0 }} kWh
           </div>
-          <p class="text-xs text-green-600 dark:text-green-400 mt-2">
-            of 50 kWh monthly allocation
-          </p>
         </div>
 
-        <!-- Daily Consumption -->
         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -237,69 +224,23 @@ endblock %} {% block breadcrumb %}
             <i class="fas fa-chart-line text-primary"></i>
           </div>
           <div class="text-2xl font-bold text-gray-900 dark:text-white">
-            R 21.50
-          </div>
-          <div class="text-xs text-gray-600 dark:text-gray-400 mt-2">
-            <div>Electricity: R 15.00</div>
-            <div>Water: R 6.50</div>
+            {{ unit.daily_usage or '—' }}
           </div>
         </div>
       </div>
 
-      <!-- Last Transactions -->
+      <!-- Placeholder transactions list -->
       <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Recent Transactions
         </h4>
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Top-up</span>
-            <span class="text-green-600">+R 100.00</span>
-            <span class="text-gray-500 text-xs">5 days ago</span>
-          </div>
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400"
-              >Daily consumption</span
-            >
-            <span class="text-red-600">-R 21.50</span>
-            <span class="text-gray-500 text-xs">Yesterday</span>
-          </div>
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400"
-              >Daily consumption</span
-            >
-            <span class="text-red-600">-R 22.00</span>
-            <span class="text-gray-500 text-xs">2 days ago</span>
-          </div>
-        </div>
-        <button class="text-primary hover:text-blue-700 text-sm mt-3">
-          View full transaction history →
-        </button>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          Quick Actions
-        </h4>
-        <div class="grid grid-cols-2 gap-2">
-          <a
-            href="{{ url_for('api_v1.wallet_statement_page', unit_id='A-101') }}"
-            class="flex items-center justify-center px-3 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
-          >
-            <i class="fas fa-file-invoice mr-2"></i>View Statement
-          </a>
-          <a
-            href="{{ url_for('api_v1.unit_visual_page', unit_id='A-101') }}"
-            class="flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-          >
-            <i class="fas fa-diagram-project mr-2"></i>Visual Diagram
-          </a>
+        <div class="text-xs text-gray-500 dark:text-gray-400">
+          No transactions yet.
         </div>
       </div>
     </div>
 
-    <!-- Individual Meter Readings -->
+    <!-- Individual Meter Readings (static placeholders) -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
         <i class="fas fa-tachometer-alt text-primary mr-2"></i>Live Meter
@@ -319,48 +260,17 @@ endblock %} {% block breadcrumb %}
             <span
               class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>At Risk
+              <i class="fas fa-circle mr-1 text-xs"></i>Status
             </span>
           </div>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
               <span class="font-mono text-gray-900 dark:text-white"
-                >E460-001</span
+                >{{ unit.electricity_meter_id or '-' }}</span
               >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Current Reading</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >15,234.5 kWh</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Today's Usage</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >8.5 kWh</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Current Load</span>
-              <span class="font-medium text-gray-900 dark:text-white"
-                >2.4 kW</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Last Update</span>
-              <span class="text-green-600 text-xs">14:32:45</span>
             </div>
           </div>
-          <button
-            class="w-full mt-3 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            View Details
-          </button>
         </div>
 
         <!-- Water Meter -->
@@ -375,48 +285,17 @@ endblock %} {% block breadcrumb %}
             <span
               class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Flowing
+              <i class="fas fa-circle mr-1 text-xs"></i>Status
             </span>
           </div>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
               <span class="font-mono text-gray-900 dark:text-white"
-                >WAT-001</span
+                >{{ unit.water_meter_id or '-' }}</span
               >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Current Reading</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >3,456.8 kL</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Today's Usage</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >325 L</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Flow Rate</span>
-              <span class="font-medium text-gray-900 dark:text-white"
-                >12 L/min</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Last Update</span>
-              <span class="text-green-600 text-xs">14:32:45</span>
             </div>
           </div>
-          <button
-            class="w-full mt-3 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            View Details
-          </button>
         </div>
 
         <!-- Solar Meter -->
@@ -431,70 +310,29 @@ endblock %} {% block breadcrumb %}
             <span
               class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Generating
+              <i class="fas fa-circle mr-1 text-xs"></i>Status
             </span>
           </div>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
               <span class="font-mono text-gray-900 dark:text-white"
-                >E460-002</span
+                >{{ unit.solar_meter_id or '-' }}</span
               >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Total Generated</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >2,150 kWh</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Today's Solar</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >12.3 kWh</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400"
-                >Current Output</span
-              >
-              <span class="font-medium text-gray-900 dark:text-white"
-                >1.8 kW</span
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Last Update</span>
-              <span class="text-green-600 text-xs">14:32:45</span>
             </div>
           </div>
-          <button
-            class="w-full mt-3 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
-          >
-            View Details
-          </button>
         </div>
       </div>
     </div>
 
+    <!-- Consumption Chart placeholder -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          <i class="fas fa-chart-area text-primary mr-2"></i>7-Day Consumption
-          History
-        </h3>
-        <select
-          class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 text-gray-900 dark:text-white"
-        >
-          <option>Last 7 Days</option>
-          <option>Last 30 Days</option>
-          <option>This Month</option>
-        </select>
-      </div>
-      <div class="relative h-64">
-        <canvas id="consumptionChart"></canvas>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-chart-area text-primary mr-2"></i>7-Day Consumption
+        History
+      </h3>
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        Chart coming soon.
       </div>
     </div>
 
@@ -504,99 +342,26 @@ endblock %} {% block breadcrumb %}
         Quick Actions
       </h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button
-          class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50"
-        >
-          <i class="fas fa-credit-card mb-1"></i>
-          <div class="text-sm">Top Up</div>
-        </button>
-        <button
-          class="px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50"
+        <a
+          href="{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 text-center"
         >
           <i class="fas fa-file-invoice mb-1"></i>
           <div class="text-sm">Statement</div>
-        </button>
-        <button
-          class="px-4 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50"
+        </a>
+        <a
+          href="{{ url_for('api_v1.unit_visual_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 text-center"
         >
-          <i class="fas fa-bell mb-1"></i>
-          <div class="text-sm">Set Alert</div>
-        </button>
-        <button
-          class="px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50"
-        >
-          <i class="fas fa-power-off mb-1"></i>
-          <div class="text-sm">Emergency</div>
-        </button>
+          <i class="fas fa-diagram-project mb-1"></i>
+          <div class="text-sm">Visual Diagram</div>
+        </a>
       </div>
     </div>
   </div>
 </div>
 {% endblock %} {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-  // Consumption Chart
-  const ctx = document.getElementById("consumptionChart").getContext("2d");
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      datasets: [
-        {
-          label: "Electricity (kWh)",
-          data: [8.5, 9.2, 8.8, 9.5, 10.2, 7.5, 8.5],
-          borderColor: "#FBBC04",
-          backgroundColor: "rgba(251, 188, 4, 0.1)",
-          tension: 0.4,
-        },
-        {
-          label: "Water (L)",
-          data: [320, 350, 310, 340, 380, 250, 325],
-          borderColor: "#1A73E8",
-          backgroundColor: "rgba(26, 115, 232, 0.1)",
-          tension: 0.4,
-          yAxisID: "y1",
-        },
-        {
-          label: "Solar Generated (kWh)",
-          data: [12, 13, 11, 14, 13.5, 10, 12.3],
-          borderColor: "#34A853",
-          backgroundColor: "rgba(52, 168, 83, 0.1)",
-          tension: 0.4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false,
-      },
-      scales: {
-        y: {
-          type: "linear",
-          display: true,
-          position: "left",
-          title: {
-            display: true,
-            text: "kWh",
-          },
-        },
-        y1: {
-          type: "linear",
-          display: true,
-          position: "right",
-          title: {
-            display: true,
-            text: "Liters",
-          },
-          grid: {
-            drawOnChartArea: false,
-          },
-        },
-      },
-    },
-  });
+  // Placeholder for any dynamic JS for unit details page
 </script>
 {% endblock %}

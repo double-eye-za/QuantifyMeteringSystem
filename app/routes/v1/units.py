@@ -124,11 +124,28 @@ def unit_visual_page(unit_id: str):
     return render_template("units/unit-visual.html", unit_id=unit_id)
 
 
-@api_v1.route("/units/<unit_id>", methods=["GET"])
+@api_v1.route("/units/<int:unit_id>", methods=["GET"])
 @login_required
-def unit_details_page(unit_id: str):
-    """Render the unit details page"""
-    return render_template("units/unit-details.html", unit_id=unit_id)
+def unit_details_page(unit_id: int):
+    """Render the unit details page with dynamic unit and resident info"""
+    unit = Unit.get_by_id(unit_id)
+    if not unit:
+        return render_template("errors/404.html"), 404
+
+    estate = None
+    if getattr(unit, "estate_id", None):
+        estate = Estate.get_by_id(unit.estate_id)
+
+    resident = None
+    if getattr(unit, "resident_id", None):
+        resident = Resident.get_by_id(unit.resident_id)
+
+    return render_template(
+        "units/unit-details.html",
+        unit=unit,
+        estate=estate,
+        resident=resident,
+    )
 
 
 @api_v1.get("/api/units/<int:unit_id>")
