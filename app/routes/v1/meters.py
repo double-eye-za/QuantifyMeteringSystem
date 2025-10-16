@@ -252,6 +252,39 @@ def get_meter(meter_id: int):
     return jsonify({"data": meter.to_dict()})
 
 
+@api_v1.post("/meters")
+@login_required
+def create_meter():
+    payload = request.get_json(force=True) or {}
+    required = ["serial_number", "meter_type"]
+    missing = [f for f in required if not payload.get(f)]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+    meter = Meter.create_from_payload(payload)
+    return jsonify({"data": meter.to_dict()}), 201
+
+
+@api_v1.get("/meters/available")
+@login_required
+def available_meters():
+    meter_type = request.args.get("meter_type")
+    if not meter_type:
+        return jsonify({"error": "meter_type is required"}), 400
+    items = Meter.list_available_by_type(meter_type)
+    return jsonify(
+        {
+            "data": [
+                {
+                    "id": m.id,
+                    "serial_number": m.serial_number,
+                    "meter_type": m.meter_type,
+                }
+                for m in items
+            ]
+        }
+    )
+
+
 @api_v1.get("/meters/<int:meter_id>/readings")
 @login_required
 def meter_readings(meter_id: int):

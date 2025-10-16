@@ -104,6 +104,9 @@ block breadcrumb %}
                     <button class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
                         <i class="fas fa-download mr-2"></i>Export
                     </button>
+                    <button type="button" onclick="showCreateMeter()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <i class="fas fa-plus mr-2"></i>Create Meter
+                    </button>
                 </div>
             </div>
         </div>
@@ -266,6 +269,61 @@ block breadcrumb %}
                 </div>
             </div>
         </div>
+        
+        <!-- Create Meter Modal -->
+        <div id="createMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-xl">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Create New Meter</h3>
+              <button onclick="hideCreateMeter()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="createMeterForm" onsubmit="event.preventDefault(); submitCreateMeter();" class="p-4 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm">Serial Number</label>
+                  <input name="serial_number" class="w-full px-3 py-2 border rounded" required />
+                </div>
+                <div>
+                  <label class="text-sm">Meter Type</label>
+                  <select name="meter_type" class="w-full px-3 py-2 border rounded" required>
+                    <option value="electricity">Electricity</option>
+                    <option value="water">Water</option>
+                    <option value="solar">Solar</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm">Manufacturer</label>
+                  <input name="manufacturer" class="w-full px-3 py-2 border rounded" />
+                </div>
+                <div>
+                  <label class="text-sm">Model</label>
+                  <input name="model" class="w-full px-3 py-2 border rounded" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm">Communication Type</label>
+                  <select name="communication_type" class="w-full px-3 py-2 border rounded">
+                    <option value="plc">PLC</option>
+                    <option value="cellular">Cellular</option>
+                    <option value="wifi">Wi-Fi</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm">Firmware Version</label>
+                  <input name="firmware_version" class="w-full px-3 py-2 border rounded" />
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="hideCreateMeter()" class="px-3 py-2 border rounded">Cancel</button>
+                <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
 {% endblock %} {% block extra_js %}
     <script>
         // Auto-refresh simulation (updates last reading times)
@@ -285,5 +343,22 @@ block breadcrumb %}
                 }
             }
         }, 5000);
+
+        function showCreateMeter(){
+          const m = document.getElementById('createMeterModal');
+          m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function hideCreateMeter(){
+          const m = document.getElementById('createMeterModal');
+          m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        async function submitCreateMeter(){
+          const form = document.getElementById('createMeterForm');
+          const payload = Object.fromEntries(new FormData(form).entries());
+          const resp = await fetch('/api/v1/meters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if(!resp.ok){ alert('Failed to create meter'); return; }
+          hideCreateMeter();
+          window.location.reload();
+        }
     </script>
 {% endblock %}

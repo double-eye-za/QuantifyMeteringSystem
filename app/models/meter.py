@@ -73,10 +73,66 @@ class Meter(db.Model):
         return query
 
     @staticmethod
+    def list_available_by_type(meter_type: str):
+        """Meters of a type that are not assigned to any unit."""
+        from .unit import Unit
+
+        subq_ids = db.session.query(Unit.electricity_meter_id).union(
+            db.session.query(Unit.water_meter_id), db.session.query(Unit.solar_meter_id)
+        )
+        return (
+            Meter.query.filter(Meter.meter_type == meter_type)
+            .filter(~Meter.id.in_(subq_ids))
+            .order_by(Meter.serial_number.asc())
+            .all()
+        )
+
+    @staticmethod
     def get_by_id(meter_id):
         return Meter.query.get(meter_id)
 
-    def to_dict(self) -> dict:
+    @staticmethod
+    def create_from_payload(payload: dict):
+        meter = Meter(
+            serial_number=payload["serial_number"],
+            meter_type=payload["meter_type"],
+            manufacturer=payload.get("manufacturer"),
+            model=payload.get("model"),
+            installation_date=payload.get("installation_date"),
+            last_reading=None,
+            last_reading_date=None,
+            communication_type=payload.get("communication_type", "plc"),
+            communication_status=payload.get("communication_status", "online"),
+            last_communication=None,
+            firmware_version=payload.get("firmware_version"),
+            is_prepaid=payload.get("is_prepaid", True),
+            is_active=payload.get("is_active", True),
+        )
+        db.session.add(meter)
+        db.session.commit()
+        return meter
+
+    @staticmethod
+    def get_electricity_meters():
+        return (
+            Meter.get_all(meter_type="electricity")
+            .order_by(Meter.serial_number.asc())
+            .all()
+        )
+
+    @staticmethod
+    def get_water_meters():
+        return (
+            Meter.get_all(meter_type="water").order_by(Meter.serial_number.asc()).all()
+        )
+
+    @staticmethod
+    def get_solar_meters():
+        return (
+            Meter.get_all(meter_type="solar").order_by(Meter.serial_number.asc()).all()
+        )
+
+    def to_dict(self):
         return {
             "id": self.id,
             "serial_number": self.serial_number,
@@ -105,11 +161,11 @@ class Meter(db.Model):
         }
 
     @staticmethod
-    def count_all() -> int:
+    def count_all():
         return Meter.query.count()
 
     @staticmethod
-    def count_active_dc450s() -> int:
+    def count_active_dc450s():
         return Meter.query.filter(
             Meter.communication_type == "plc", Meter.communication_status == "online"
         ).count()
