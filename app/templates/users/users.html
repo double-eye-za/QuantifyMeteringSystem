@@ -566,6 +566,7 @@ Manage Users
 {% endblock %}
 
 {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
     <script>
 const BASE_URL = '/api/v1';
 
@@ -734,11 +735,12 @@ async function createUser() {
         if (result.success) {
             hideCreateModal();
             window.location.reload();
+            showFlashMessage('User created successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to create user');
+            showFlashMessage(result.error || 'Failed to create user', 'error', true);
         }
     } catch (error) {
-        alert('Failed to create user');
+        showFlashMessage('Failed to create user', 'error', true);
     }
 }
 
@@ -766,11 +768,12 @@ async function updateUser() {
         if (result.success) {
             hideEditModal();
             window.location.reload();
+            showFlashMessage('User updated successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to update user');
+            showFlashMessage(result.error || 'Failed to update user', 'error', true);
         }
     } catch (error) {
-        alert('Failed to update user');
+        showFlashMessage('Failed to update user', 'error', true);
     }
 }
 
@@ -788,11 +791,12 @@ async function enableUser(userId) {
         if (result.success) {
             hideConfirmModal();
             window.location.reload();
+            showFlashMessage('User enabled successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to enable user');
+            showFlashMessage(result.error || 'Failed to enable user', 'error', true);
         }
     } catch (error) {
-        alert('Failed to enable user');
+       showFlashMessage('Failed to enable user', 'error', true);
     }
 }
 
@@ -810,11 +814,12 @@ async function disableUser(userId) {
         if (result.success) {
             hideConfirmModal();
             window.location.reload();
+            showFlashMessage('User disabled successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to disable user');
+           showFlashMessage(result.error || 'Failed to disable user', 'error', true);
         }
     } catch (error) {
-        alert('Failed to disable user');
+        showFlashMessage('Failed to disable user', 'error', true);
     }
 }
 

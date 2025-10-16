@@ -353,6 +353,7 @@ block breadcrumb %}
           </div>
         </div>
 {% endblock %} {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
     <script>
         // Auto-refresh simulation (updates last reading times)
         setInterval(() => {
@@ -436,9 +437,10 @@ block breadcrumb %}
           const payload = Object.fromEntries(new FormData(form).entries());
           if(payload.installation_date === '') delete payload.installation_date;
           const resp = await fetch('/api/v1/meters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if(!resp.ok){ alert('Failed to create meter'); return; }
+          if(!resp.ok){ showFlashMessage("Failed to create meter", "error", true); return; }
           hideCreateMeter();
           window.location.reload();
+          showFlashMessage("Meter created successfully", "success", true);
         }
         async function submitEditMeter(){
           const form = document.getElementById('editMeterForm');
@@ -446,16 +448,18 @@ block breadcrumb %}
           const id = payload.id; delete payload.id;
           if(payload.installation_date === '') delete payload.installation_date;
           const resp = await fetch(`/api/v1/meters/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if(!resp.ok){ alert('Failed to update meter'); return; }
+          if(!resp.ok){ showFlashMessage("Failed to update meter details", "error", true); return; }
           hideEditMeter();
           window.location.reload();
+          showFlashMessage("Meter updated successfully", "success", true);
         }
         async function performDeleteMeter(){
           const id = window._deleteMeterId; if(!id) return;
           const resp = await fetch(`/api/v1/meters/${id}`, { method: 'DELETE' });
-          if(!resp.ok){ alert('Failed to delete meter'); return; }
+          if(!resp.ok){ showFlashMessaged("Failed to delete meter", "error", true); return; }
           hideDeleteMeter();
           window.location.reload();
+          showFlashMessage("Meter deleted successfully", "success", true);
         }
     </script>
 {% endblock %}

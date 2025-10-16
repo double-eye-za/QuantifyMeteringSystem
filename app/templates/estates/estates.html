@@ -1431,6 +1431,7 @@ block breadcrumb %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
 <script>
   // Estate Functions
   function showAddEstateModal() {
@@ -1462,11 +1463,15 @@ block breadcrumb %}
       const res = await fetch(`/api/v1/estates/${estateId}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        showFlashMessage("Failed to delete estate", "error", true);
+        return;
+      }
       hideDeleteEstate();
       window.location.reload();
+      showFlashMessage("Estate deleted successfully", "success", true);
     } catch (e) {
-      alert("Failed to delete estate");
+      showFlashMessage("Failed to delete estate", "error", true);
     }
   }
 
@@ -1496,11 +1501,15 @@ block breadcrumb %}
           water_rate_table_id: d.water_rate_table || null,
         }),
       });
-      if (!res.ok) throw new Error("request failed");
+      if (!res.ok) {
+        showFlashMessage("Failed to create estate", "error", true);
+        return;
+      }
       await res.json();
       window.location.reload();
+      showFlashMessage("Estate created successfully", "success", true);
     } catch (e) {
-      alert("Failed to create estate");
+      showFlashMessage("Failed to create estate", "error", true);
     }
   }
 
@@ -1588,11 +1597,14 @@ block breadcrumb %}
           water_rate_table_id: updatedData.water_rate_table || null,
         }),
       });
-      if (!res.ok) throw new Error("request failed");
+      if (!res.ok) {
+        showFlashMessage("Failed to update estate", "error", true);
+      }
       await res.json();
       window.location.reload();
+      showFlashMessage("Estate updated successfully", "success", true);
     } catch (e) {
-      alert("Failed to update estate");
+      showFlashMessage("Failed to update estate", "error", true);
     }
   }
 

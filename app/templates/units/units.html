@@ -676,6 +676,7 @@ block breadcrumb %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
     <script>
         // Unit Functions
         function showAddUnitModal() {
@@ -695,12 +696,15 @@ block breadcrumb %}
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (!resp.ok) throw new Error('Failed');
+        if (!resp.ok) {
+          showFlashMessage('Failed to create unit', 'error', true);
+        }
         await resp.json();
         hideAddUnitModal();
         window.location.reload();
+        showFlashMessage('Unit created successfully', 'success', true);
       } catch (e) {
-        alert('Failed to create unit');
+        showFlashMessage('Failed to create unit', 'error', true);
       }
     })();
         }
@@ -797,12 +801,15 @@ block breadcrumb %}
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (!resp.ok) throw new Error('Failed');
+        if (!resp.ok) {
+          showFlashMessage("Failed to update unit", 'error', true);
+        }
         await resp.json();
         hideEditUnitModal();
         window.location.reload();
+        showFlashMessage('Unit updated successfully', 'success', true);
       } catch (e) {
-        alert('Failed to update unit');
+        showFlashMessage("Failed to update unit", 'error', true);
       }
     })();
   }
@@ -855,10 +862,13 @@ block breadcrumb %}
     try {
       if (!deleteUnitId) return;
       const resp = await fetch(`/api/v1/units/${deleteUnitId}`, { method: 'DELETE' });
-      if (!resp.ok) { alert('Failed to delete unit'); return; }
+      if (!resp.ok) {
+        showFlashMessage("Failed to delete unit", 'error', true);
+      }
       window.hideDeleteUnitModal();
       window.location.reload();
-    } catch (e) { console.error(e); }
+      showFlashMessage("Unit deleted successfully.", "success", true)
+    } catch (e) { console.error(e); showFlashMessage("Error deleting unit. Try again later.", "error", true) }
   }
     </script>
 {% endblock %}

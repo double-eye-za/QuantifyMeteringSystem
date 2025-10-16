@@ -439,6 +439,7 @@
   </div>
 </main>
 {% endblock %} {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
 <script>
   // Tab Functionality
   function showTab(tabName) {
@@ -484,11 +485,12 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!resp.ok) throw new Error("Failed");
+      if (!resp.ok) showFlashMessage("Failed to update profile", "error", true);
       await resp.json();
       window.location.reload();
+      showFlashMessage("Profile updated successfully", "success", true);
     } catch (e) {
-      alert("Failed to update profile");
+      showFlashMessage("Failed to update profile", "error", true);
     }
     return false;
   }
@@ -504,10 +506,13 @@
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Failed");
+      if (!resp.ok) {
+        showFlashMessage(data.error || "Failed to update password", "error", true);
+      }
       window.location.reload();
+      showFlashMessage("Password updated successfully", "success", true);
     } catch (e) {
-      alert(e.message || "Failed to update password");
+      showFlashMessage("Failed to update password", "error", true);
     }
     return false;
   }

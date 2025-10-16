@@ -447,6 +447,7 @@ Roles & Permissions
 {% endblock %}
 
 {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
     <script>
 const BASE_URL = '/api/v1';
 // Expose modules/actions map from server
@@ -753,11 +754,12 @@ async function createRole() {
         if (result.success) {
             hideCreateModal();
             window.location.reload();
+            showFlashMessage('Role created successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to create role');
+            showFlashMessage(result.error || 'Failed to create role', 'error', true);
         }
     } catch (error) {
-        alert('Failed to create role');
+        showFlashMessage('Failed to create role', 'error', true);
     }
 }
 
@@ -783,11 +785,12 @@ async function updateRole() {
         if (result.success) {
             hideEditModal();
             window.location.reload();
+            showFlashMessage('Role updated successfully', 'success', true);
             } else {
-            alert(result.error || 'Failed to update role');
+           showFlashMessage(result.error || 'Failed to update role', 'error', true);
         }
     } catch (error) {
-        alert('Failed to update role');
+       showFlashMessage('Failed to update role', 'error', true);
     }
 }
 
@@ -805,11 +808,12 @@ async function deleteRole(roleId) {
         if (result.success) {
             hideConfirmModal();
             window.location.reload();
+            showFlashMessage('Role deleted successfully', 'success', true);
         } else {
-            alert(result.error || 'Failed to delete role');
+            showFlashMessage(result.error || 'Failed to delete role', 'error', true);
         }
     } catch (error) {
-        alert('Failed to delete role');
+        showFlashMessage('Failed to delete role', 'error', true);
             }
         }
     </script>
