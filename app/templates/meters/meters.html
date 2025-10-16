@@ -153,21 +153,21 @@ block breadcrumb %}
           {% elif m.meter_type=='solar' %}{% set balance = m.wallet.solar_balance %}
           {% endif %}
         {% endif %}
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-          <td class="px-6 py-4 font-mono text-xs">{{ m.serial_number }}</td>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" data-meter='{{ m | tojson }}'>
+          <td class="px-6 py-4 font-mono text-xs text-gray-900 dark:text-white">{{ m.serial_number }}</td>
                             <td class="px-6 py-4">
             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else 'Unassigned' }}</div>
-            <div class="text-xs text-gray-500">{{ unit.estate_name if unit else '' }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ unit.estate_name if unit else '' }}</div>
                             </td>
                             <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if m.meter_type=='electricity' else ('bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' if m.meter_type=='water' else 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300') }}">
-              <i class="fas {{ 'fa-bolt' if m.meter_type=='electricity' else ('fa-tint' if m.meter_type=='water' else 'fa-solar-panel') }} mr-1"></i>{{ m.meter_type|capitalize }}
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if m.meter_type=='electricity' else ('bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' if m.meter_type=='water' else ('bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if m.meter_type=='solar' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300')) }}">
+              <i class="fas {{ 'fa-bolt' if m.meter_type=='electricity' else ('fa-tint' if m.meter_type=='water' else ('fa-solar-panel' if m.meter_type=='solar' else 'fa-battery-full')) }} mr-1"></i>{{ m.meter_type|replace('_',' ')|title }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
             {% set cs = m.credit_status %}
-            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if cs=='ok' else ('bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if cs=='low' else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300') }}">
-              <i class="fas {{ 'fa-circle' if cs=='ok' else ('fa-exclamation-triangle' if cs=='low' else 'fa-times-circle') }} mr-1"></i>{{ 'Active' if cs=='ok' else ('Low' if cs=='low' else 'Disconnected') }}
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if m.is_active else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}">
+              <i class="fas {{ 'fa-circle' if m.is_active else 'fa-minus-circle' }} mr-1"></i>{{ 'Active' if m.is_active else 'Inactive' }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -184,7 +184,8 @@ block breadcrumb %}
                             </td>
                             <td class="px-6 py-4">
             <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.serial_number) }}"><i class="fas fa-eye"></i></a>
-            <button class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white" title="Configure"><i class="fas fa-cog"></i></button>
+            <button class="text-primary hover:text-blue-700 mr-3" title="Edit" onclick="openEditMeter(this)"><i class="fas fa-edit"></i></button>
+            <button class="text-red-600 dark:text-red-400 hover:text-red-700" title="Delete" onclick="confirmDeleteMeter(this)"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
         {% endfor %}
@@ -208,85 +209,25 @@ block breadcrumb %}
                 </div>
             </div>
         </div>
-
-        <!-- Alerts Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
-  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-    Active Alerts
-  </h3>
-            <div class="space-y-3">
-    <div
-      class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-    >
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-                        <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
-            Communication Lost - Unit D402
-          </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Solar meter offline for 2 hours
-          </p>
-                        </div>
-                    </div>
-      <button class="text-sm text-primary hover:text-blue-700">
-        Investigate
-      </button>
-                </div>
-
-    <div
-      class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
-    >
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
-                        <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
-            Low Credit Alert - Multiple Units
-          </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            15 units below R50 threshold
-          </p>
-                        </div>
-                    </div>
-                    <button class="text-sm text-primary hover:text-blue-700">View All</button>
-                </div>
-
-    <div
-      class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
-    >
-                    <div class="flex items-center">
-                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
-                        <div>
-          <p class="text-sm font-medium text-gray-900 dark:text-white">
-            Water Low Warning Active - Unit B205
-          </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Low credit warning
-          </p>
-                        </div>
-                    </div>
-                    <button class="text-sm text-primary hover:text-blue-700">Top Up</button>
-                </div>
-            </div>
-        </div>
         
         <!-- Create Meter Modal -->
         <div id="createMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-xl">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 class="text-lg font-semibold">Create New Meter</h3>
-              <button onclick="hideCreateMeter()"><i class="fas fa-times"></i></button>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Create New Meter</h3>
+              <button onclick="hideCreateMeter()" class="text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
             </div>
             <form id="createMeterForm" onsubmit="event.preventDefault(); submitCreateMeter();" class="p-4 space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="text-sm">Serial Number</label>
-                  <input name="serial_number" class="w-full px-3 py-2 border rounded" required />
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-red-600">*</span></label>
+                  <input name="serial_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
                 </div>
                 <div>
-                  <label class="text-sm">Meter Type</label>
-                  <select name="meter_type" class="w-full px-3 py-2 border rounded" required>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Meter Type <span class="text-red-600">*</span></label>
+                  <select name="meter_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
                     <option value="electricity">Electricity</option>
+                    <option value="bulk_electricity">Bulk Electricity</option>
                     <option value="water">Water</option>
                     <option value="solar">Solar</option>
                   </select>
@@ -294,34 +235,121 @@ block breadcrumb %}
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="text-sm">Manufacturer</label>
-                  <input name="manufacturer" class="w-full px-3 py-2 border rounded" />
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Estate</label>
+                  <select name="estate_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select Estate --</option>
+                    {% for e in estates %}
+                    <option value="{{ e.id }}">{{ e.name }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
                 <div>
-                  <label class="text-sm">Model</label>
-                  <input name="model" class="w-full px-3 py-2 border rounded" />
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Assign to Unit</label>
+                  <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Unassigned --</option>
+                    {% for u in units %}
+                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}">Unit {{ u.unit_number }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="text-sm">Communication Type</label>
-                  <select name="communication_type" class="w-full px-3 py-2 border rounded">
-                    <option value="plc">PLC</option>
-                    <option value="cellular">Cellular</option>
-                    <option value="wifi">Wi-Fi</option>
-                    <option value="manual">Manual</option>
-                  </select>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Installation Date</label>
+                  <input name="installation_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                 </div>
                 <div>
-                  <label class="text-sm">Firmware Version</label>
-                  <input name="firmware_version" class="w-full px-3 py-2 border rounded" />
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Status</label>
+                  <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="active" selected>Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
               <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="hideCreateMeter()" class="px-3 py-2 border rounded">Cancel</button>
+                <button type="button" onclick="hideCreateMeter()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded">Cancel</button>
                 <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Create</button>
               </div>
             </form>
+          </div>
+        </div>
+
+        <!-- Edit Meter Modal -->
+        <div id="editMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Meter</h3>
+              <button onclick="hideEditMeter()" class="text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="editMeterForm" onsubmit="event.preventDefault(); submitEditMeter();" class="p-4 space-y-4">
+              <input type="hidden" name="id" />
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-red-600">*</span></label>
+                  <input name="serial_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Meter Type <span class="text-red-600">*</span></label>
+                  <select name="meter_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+                    <option value="electricity">Electricity</option>
+                    <option value="bulk_electricity">Bulk Electricity</option>
+                    <option value="water">Water</option>
+                    <option value="solar">Solar</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Estate</label>
+                  <select name="estate_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select Estate --</option>
+                    {% for e in estates %}
+                    <option value="{{ e.id }}">{{ e.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Assign to Unit</label>
+                  <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Unassigned --</option>
+                    {% for u in units %}
+                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}">Unit {{ u.unit_number }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Installation Date</label>
+                  <input name="installation_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Status</label>
+                  <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="hideEditMeter()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded">Cancel</button>
+                <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Meter</h3>
+            </div>
+            <div class="p-4 text-sm text-gray-700 dark:text-gray-300">Are you sure you want to delete this meter? This action cannot be undone.</div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button type="button" onclick="hideDeleteMeter()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button type="button" onclick="performDeleteMeter()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Delete</button>
+            </div>
           </div>
         </div>
 {% endblock %} {% block extra_js %}
@@ -352,12 +380,81 @@ block breadcrumb %}
           const m = document.getElementById('createMeterModal');
           m.classList.add('hidden'); m.classList.remove('flex');
         }
+        function openEditMeter(btn){
+          const row = btn.closest('tr');
+          const data = JSON.parse(row.getAttribute('data-meter'));
+          const m = document.getElementById('editMeterModal');
+          const form = document.getElementById('editMeterForm');
+          form.elements.id.value = data.id;
+          form.elements.serial_number.value = data.serial_number || '';
+          form.elements.meter_type.value = data.meter_type || '';
+          form.elements.installation_date.value = (data.installation_date || '').split('T')[0] || '';
+          form.elements.status.value = data.is_active ? 'active' : 'inactive';
+          // preselect estate if available via unit
+          if(data.unit && data.unit.estate_id){ form.elements.estate_id.value = data.unit.estate_id; }
+          if(data.unit && data.unit.id){ form.elements.unit_id.value = data.unit.id; }
+          m.classList.remove('hidden'); m.classList.add('flex');
+          refreshUnitDisableState(form);
+        }
+        function hideEditMeter(){
+          const m = document.getElementById('editMeterModal');
+          m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function confirmDeleteMeter(btn){
+          const row = btn.closest('tr');
+          const data = JSON.parse(row.getAttribute('data-meter'));
+          window._deleteMeterId = data.id;
+          const m = document.getElementById('deleteMeterModal');
+          m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function hideDeleteMeter(){
+          const m = document.getElementById('deleteMeterModal');
+          m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        function refreshUnitDisableState(scope){
+          const form = scope || document.getElementById('createMeterForm');
+          const type = form.elements.meter_type.value;
+          const unitSelect = form.elements.unit_id;
+          Array.from(unitSelect.options).forEach(opt => {
+            if(!opt.value) return; // skip placeholder
+            const hasElec = opt.getAttribute('data-has-electricity') === '1';
+            const hasWater = opt.getAttribute('data-has-water') === '1';
+            const hasSolar = opt.getAttribute('data-has-solar') === '1';
+            let disabled = false;
+            if(type === 'electricity' && hasElec) disabled = true;
+            if(type === 'water' && hasWater) disabled = true;
+            if(type === 'solar' && hasSolar) disabled = true;
+            opt.disabled = disabled;
+          });
+        }
+        document.getElementById('createMeterForm')?.elements.meter_type?.addEventListener('change', () => refreshUnitDisableState(document.getElementById('createMeterForm')));
+        document.getElementById('editMeterForm')?.elements.meter_type?.addEventListener('change', () => refreshUnitDisableState(document.getElementById('editMeterForm')));
+
         async function submitCreateMeter(){
           const form = document.getElementById('createMeterForm');
           const payload = Object.fromEntries(new FormData(form).entries());
+          if(payload.installation_date === '') delete payload.installation_date;
           const resp = await fetch('/api/v1/meters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           if(!resp.ok){ alert('Failed to create meter'); return; }
           hideCreateMeter();
+          window.location.reload();
+        }
+        async function submitEditMeter(){
+          const form = document.getElementById('editMeterForm');
+          const payload = Object.fromEntries(new FormData(form).entries());
+          const id = payload.id; delete payload.id;
+          if(payload.installation_date === '') delete payload.installation_date;
+          const resp = await fetch(`/api/v1/meters/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if(!resp.ok){ alert('Failed to update meter'); return; }
+          hideEditMeter();
+          window.location.reload();
+        }
+        async function performDeleteMeter(){
+          const id = window._deleteMeterId; if(!id) return;
+          const resp = await fetch(`/api/v1/meters/${id}`, { method: 'DELETE' });
+          if(!resp.ok){ alert('Failed to delete meter'); return; }
+          hideDeleteMeter();
           window.location.reload();
         }
     </script>

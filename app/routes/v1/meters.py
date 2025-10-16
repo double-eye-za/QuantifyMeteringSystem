@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from flask import jsonify, request, render_template
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Resident
 from ...utils.pagination import paginate_query, parse_pagination_params
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -136,8 +137,24 @@ def meters_page():
         {"id": e.id, "name": e.name}
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
+
+    # Units availability for dropdowns (disable units that already have a meter of a given type)
+    units_info = []
+    for u in Unit.query.order_by(Unit.unit_number.asc()).all():
+        units_info.append(
+            {
+                "id": u.id,
+                "unit_number": u.unit_number,
+                "estate_id": u.estate_id,
+                "has_electricity": bool(u.electricity_meter_id),
+                "has_water": bool(u.water_meter_id),
+                "has_solar": bool(u.solar_meter_id),
+            }
+        )
+
     meter_types = [
         {"value": "electricity", "label": "Electricity"},
+        {"value": "bulk_electricity", "label": "Bulk Electricity"},
         {"value": "water", "label": "Water"},
         {"value": "solar", "label": "Solar"},
     ]
@@ -146,6 +163,7 @@ def meters_page():
         "meters/meters.html",
         meters=meters,
         estates=estates,
+        units=units_info,
         meter_types=meter_types,
         pagination=meta,
         stats={
@@ -252,6 +270,41 @@ def get_meter(meter_id: int):
     return jsonify({"data": meter.to_dict()})
 
 
+def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
+    """Assign the meter to the given unit based on meter_type; handles unassigning from previous unit."""
+    # Unassign from any current unit first
+    current_unit = Unit.query.filter(
+        (Unit.electricity_meter_id == meter.id)
+        | (Unit.water_meter_id == meter.id)
+        | (Unit.solar_meter_id == meter.id)
+    ).first()
+    if current_unit:
+        if current_unit.electricity_meter_id == meter.id:
+            current_unit.electricity_meter_id = None
+        if current_unit.water_meter_id == meter.id:
+            current_unit.water_meter_id = None
+        if current_unit.solar_meter_id == meter.id:
+            current_unit.solar_meter_id = None
+    if unit_id:
+        target = Unit.query.get(unit_id)
+        if target:
+            if meter.meter_type == "electricity":
+                if target.electricity_meter_id:
+                    raise ValueError("Target unit already has an electricity meter")
+                target.electricity_meter_id = meter.id
+            elif meter.meter_type == "water":
+                if target.water_meter_id:
+                    raise ValueError("Target unit already has a water meter")
+                target.water_meter_id = meter.id
+            elif meter.meter_type == "solar":
+                if target.solar_meter_id:
+                    raise ValueError("Target unit already has a solar meter")
+                target.solar_meter_id = meter.id
+    from ...db import db
+
+    db.session.commit()
+
+
 @api_v1.post("/meters")
 @login_required
 def create_meter():
@@ -260,8 +313,78 @@ def create_meter():
     missing = [f for f in required if not payload.get(f)]
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+    # map status->is_active if provided
+    status = (payload.get("status") or "").lower()
+    if status in ("active", "inactive"):
+        payload["is_active"] = status == "active"
     meter = Meter.create_from_payload(payload)
+    # assign to unit if provided
+    unit_id = payload.get("unit_id")
+    try:
+        if unit_id:
+            _assign_meter_to_unit(meter, int(unit_id))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    log_action(
+        "meter.create", entity_type="meter", entity_id=meter.id, new_values=payload
+    )
     return jsonify({"data": meter.to_dict()}), 201
+
+
+@api_v1.put("/meters/<int:meter_id>")
+@login_required
+def update_meter(meter_id: int):
+    meter = Meter.get_by_id(meter_id)
+    if not meter:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+    payload = request.get_json(force=True) or {}
+    before = meter.to_dict()
+    # Status mapping
+    status = (payload.get("status") or "").lower()
+    if status in ("active", "inactive"):
+        payload["is_active"] = status == "active"
+    # Apply updatable fields
+    for f in ("serial_number", "meter_type", "installation_date", "is_active"):
+        if f in payload:
+            setattr(meter, f, payload[f])
+    from ...db import db
+
+    db.session.commit()
+    # Handle assignment changes (unit_id may be empty string => unassign)
+    try:
+        if "unit_id" in payload:
+            _assign_meter_to_unit(
+                meter, int(payload["unit_id"]) if payload["unit_id"] else None
+            )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    log_action(
+        "meter.update",
+        entity_type="meter",
+        entity_id=meter_id,
+        old_values=before,
+        new_values=payload,
+    )
+    return jsonify({"data": meter.to_dict()})
+
+
+@api_v1.delete("/meters/<int:meter_id>")
+@login_required
+def delete_meter(meter_id: int):
+    meter = Meter.get_by_id(meter_id)
+    if not meter:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+    # Unassign from any unit
+    _assign_meter_to_unit(meter, None)
+    from ...db import db
+
+    before = meter.to_dict()
+    db.session.delete(meter)
+    db.session.commit()
+    log_action(
+        "meter.delete", entity_type="meter", entity_id=meter_id, old_values=before
+    )
+    return jsonify({"message": "Deleted"})
 
 
 @api_v1.get("/meters/available")
