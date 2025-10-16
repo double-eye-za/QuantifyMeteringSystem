@@ -76,7 +76,7 @@ class Estate(db.Model):
         return Estate.query.get(estate_id)
 
     @staticmethod
-    def create_from_payload(payload):
+    def create_from_payload(payload, user_id: Optional[int] = None):
         estate = Estate(
             code=payload.get("code"),
             name=payload.get("name"),
@@ -97,12 +97,13 @@ class Estate(db.Model):
             water_markup_percentage=payload.get("water_markup_percentage", 0.00),
             solar_free_allocation_kwh=payload.get("solar_free_allocation_kwh", 50.00),
             is_active=payload.get("is_active", True),
+            created_by=user_id,
         )
         db.session.add(estate)
         db.session.commit()
         return estate
 
-    def update_from_payload(self, payload):
+    def update_from_payload(self, payload, user_id: Optional[int] = None):
         for field in (
             "code",
             "name",
@@ -124,6 +125,8 @@ class Estate(db.Model):
         ):
             if field in payload:
                 setattr(self, field, payload[field])
+        if user_id is not None:
+            self.updated_by = user_id
         db.session.commit()
         return self
 

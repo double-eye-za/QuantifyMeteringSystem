@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import jsonify, request, render_template
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from ...models import Estate
 from ...utils.pagination import paginate_query
@@ -69,7 +69,9 @@ def get_estate(estate_id: int):
 @login_required
 def create_estate():
     payload = request.get_json(force=True) or {}
-    estate = Estate.create_from_payload(payload)
+    estate = Estate.create_from_payload(
+        payload, user_id=getattr(current_user, "id", None)
+    )
     return jsonify({"data": estate.to_dict()}), 201
 
 
@@ -80,7 +82,7 @@ def update_estate(estate_id: int):
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
-    estate.update_from_payload(payload)
+    estate.update_from_payload(payload, user_id=getattr(current_user, "id", None))
     return jsonify({"data": estate.to_dict()})
 
 
