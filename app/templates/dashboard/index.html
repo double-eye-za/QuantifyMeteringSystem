@@ -16,7 +16,9 @@ breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">Live</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      {{ stats.total_estates }}
+    </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Active Estates</p>
   </div>
 
@@ -27,9 +29,11 @@ breadcrumb %}
       >
         <i class="fas fa-house text-green-500"></i>
       </div>
-      <span class="text-xs text-green-600">+5%</span>
+      <span class="text-xs text-green-600">&nbsp;</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">1,248</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      {{ stats.total_units }}
+    </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Total Units</p>
   </div>
 
@@ -42,7 +46,9 @@ breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">Today</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">15.2</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      {{ stats.mwh_today }}
+    </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">MWh Consumed</p>
   </div>
 
@@ -53,9 +59,11 @@ breadcrumb %}
       >
         <i class="fas fa-money-bill-wave text-green-600"></i>
       </div>
-      <span class="text-xs text-green-600">+12%</span>
+      <span class="text-xs text-green-600">&nbsp;</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">R 152K</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      R {{ stats.revenue_today }}
+    </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Today's Revenue</p>
   </div>
 
@@ -68,7 +76,9 @@ breadcrumb %}
       </div>
       <span class="text-xs text-red-600">Critical</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">37</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+      {{ stats.units_disconnected }}
+    </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Units Disconnected</p>
   </div>
 </div>
@@ -79,7 +89,7 @@ breadcrumb %}
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
       Estates Performance
     </h2>
-    <div class="flex gap-2">
+    <div class="flex gap-2 items-center">
       <button
         onclick="setView('grid')"
         id="gridViewBtn"
@@ -94,11 +104,17 @@ breadcrumb %}
       >
         <i class="fas fa-list mr-1"></i>List
       </button>
-      <input
-        type="text"
-        placeholder="Search estates..."
-        class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 w-64"
-      />
+      <form method="get" action="{{ url_for('api_v1.dashboard') }}">
+        <input
+          type="text"
+          id="dashboardSearch"
+          name="q"
+          value="{{ q or '' }}"
+          placeholder="Search estates..."
+          oninput="filterEstates()"
+          class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 w-64"
+        />
+      </form>
     </div>
   </div>
 
@@ -107,15 +123,16 @@ breadcrumb %}
     id="gridView"
     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4"
   >
-    <!-- Estate Card 1 -->
+    {% for e in estates_perf %}
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-      onclick="viewEstateDetails('Willow Creek')"
+      onclick="viewEstateDetails('{{ e.name|e }}')"
+      data-estate-name="{{ e.name|lower }}"
     >
       <div class="p-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-semibold text-gray-900 dark:text-white">
-            Willow Creek
+            {{ e.name }}
           </h3>
           <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
         </div>
@@ -124,25 +141,14 @@ breadcrumb %}
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">Units</span>
             <span class="font-medium text-green-600 dark:text-green-400"
-              >50</span
+              >{{ e.total_units }}</span
             >
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">Occupied</span>
             <span class="font-medium text-green-600 dark:text-green-400"
-              >48 (96%)</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Today</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >625 kWh</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Revenue</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >R 12.5K</span
+              >{{ e.occupied_units }} ({{ '%.1f'|format(e.occupied_pct)
+              }}%)</span
             >
           </div>
         </div>
@@ -150,121 +156,21 @@ breadcrumb %}
         <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between text-xs">
             <span class="text-red-600 dark:text-red-400">
-              <i class="fas fa-power-off mr-1"></i>2 disconnected
+              <i class="fas fa-power-off mr-1"></i>{{ e.alerts.disconnected }}
+              disconnected
             </span>
             <span class="text-yellow-600 dark:text-yellow-400">
-              <i class="fas fa-exclamation mr-1"></i>5 low
+              <i class="fas fa-exclamation mr-1"></i>{{ e.alerts.low }} low
+            </span>
+            <span class="text-blue-600 dark:text-blue-400">
+              <i class="fas fa-tachometer-alt mr-1"></i>{{ e.alerts.offline }}
+              offline
             </span>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Estate Card 2 -->
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-      onclick="viewEstateDetails('Parkview Gardens')"
-    >
-      <div class="p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-gray-900 dark:text-white">
-            Parkview Gardens
-          </h3>
-          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        </div>
-
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Units</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >50</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Occupied</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >45 (90%)</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Today</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >580 kWh</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Revenue</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >R 11.2K</span
-            >
-          </div>
-        </div>
-
-        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-red-600 dark:text-red-400">
-              <i class="fas fa-power-off mr-1"></i>3 disconnected
-            </span>
-            <span class="text-yellow-600 dark:text-yellow-400">
-              <i class="fas fa-exclamation mr-1"></i>8 low
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Estate Card 3 -->
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-      onclick="viewEstateDetails('Sunset Ridge')"
-    >
-      <div class="p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-gray-900 dark:text-white">
-            Sunset Ridge
-          </h3>
-          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        </div>
-
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Units</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >75</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Occupied</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >72 (96%)</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Today</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >892 kWh</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Revenue</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >R 18.3K</span
-            >
-          </div>
-        </div>
-
-        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-green-600 dark:text-green-400">
-              <i class="fas fa-check mr-1"></i>All active
-            </span>
-            <span class="text-yellow-600 dark:text-yellow-400">
-              <i class="fas fa-exclamation mr-1"></i>3 low
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    {% endfor %}
   </div>
 
   <!-- List View (Hidden by default) -->
@@ -291,17 +197,17 @@ breadcrumb %}
             <th
               class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             >
-              Today (kWh)
+              Disconnected
             </th>
             <th
               class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             >
-              Revenue
+              Low Balance
             </th>
             <th
               class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
             >
-              Status
+              Offline
             </th>
             <th
               class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -311,114 +217,56 @@ breadcrumb %}
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          {% for e in estates_perf %}
+          <tr
+            class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            data-estate-name="{{ e.name|lower }}"
+          >
             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-              Willow Creek
+              {{ e.name }}
             </td>
             <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              50
+              {{ e.total_units }}
             </td>
             <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              48 (96%)
+              {{ e.occupied_units }} ({{ '%.1f'|format(e.occupied_pct) }}%)
             </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              625
+            <td class="px-4 py-3 text-center text-red-600 dark:text-red-400">
+              {{ e.alerts.disconnected }}
             </td>
             <td
-              class="px-4 py-3 text-center text-green-600 dark:text-green-400"
+              class="px-4 py-3 text-center text-yellow-600 dark:text-yellow-400"
             >
-              R 12.5K
+              {{ e.alerts.low }}
             </td>
-            <td class="px-4 py-3 text-center">
-              <span
-                class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full"
-                >Active</span
-              >
+            <td class="px-4 py-3 text-center text-blue-600 dark:text-blue-400">
+              {{ e.alerts.offline }}
             </td>
             <td class="px-4 py-3 text-center">
               <button
-                onclick="viewEstateDetails('Willow Creek')"
+                onclick="viewEstateDetails('{{ e.name|e }}')"
                 class="text-primary hover:underline text-xs"
               >
                 View
               </button>
             </td>
           </tr>
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-              Parkview Gardens
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              50
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              45 (90%)
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              580
-            </td>
-            <td
-              class="px-4 py-3 text-center text-green-600 dark:text-green-400"
-            >
-              R 11.2K
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span
-                class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full"
-                >Active</span
-              >
-            </td>
-            <td class="px-4 py-3 text-center">
-              <button
-                onclick="viewEstateDetails('Parkview Gardens')"
-                class="text-primary hover:underline text-xs"
-              >
-                View
-              </button>
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-              Sunset Ridge
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              75
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              72 (96%)
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              892
-            </td>
-            <td
-              class="px-4 py-3 text-center text-green-600 dark:text-green-400"
-            >
-              R 18.3K
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span
-                class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full"
-                >Active</span
-              >
-            </td>
-            <td class="px-4 py-3 text-center">
-              <button
-                onclick="viewEstateDetails('Sunset Ridge')"
-                class="text-primary hover:underline text-xs"
-              >
-                View
-              </button>
-            </td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
+  <div
+    id="noResults"
+    class="hidden mt-4 text-sm text-gray-600 dark:text-gray-300"
+  >
+    No estates found.
+  </div>
 </div>
 
-<!-- System Analytics -->
+<!-- System Analytics (graphs remain mocked) -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-  <!-- Consumption Trend -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       System-wide Consumption Trend
@@ -427,8 +275,6 @@ breadcrumb %}
       <canvas id="consumptionChart"></canvas>
     </div>
   </div>
-
-  <!-- Revenue Distribution -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Revenue by Estate
@@ -439,7 +285,7 @@ breadcrumb %}
   </div>
 </div>
 
-<!-- Critical Alerts Summary -->
+<!-- Critical Alerts Summary (uses estates_perf) -->
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
   <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -447,21 +293,22 @@ breadcrumb %}
     </h3>
   </div>
   <div class="p-6">
-    <!-- Willow Creek Estate -->
-    <div class="mb-6">
+    {% for e in estates_perf %}
+    <div class="mb-6" data-estate-name="{{ e.name|lower }}">
       <div class="flex items-center gap-2 mb-3">
         <i class="fas fa-building text-primary text-sm"></i>
         <h4 class="font-semibold text-gray-900 dark:text-white">
-          Willow Creek
+          {{ e.name }}
         </h4>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <!-- Disconnected Units Alert -->
         <div
           class="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-200 dark:border-red-800 flex items-center justify-between gap-2"
         >
           <i class="fas fa-power-off text-red-500 text-sm flex-shrink-0"></i>
-          <span class="text-lg font-bold text-red-600 flex-shrink-0">8</span>
+          <span class="text-lg font-bold text-red-600 flex-shrink-0"
+            >{{ e.alerts.disconnected }}</span
+          >
           <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
             >Disconnected</span
           >
@@ -471,8 +318,6 @@ breadcrumb %}
             View
           </button>
         </div>
-
-        <!-- Low Balance Alert -->
         <div
           class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800 flex items-center justify-between gap-2"
         >
@@ -480,7 +325,7 @@ breadcrumb %}
             class="fas fa-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
           ></i>
           <span class="text-lg font-bold text-yellow-600 flex-shrink-0"
-            >12</span
+            >{{ e.alerts.low }}</span
           >
           <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
             >Low Balance</span
@@ -491,15 +336,15 @@ breadcrumb %}
             View
           </button>
         </div>
-
-        <!-- Meters Offline Alert -->
         <div
           class="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-2"
         >
           <i
             class="fas fa-tachometer-alt text-blue-500 text-sm flex-shrink-0"
           ></i>
-          <span class="text-lg font-bold text-blue-600 flex-shrink-0">3</span>
+          <span class="text-lg font-bold text-blue-600 flex-shrink-0"
+            >{{ e.alerts.offline }}</span
+          >
           <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
             >Meters Offline</span
           >
@@ -511,134 +356,7 @@ breadcrumb %}
         </div>
       </div>
     </div>
-
-    <!-- Parkview Estate -->
-    <div class="mb-6">
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-building text-primary text-sm"></i>
-        <h4 class="font-semibold text-gray-900 dark:text-white">Parkview</h4>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <!-- Disconnected Units Alert -->
-        <div
-          class="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-200 dark:border-red-800 flex items-center justify-between gap-2"
-        >
-          <i class="fas fa-power-off text-red-500 text-sm flex-shrink-0"></i>
-          <span class="text-lg font-bold text-red-600 flex-shrink-0">15</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Disconnected</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-
-        <!-- Low Balance Alert -->
-        <div
-          class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-yellow-600 flex-shrink-0"
-            >28</span
-          >
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Low Balance</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-
-        <!-- Meters Offline Alert -->
-        <div
-          class="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-tachometer-alt text-blue-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-blue-600 flex-shrink-0">6</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Meters Offline</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sunset Ridge Estate -->
-    <div>
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-building text-primary text-sm"></i>
-        <h4 class="font-semibold text-gray-900 dark:text-white">
-          Sunset Ridge
-        </h4>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <!-- Disconnected Units Alert -->
-        <div
-          class="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-200 dark:border-red-800 flex items-center justify-between gap-2"
-        >
-          <i class="fas fa-power-off text-red-500 text-sm flex-shrink-0"></i>
-          <span class="text-lg font-bold text-red-600 flex-shrink-0">14</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Disconnected</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-
-        <!-- Low Balance Alert -->
-        <div
-          class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-yellow-600 flex-shrink-0"
-            >45</span
-          >
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Low Balance</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-
-        <!-- Meters Offline Alert -->
-        <div
-          class="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-tachometer-alt text-blue-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-blue-600 flex-shrink-0">6</span>
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Meters Offline</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-      </div>
-    </div>
+    {% endfor %}
   </div>
 </div>
 
@@ -856,9 +574,55 @@ breadcrumb %}
         "dark:text-gray-300"
       );
     }
+    filterEstates();
   }
 
-  // Estate Details Modal
+  // Live filter estates across grid/list and alerts sections
+  function filterEstates() {
+    const q = (document.getElementById("dashboardSearch")?.value || "")
+      .toLowerCase()
+      .trim();
+    let visibleGrid = 0,
+      visibleList = 0,
+      visibleAlerts = 0;
+
+    // Grid cards
+    document.querySelectorAll("#gridView [data-estate-name]")?.forEach((el) => {
+      const name = el.getAttribute("data-estate-name") || "";
+      const show = !q || name.includes(q);
+      el.style.display = show ? "" : "none";
+      if (show) visibleGrid++;
+    });
+
+    // List rows
+    document.querySelectorAll("#listView [data-estate-name]")?.forEach((el) => {
+      const name = el.getAttribute("data-estate-name") || "";
+      const show = !q || name.includes(q);
+      el.style.display = show ? "" : "none";
+      if (show) visibleList++;
+    });
+
+    // Alerts blocks
+    document
+      .querySelectorAll("[data-estate-name][class*='mb-6']")
+      ?.forEach((el) => {
+        const name = el.getAttribute("data-estate-name") || "";
+        const show = !q || name.includes(q);
+        el.style.display = show ? "" : "none";
+        if (show) visibleAlerts++;
+      });
+
+    const currentViewIsGrid = !document
+      .getElementById("gridView")
+      .classList.contains("hidden");
+    const anyVisible = (currentViewIsGrid ? visibleGrid : visibleList) > 0;
+    const noResults = document.getElementById("noResults");
+    if (noResults) {
+      noResults.classList.toggle("hidden", anyVisible);
+    }
+  }
+
+  // Estate Details Modal (unchanged except dynamic name)
   function viewEstateDetails(estateName) {
     document.getElementById("estateName").textContent =
       estateName + " - Detailed Analytics";

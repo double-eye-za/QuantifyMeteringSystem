@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint, or_
 from ..db import db
 
 
@@ -176,3 +176,16 @@ class Unit(db.Model):
     @staticmethod
     def count_all() -> int:
         return Unit.query.count()
+
+    @staticmethod
+    def find_by_meter_id(meter_id: int):
+        """Return the unit that has the given meter_id assigned to any meter FK."""
+        if not meter_id:
+            return None
+        return Unit.query.filter(
+            or_(
+                Unit.electricity_meter_id == meter_id,
+                Unit.water_meter_id == meter_id,
+                Unit.solar_meter_id == meter_id,
+            )
+        ).first()
