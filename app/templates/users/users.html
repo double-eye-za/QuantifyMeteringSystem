@@ -1,427 +1,857 @@
 {% extends "base.html" %}
-
-{% block title %}Users - Admin System{% endblock %}
-
-{% block page_title %}User Management{% endblock %}
+{% block title %}Users{% endblock %}
+{% block page_title %}
+Manage Users
+{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
-<span class="mx-1">/</span>
-<span>Users</span>
+<nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
+  <ol class="flex items-center space-x-2">
+    <li><a href="{{ url_for('api_v1.dashboard') }}" class="hover:underline">Home</a></li>
+    <li>/</li>
+    <li class="text-gray-700 dark:text-gray-300">Users</li>
+  </ol>
+            </nav>
 {% endblock %}
 
 {% block content %}
-                <!-- Filters and Actions Bar -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <!-- Filters -->
-                        <div class="flex flex-wrap items-center gap-3">
-                            <!-- Search -->
-                            <div class="relative">
-                                <input type="text" placeholder="Search users..." class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary w-64">
-                                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
-                            </div>
-
-                            <!-- Status Filter -->
-                            <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                                <option>All Status</option>
-                                <option>Active</option>
-                                <option>Inactive</option>
-                                <option>Pending</option>
-                            </select>
-
-                            <!-- Role Filter -->
-                            <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                                <option>All Roles</option>
-                                <option>Super Administrator</option>
-                                <option>Administrator</option>
-                                <option>Standard User</option>
-                            </select>
-
-                            <!-- Clear Filters -->
-                            <button class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                                <i class="fas fa-times mr-1"></i> Clear
-                            </button>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex items-center gap-3">
-                            <button class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 text-sm transition-colors">
-                                <i class="fas fa-download mr-2"></i> Export
-                            </button>
-                            <button onclick="showInviteModal()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
-                                <i class="fas fa-user-plus mr-2"></i> Invite User
-                            </button>
+    <div class="max-w-7xl mx-auto pt-5">
+      <div class="mb-8">
+      <div class="flex items-center justify-end">
+      
+        {% if current_user.has_permission("users.create") %}
+        <button id="invite-open" type="button" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors duration-200 text-white rounded text-sm">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Create user</span>
+                        </button>
+        {% endif %}
                         </div>
                     </div>
-                </div>
 
-                <!-- Users Table -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                                <tr>
-                                    <th class="px-6 py-3 text-left">
-                                        <input type="checkbox" class="rounded border-gray-300 dark:border-gray-600">
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Role</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Last Active</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+      <div class="mb-6">
+      <form id="filters" class="mt-3 flex flex-col md:flex-row md:items-end gap-3" method="GET">
+        <div class="w-full md:flex-1 md:max-w-xl">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <input
+              name="search"
+              id="search"
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              placeholder="Search by name or email"
+              aria-label="Search by name or email"
+              value="{{ current_filters.search }}"
+            />
+          </div>
+        </div>
+        <div class="w-full md:w-auto flex items-end gap-2 md:ml-auto">
+          <div class="w-full md:w-auto">
+            <select name="status" id="status" class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-40 transition-colors duration-200" aria-label="Filter by status">
+              <option value="" {{ 'selected' if not current_filters.status else '' }}>Status: All</option>
+              <option value="active" {{ 'selected' if current_filters.status=='active' else '' }}>Status: Active</option>
+              <option value="disabled" {{ 'selected' if current_filters.status=='disabled' else '' }}>Status: Disabled</option>
+            </select>
+          </div>
+          <div class="w-full md:w-auto">
+            <select name="role_id" id="role_id" class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-48 transition-colors duration-200" aria-label="Filter by role">
+              <option value="" {{ 'selected' if not current_filters.role_id else '' }}>Role: All</option>
+              {% for role in roles %}
+              <option value="{{ role.id }}" {{ 'selected' if current_filters.role_id==role.id|string else '' }}>{{ role.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+            <i class="fa-solid fa-search mr-2"></i>
+            Search
+          </button>
+        </div>
+      </form>
+      </div>
+
+      <!-- Desktop View - Table -->
+      <div class="hidden md:block mt-4 overflow-x-auto bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-100 dark:bg-gray-700">
+            <tr>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Name</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Email</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Phone</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Role</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Status</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Created</th>
+              <th class="text-left p-3 text-gray-900 dark:text-gray-100">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <!-- User Row 1 -->
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <input type="checkbox" class="rounded border-gray-300 dark:border-gray-600">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3">
-                                                <span class="text-gray-600 dark:text-gray-300 font-medium">JA</span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">John Admin</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: USR001</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">john.admin@example.com</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400">
-                                            Super Administrator
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            {% for user in users %}
+            <tr class="odd:bg-gray-50 dark:odd:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+              <td class="p-3 text-gray-900 dark:text-gray-100">{{ user.full_name }}</td>
+              <td class="p-3 text-gray-900 dark:text-gray-100">{{ user.email }}</td>
+              <td class="p-3 text-gray-900 dark:text-gray-100">{{ user.phone or '-' }}</td>
+              <td class="p-3 text-gray-900 dark:text-gray-100">{{ user.role_name or '-' }}</td>
+              <td class="p-3">
+                <span
+                  class="px-2 py-1 rounded text-white text-xs {{ 'bg-green-600' if user.is_active else 'bg-gray-500' }}"
+                >
+                  {{ 'Active' if user.is_active else 'Disabled' }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400">
-                                            <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                            Active
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">2 hours ago</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button onclick="editUser()" class="p-1 text-gray-600 dark:text-gray-400 hover:text-primary">
-                                                <i class="fas fa-edit"></i>
+              <td class="p-3 text-gray-900 dark:text-gray-100">{{ user.created_at }}</td>
+              <td class="p-3">
+                <div class="flex gap-2">
+                  {% if current_user.has_permission("users.edit") %}
+                  <button data-user='{{user | tojson}}' class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors duration-200" title="Edit user">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i>
+                    Edit
                                             </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-error">
-                                                <i class="fas fa-trash"></i>
+                  {% endif %}
+                  {% if current_user.has_permission("users.enable") or current_user.has_permission("users.disable") %}
+                    {% if user.is_active %}
+                    <button data-user-id="{{user.id}}" data-user-data='{{user | tojson}}' class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400 transition-colors duration-200" title="Disable user">
+                      <i class="fa-solid fa-ban mr-1"></i>
+                      Disable
                                             </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-info">
-                                                <i class="fas fa-ellipsis-v"></i>
+                    {% else %}
+                    <button data-user-id="{{user.id}}" data-user-data='{{user | tojson}}' class="inline-flex items-center px-2 py-1 border border-green-300 dark:border-green-600 rounded text-xs hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 transition-colors duration-200" title="Enable user">
+                      <i class="fa-solid fa-check mr-1"></i>
+                      Enable
                                             </button>
+                    {% endif %}
+                  {% endif %}
+                  {# Delete action intentionally removed per requirements #}
                                         </div>
                                     </td>
                                 </tr>
-
-                                <!-- User Row 2 -->
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <input type="checkbox" class="rounded border-gray-300 dark:border-gray-600">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                                                <span class="text-white font-medium">SJ</span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">Sarah Johnson</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: USR002</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">sarah.j@example.com</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400">
-                                            Administrator
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400">
-                                            <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                            Active
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">1 day ago</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button onclick="editUser()" class="p-1 text-gray-600 dark:text-gray-400 hover:text-primary">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-error">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-info">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- User Row 3 -->
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <input type="checkbox" class="rounded border-gray-300 dark:border-gray-600">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                                                <span class="text-white font-medium">MC</span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">Mike Chen</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: USR003</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">mike.chen@example.com</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400">
-                                            Standard User
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400">
-                                            <i class="fas fa-clock text-yellow-400 mr-1 text-xs"></i>
-                                            Pending
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">Never</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button onclick="editUser()" class="p-1 text-gray-600 dark:text-gray-400 hover:text-primary">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-error">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-info">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- User Row 4 -->
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <input type="checkbox" class="rounded border-gray-300 dark:border-gray-600">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3">
-                                                <span class="text-white font-medium">JD</span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">Jane Doe</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: USR004</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">jane.doe@example.com</td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400">
-                                            Standard User
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400">
-                                            <i class="fas fa-circle text-red-400 mr-1 text-xs"></i>
-                                            Inactive
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">3 days ago</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <button onclick="editUser()" class="p-1 text-gray-600 dark:text-gray-400 hover:text-primary">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-error">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <button class="p-1 text-gray-600 dark:text-gray-400 hover:text-info">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                        </div>
+            {% endfor %}
+            <tr id="no-results-row" class="hidden">
+              <td colspan="7" class="p-6 text-center text-gray-500 dark:text-gray-400">
+                No results found
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- Pagination -->
-                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-700 dark:text-gray-300">
-                                Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">1,234</span> results
+      <!-- Tablet and Mobile view - Card -->
+      <div class="grid md:hidden grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+        {% for user in users %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-semibold text-gray-900 dark:text-gray-100">{{ user.full_name }}</div>
+            <span
+              class="px-2 py-0.5 rounded text-white text-xs {{ 'bg-green-600' if user.is_active else 'bg-gray-500' }}"
+            >
+              {{ 'Active' if user.is_active else 'Disabled' }}
+            </span>
+          </div>
+          <div class="text-sm text-gray-700 dark:text-gray-300">{{ user.email }}</div>
+          <div class="text-sm text-gray-700 dark:text-gray-300">{{ user.phone or '-' }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Role: {{ user.role_name or '-' }}
+          </div>
+          <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Created: {{ user.created_at }}
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                    <i class="fas fa-chevron-left"></i>
+          <div class="mt-2 flex gap-3 text-sm">
+            {% if current_user.has_permission("users.edit") %}
+            <button
+              type="button"
+              class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline"
+              data-user-mobile='{{ user | tojson }}'
+            >
+              <i class="fa-solid fa-pen-to-square mr-1"></i>
+              Edit
+            </button>
+            {% endif %}
+            {% if current_user.has_permission("users.enable") or current_user.has_permission("users.disable") %}
+              {% if user.is_active %}
+              <button
+                type="button"
+                class="inline-flex items-center text-red-700 dark:text-red-400 hover:underline"
+                data-user-id="{{user.id}}"
+                data-user-data='{{user | tojson}}'
+                title="Disable user"
+              >
+                <i class="fa-solid fa-ban mr-1"></i>
+                Disable
                                 </button>
-                                <button class="px-3 py-1 bg-primary text-white rounded-lg">1</button>
-                                <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">2</button>
-                                <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">3</button>
-                                <span class="px-2 text-gray-500">...</span>
-                                <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">124</button>
-                                <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <i class="fas fa-chevron-right"></i>
+              {% else %}
+              <button
+                type="button"
+                class="inline-flex items-center text-green-700 dark:text-green-400 hover:underline"
+                data-user-id="{{user.id}}"
+                data-user-data='{{user | tojson}}'
+                title="Enable user"
+              >
+                <i class="fa-solid fa-check mr-1"></i>
+                Enable
                                 </button>
+              {% endif %}
+            {% endif %}
+            {# Delete action intentionally removed per requirements #}
                             </div>
                         </div>
+        {% endfor %}
+        <div id="no-results-card" class="hidden col-span-full p-6 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-600">
+          No results found
                     </div>
                 </div>
-            </main>
 
-    <!-- Invite User Modal -->
-    <div id="inviteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Invite New User</h3>
+    <!-- Edit User Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl relative max-h-[90vh] overflow-hidden transition-colors duration-200">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit User Details</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Update user information and role</p>
+          </div>
+          <button id="edit-close" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200" aria-label="Close">
+            <i class="fa-solid fa-xmark text-gray-500 dark:text-gray-400"></i>
+          </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <form id="edit-form" class="space-y-6">
+            <input type="hidden" id="edit-id" />
+            
+            <!-- User Information -->
+            <div class="space-y-2">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="edit-first-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    id="edit-first-name"
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    placeholder="Enter first name"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label for="edit-last-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    id="edit-last-name"
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    placeholder="Enter last name"
+                    required
+                  />
+    </div>
+
+                <div>
+                  <label for="edit-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    id="edit-email"
+                    type="email"
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    placeholder="Enter email address"
+                    required
+                  />
             </div>
-            <div class="p-6">
-                <form class="space-y-4">
+                
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Email Address <span class="text-error">*</span>
+                  <label for="edit-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Number
                         </label>
-                        <input type="email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" placeholder="user@example.com">
+                  <input
+                    id="edit-phone"
+                    type="tel"
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    placeholder="Enter phone number"
+                  />
                     </div>
+                
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Role <span class="text-error">*</span>
+                  <label for="edit-role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Role
                         </label>
-                        <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary">
-                            <option>Select a role</option>
-                            <option>Administrator</option>
-                            <option>Standard User</option>
+                  <select 
+                    id="edit-role" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    required
+                  >
+                    {% for role in roles %}
+                    <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Message (Optional)
-                        </label>
-                        <textarea class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" rows="3" placeholder="Add a personal message..."></textarea>
+              </div>
                     </div>
                 </form>
             </div>
-            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-                <button onclick="hideInviteModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
+        
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <button 
+            id="edit-cancel" 
+            type="button" 
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
                     Cancel
                 </button>
-                <button onclick="sendInvite()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors">
-                    Send Invitation
+          <button 
+            type="submit" 
+            form="edit-form"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Save Changes
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Edit User Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit User</h3>
+    <!-- Create User Modal -->
+    <div id="invite-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl relative max-h-[90vh] overflow-hidden transition-colors duration-200">
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New User</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a new user with temporary password</p>
+          </div>
+          <button id="invite-close" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200" aria-label="Close">
+            <i class="fa-solid fa-xmark text-gray-500 dark:text-gray-400"></i>
+          </button>
             </div>
-            <div class="p-6">
-                <form class="space-y-6">
+        
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <form id="invite-form" class="space-y-6">
+            
+            <!-- Basic Information -->
+            <div class="space-y-2">
+              
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                First Name <span class="text-error">*</span>
+                  <label for="invite-username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Username
                             </label>
-                            <input type="text" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" value="John">
+                  <input 
+                    id="invite-username" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    placeholder="Enter username" 
+                    required 
+                  />
                         </div>
+                
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Last Name <span class="text-error">*</span>
+                  <label for="invite-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Address
                             </label>
-                            <input type="text" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" value="Admin">
+                  <input 
+                    id="invite-email" 
+                    type="email" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    placeholder="Enter email address" 
+                    required 
+                  />
                         </div>
+                
+                <div>
+                  <label for="invite-first-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    First Name
+                  </label>
+                  <input 
+                    id="invite-first-name" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    placeholder="Enter first name" 
+                    required 
+                  />
                     </div>
+                
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Email Address <span class="text-error">*</span>
+                  <label for="invite-last-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Last Name
                         </label>
-                        <input type="email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" value="john.admin@example.com">
+                  <input 
+                    id="invite-last-name" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    placeholder="Enter last name" 
+                    required 
+                  />
                     </div>
+                
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label for="invite-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Phone Number
                         </label>
-                        <input type="tel" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary" placeholder="+1 (555) 123-4567">
+                  <input 
+                    id="invite-phone" 
+                    type="tel" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    placeholder="Enter phone number" 
+                  />
                     </div>
+                
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Role <span class="text-error">*</span>
+                  <label for="invite-role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Role
                         </label>
-                        <select class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary">
-                            <option selected>Super Administrator</option>
-                            <option>Administrator</option>
-                            <option>Standard User</option>
+                  <select 
+                    id="invite-role" 
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    required
+                  >
+                    <option value="">Select a role</option>
+                    {% for role in roles %}
+                    <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
                         </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Temporary Password Section -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <i class="fa-solid fa-key text-green-600 dark:text-green-400 mr-2"></i>
+                Temporary Password
+              </h3>
+              
+              <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+                      Generated Password
+                    </label>
+                    <div class="relative">
+                      <input 
+                        id="temp-password" 
+                        type="password" 
+                        class="w-full px-4 py-3 pr-12 bg-white dark:bg-gray-700 border border-green-300 dark:border-green-600 rounded-lg font-mono text-sm text-gray-900 dark:text-gray-100" 
+                        readonly 
+                        placeholder="temporary123"
+                      />
+                      <button 
+                        type="button" 
+                        id="toggle-temp-password"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        <i class="fa-solid fa-eye text-green-600 hover:text-green-700"></i>
+                      </button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Status
-                        </label>
-                        <div class="flex items-center gap-4">
-                            <label class="flex items-center">
-                                <input type="radio" name="status" class="mr-2" checked>
-                                <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="status" class="mr-2">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">Inactive</span>
-                            </label>
+                    <p class="text-xs text-green-600 mt-2">
+                      <i class="fa-solid fa-info-circle mr-1"></i>
+                      Temporary password is "temporary123" or generate a secure one. 
+                    </p>
+                  </div>
+                  <div class="ml-4 flex flex-col gap-2">
+                    <button 
+                      type="button" 
+                      id="generate-password"
+                      class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                    >
+                      <i class="fa-solid fa-refresh mr-1"></i>
+                      Generate
+                    </button>
+                    <button 
+                      type="button" 
+                      id="copy-password"
+                      class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                    >
+                      <i class="fa-solid fa-copy mr-1"></i>
+                      Copy
+                    </button>
+                  </div>
+                </div>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-                <button onclick="hideEditModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
+        
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <button 
+            id="invite-cancel" 
+            type="button" 
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
                     Cancel
                 </button>
-                <button onclick="saveUser()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors">
-                    Save Changes
+          <button 
+            type="submit" 
+            form="invite-form"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Create User
                 </button>
             </div>
         </div>
+    </div>
+
+  </div>
+      <!-- Pagination -->
+      <div class="mt-4 flex items-center justify-between">
+        <div class="text-sm text-gray-600">
+          Page {{ pagination.page }} of {{ pagination.total_pages }} • {{ pagination.total
+          }} total
+        </div>
+        <div class="flex gap-1">
+          {% set prev_page = pagination.page - 1 %} {% set next_page = pagination.page + 1 %}
+          <!-- First page -->
+          <a
+            href="?page=1&per_page={{ pagination.per_page }}&search={{ current_filters.search }}&status={{ current_filters.status }}&role_id={{ current_filters.role_id }}"
+            class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page <= 1 else '' }}"
+            title="First page"
+          >
+            <i class="fa-solid fa-angles-left"></i>
+          </a>
+          <!-- Previous page -->
+          <a
+            href="?page={{ prev_page }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}&status={{ current_filters.status }}&role_id={{ current_filters.role_id }}"
+            class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page <= 1 else '' }}"
+            title="Previous page"
+          >
+            <i class="fa-solid fa-chevron-left"></i>
+          </a>
+          <!-- Next page -->
+          <a
+            href="?page={{ next_page }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}&status={{ current_filters.status }}&role_id={{ current_filters.role_id }}"
+            class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page >= pagination.total_pages else '' }}"
+            title="Next page"
+          >
+            <i class="fa-solid fa-chevron-right"></i>
+          </a>
+          <!-- Last page -->
+          <a
+            href="?page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}&search={{ current_filters.search }}&status={{ current_filters.status }}&role_id={{ current_filters.role_id }}"
+            class="px-2 py-1 border rounded hover:bg-gray-100 {{ 'pointer-events-none opacity-50' if pagination.page >= pagination.total_pages else '' }}"
+            title="Last page"
+          >
+            <i class="fa-solid fa-angles-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Action Confirmation Modal -->
+    <div id="user-confirm-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl relative transition-colors duration-200">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+              <i id="confirm-icon" class="fa-solid fa-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
+            </div>
+            <div>
+              <h2 id="confirm-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Action</h2>
+            </div>
+          </div>
+          <button
+            id="user-confirm-close"
+            class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200"
+            aria-label="Close"
+          >
+            <i class="fa-solid fa-times text-gray-500 dark:text-gray-400"></i>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <p id="confirm-message" class="text-gray-700 dark:text-gray-300 mb-4">
+            Are you sure you want to perform this action?
+          </p>
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+              <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <i class="fa-solid fa-user text-blue-600 dark:text-blue-400"></i>
+              </div>
+              <div>
+                <p id="confirm-user-name" class="font-medium text-gray-900 dark:text-gray-100">User Name</p>
+                <p id="confirm-user-email" class="text-sm text-gray-500 dark:text-gray-400">user@example.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <button
+            id="user-confirm-cancel"
+            type="button"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            id="user-confirm-action"
+            type="button"
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
     </div>
 
 {% endblock %}
 
 {% block extra_js %}
     <script>
-        // Modal Functions
-        function showInviteModal() {
-            document.getElementById('inviteModal').classList.remove('hidden');
-        }
+const BASE_URL = '/api/v1';
 
-        function hideInviteModal() {
-            document.getElementById('inviteModal').classList.add('hidden');
-        }
+// Modal management
+function showCreateModal() {
+    document.getElementById('invite-modal').classList.remove('hidden');
+    document.getElementById('invite-modal').classList.add('flex');
+}
 
-        function sendInvite() {
-            alert('Invitation sent successfully!');
-            hideInviteModal();
-        }
+function hideCreateModal() {
+    document.getElementById('invite-modal').classList.add('hidden');
+    document.getElementById('invite-modal').classList.remove('flex');
+    document.getElementById('invite-form').reset();
+}
 
-        function editUser() {
-            document.getElementById('editModal').classList.remove('hidden');
-        }
+function showEditModal() {
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-modal').classList.add('flex');
+}
 
-        function hideEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
+function hideEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+    document.getElementById('edit-modal').classList.remove('flex');
+    document.getElementById('edit-form').reset();
+}
 
-        function saveUser() {
-            alert('User updated successfully!');
+function showConfirmModal(title, message, action) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('user-confirm-modal').classList.remove('hidden');
+    document.getElementById('user-confirm-modal').classList.add('flex');
+    
+    // Store action for later execution
+    document.getElementById('user-confirm-action').onclick = action;
+}
+
+function hideConfirmModal() {
+    document.getElementById('user-confirm-modal').classList.add('hidden');
+    document.getElementById('user-confirm-modal').classList.remove('flex');
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Create modal
+    document.getElementById('invite-open').addEventListener('click', showCreateModal);
+    document.getElementById('invite-close').addEventListener('click', hideCreateModal);
+    document.getElementById('invite-cancel').addEventListener('click', hideCreateModal);
+    
+    // Edit modal
+    document.getElementById('edit-close').addEventListener('click', hideEditModal);
+    document.getElementById('edit-cancel').addEventListener('click', hideEditModal);
+    
+    // Confirm modal
+    document.getElementById('user-confirm-close').addEventListener('click', hideConfirmModal);
+    document.getElementById('user-confirm-cancel').addEventListener('click', hideConfirmModal);
+    
+    // Edit buttons
+    document.querySelectorAll('[data-user]').forEach(button => {
+        button.addEventListener('click', function() {
+            const user = JSON.parse(this.dataset.user);
+            populateEditForm(user);
+            showEditModal();
+        });
+    });
+    
+    // Enable/Disable buttons
+    document.querySelectorAll('[data-user-id]').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const user = JSON.parse(this.dataset.userData);
+            const isActive = user.is_active;
+            
+            if (isActive) {
+                showConfirmModal(
+                    'Disable User',
+                    `Are you sure you want to disable ${user.full_name}?`,
+                    () => disableUser(userId)
+                );
+            } else {
+                showConfirmModal(
+                    'Enable User',
+                    `Are you sure you want to enable ${user.full_name}?`,
+                    () => enableUser(userId)
+                );
+            }
+        });
+    });
+    
+    // Delete user action removed
+    
+    // Form submissions
+    document.getElementById('invite-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createUser();
+    });
+    
+    document.getElementById('edit-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateUser();
+    });
+    
+    // Password generation
+    document.getElementById('generate-password').addEventListener('click', function() {
+        const password = generateSecurePassword();
+        document.getElementById('temp-password').value = password;
+    });
+    
+    document.getElementById('toggle-temp-password').addEventListener('click', function() {
+        const input = document.getElementById('temp-password');
+        const icon = this.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+    
+    document.getElementById('copy-password').addEventListener('click', function() {
+        const password = document.getElementById('temp-password').value;
+        navigator.clipboard.writeText(password).then(() => {
+            // Show success feedback
+            this.innerHTML = '<i class="fa-solid fa-check mr-1"></i>Copied!';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fa-solid fa-copy mr-1"></i>Copy';
+            }, 2000);
+        });
+    });
+});
+
+function populateEditForm(user) {
+    document.getElementById('edit-id').value = user.id;
+    document.getElementById('edit-first-name').value = user.first_name;
+    document.getElementById('edit-last-name').value = user.last_name;
+    document.getElementById('edit-email').value = user.email;
+    document.getElementById('edit-phone').value = user.phone || '';
+    document.getElementById('edit-role').value = user.role_id || '';
+}
+
+async function createUser() {
+    const formData = {
+        username: document.getElementById('invite-username').value,
+        email: document.getElementById('invite-email').value,
+        first_name: document.getElementById('invite-first-name').value,
+        last_name: document.getElementById('invite-last-name').value,
+        phone: document.getElementById('invite-phone').value,
+        role_id: document.getElementById('invite-role').value,
+        password: document.getElementById('temp-password').value
+    };
+    
+    try {
+        const response = await fetch(`${BASE_URL}/api/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideCreateModal();
+            window.location.reload();
+        } else {
+            alert(result.error || 'Failed to create user');
+        }
+    } catch (error) {
+        alert('Failed to create user');
+    }
+}
+
+async function updateUser() {
+    const userId = document.getElementById('edit-id').value;
+    const formData = {
+        first_name: document.getElementById('edit-first-name').value,
+        last_name: document.getElementById('edit-last-name').value,
+        email: document.getElementById('edit-email').value,
+        phone: document.getElementById('edit-phone').value,
+        role_id: document.getElementById('edit-role').value
+    };
+    
+    try {
+        const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
             hideEditModal();
+            window.location.reload();
+        } else {
+            alert(result.error || 'Failed to update user');
         }
+    } catch (error) {
+        alert('Failed to update user');
+    }
+}
 
+async function enableUser(userId) {
+    try {
+        const response = await fetch(`${BASE_URL}/api/users/${userId}/enable`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideConfirmModal();
+            window.location.reload();
+        } else {
+            alert(result.error || 'Failed to enable user');
+        }
+    } catch (error) {
+        alert('Failed to enable user');
+    }
+}
+
+async function disableUser(userId) {
+    try {
+        const response = await fetch(`${BASE_URL}/api/users/${userId}/disable`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideConfirmModal();
+            window.location.reload();
+        } else {
+            alert(result.error || 'Failed to disable user');
+        }
+    } catch (error) {
+        alert('Failed to disable user');
+    }
+}
+
+// Delete user function removed
+
+function generateSecurePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+        }
     </script>
 {% endblock %}
