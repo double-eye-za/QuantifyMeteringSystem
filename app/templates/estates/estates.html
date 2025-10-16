@@ -185,9 +185,52 @@ block breadcrumb %}
         >
           <i class="fas fa-edit"></i>
         </button>
+        <button
+          onclick="confirmDeleteEstate(this)"
+          class="px-3 py-2 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-sm rounded-lg transition-colors"
+          title="Delete Estate"
+        >
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
     </div>
     {% endfor %}
+  </div>
+</div>
+
+<!-- Delete Estate Confirmation Modal -->
+<div
+  id="deleteEstateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4"
+>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Delete Estate
+      </h3>
+    </div>
+    <div class="p-4 text-sm text-gray-700 dark:text-gray-300">
+      Deleting this estate will also delete all units under it. This action
+      cannot be undone. Are you sure you want to proceed?
+    </div>
+    <div
+      class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2"
+    >
+      <button
+        type="button"
+        onclick="hideDeleteEstate()"
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onclick="performDeleteEstate()"
+        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+      >
+        Delete
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1396,6 +1439,35 @@ block breadcrumb %}
 
   function closeAddEstateModal() {
     document.getElementById("addEstateModal").classList.add("hidden");
+  }
+
+  function confirmDeleteEstate(buttonEl) {
+    const card = buttonEl.closest("[data-estate]");
+    const estate = JSON.parse(card.getAttribute("data-estate"));
+    const modal = document.getElementById("deleteEstateModal");
+    modal.setAttribute("data-estate-id", estate.id);
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+  function hideDeleteEstate() {
+    const modal = document.getElementById("deleteEstateModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+  async function performDeleteEstate() {
+    const modal = document.getElementById("deleteEstateModal");
+    const estateId = modal.getAttribute("data-estate-id");
+    if (!estateId) return;
+    try {
+      const res = await fetch(`/api/v1/estates/${estateId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed");
+      hideDeleteEstate();
+      window.location.reload();
+    } catch (e) {
+      alert("Failed to delete estate");
+    }
   }
 
   async function saveNewEstate(event) {

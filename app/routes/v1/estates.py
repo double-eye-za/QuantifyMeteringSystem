@@ -104,6 +104,22 @@ def delete_estate(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
+
+    from ...models import Unit
+
+    units = Unit.query.filter_by(estate_id=estate_id).all()
+    deleted_units = 0
+    for u in units:
+        u.delete()
+        deleted_units += 1
+
+    before = estate.to_dict()
     estate.delete()
-    log_action("estate.delete", entity_type="estate", entity_id=estate_id)
-    return jsonify({"message": "Deleted"}), 200
+
+    log_action(
+        "estate.delete",
+        entity_type="estate",
+        entity_id=estate_id,
+        old_values={"estate": before, "deleted_units": deleted_units},
+    )
+    return jsonify({"message": "Deleted", "deleted_units": deleted_units}), 200
