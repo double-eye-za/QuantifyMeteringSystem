@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Quantify Metering System{% endblock %}</title>
 
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          if (!saved) {
+            saved = "light";
+          }
+          if (saved === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -314,16 +330,21 @@
       const themeToggle = document.getElementById("themeToggle");
       const html = document.documentElement;
 
-      // Check for saved theme or default to light
-      const savedTheme = localStorage.getItem("theme") || "light";
-      if (savedTheme === "dark") {
-        html.classList.add("dark");
-      }
+      // Apply saved theme already done in head; ensure storage stays in sync
+      (function ensureThemeSync() {
+        try {
+          const saved = localStorage.getItem("theme");
+          if (saved === "dark") html.classList.add("dark");
+          if (saved === "light") html.classList.remove("dark");
+        } catch (e) {}
+      })();
 
       themeToggle.addEventListener("click", () => {
         html.classList.toggle("dark");
         const currentTheme = html.classList.contains("dark") ? "dark" : "light";
-        localStorage.setItem("theme", currentTheme);
+        try {
+          localStorage.setItem("theme", currentTheme);
+        } catch (e) {}
       });
 
       // Sidebar Toggle
