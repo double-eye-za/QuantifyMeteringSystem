@@ -22,6 +22,7 @@ class Resident(db.Model):
     emergency_contact_phone: Optional[str]
     lease_start_date: Optional[date]
     lease_end_date: Optional[date]
+    status: Optional[str]
     is_active: Optional[bool]
     app_user_id: Optional[str]
     created_by: Optional[int]
@@ -40,6 +41,7 @@ class Resident(db.Model):
     emergency_contact_phone = db.Column(db.String(20))
     lease_start_date = db.Column(db.Date)
     lease_end_date = db.Column(db.Date)
+    status = db.Column(db.String(20), default="active")
     is_active = db.Column(db.Boolean, default=True)
     app_user_id = db.Column(db.String(36))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -77,6 +79,11 @@ class Resident(db.Model):
 
     @staticmethod
     def create_from_payload(payload: dict, user_id: Optional[int] = None):
+        status = (payload.get("status") or "active").lower()
+        is_active = payload.get("is_active")
+        # Derive is_active from status if not explicitly provided
+        if is_active is None:
+            is_active = False if status == "vacated" else True
         r = Resident(
             id_number=payload.get("id_number"),
             first_name=payload["first_name"],
@@ -88,7 +95,8 @@ class Resident(db.Model):
             emergency_contact_phone=payload.get("emergency_contact_phone"),
             lease_start_date=payload.get("lease_start_date"),
             lease_end_date=payload.get("lease_end_date"),
-            is_active=payload.get("is_active", True),
+            status=status,
+            is_active=is_active,
             app_user_id=payload.get("app_user_id"),
             created_by=user_id,
         )
@@ -108,11 +116,17 @@ class Resident(db.Model):
             "emergency_contact_phone",
             "lease_start_date",
             "lease_end_date",
+            "status",
             "is_active",
             "app_user_id",
         ):
             if field in payload:
                 setattr(self, field, payload[field])
+        # Keep is_active aligned with status if status provided
+        if "status" in payload and "is_active" not in payload:
+            self.is_active = (
+                False if (payload.get("status") or "").lower() == "vacated" else True
+            )
         if user_id is not None:
             self.updated_by = user_id
         db.session.commit()
@@ -135,6 +149,7 @@ class Resident(db.Model):
             "lease_end_date": self.lease_end_date.isoformat()
             if self.lease_end_date
             else None,
+            "status": self.status,
             "is_active": self.is_active,
             "app_user_id": self.app_user_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
