@@ -91,7 +91,12 @@ class Unit(db.Model):
         return Unit.query.get(unit_id)
 
     @staticmethod
-    def create_from_payload(payload):
+    def create_from_payload(payload, user_id: Optional[int] = None):
+        resident_id_val = payload.get("resident_id")
+        occupancy = payload.get("occupancy_status")
+        if occupancy is None and resident_id_val:
+            occupancy = "occupied"
+
         unit = Unit(
             estate_id=payload["estate_id"],
             unit_number=payload["unit_number"],
@@ -100,18 +105,19 @@ class Unit(db.Model):
             bedrooms=payload.get("bedrooms"),
             bathrooms=payload.get("bathrooms"),
             size_sqm=payload.get("size_sqm"),
-            occupancy_status=payload.get("occupancy_status", "vacant"),
-            resident_id=payload.get("resident_id"),
+            occupancy_status=occupancy or "vacant",
+            resident_id=resident_id_val,
             electricity_meter_id=payload.get("electricity_meter_id"),
             water_meter_id=payload.get("water_meter_id"),
             solar_meter_id=payload.get("solar_meter_id"),
             is_active=payload.get("is_active", True),
+            created_by=user_id,
         )
         db.session.add(unit)
         db.session.commit()
         return unit
 
-    def update_from_payload(self, payload):
+    def update_from_payload(self, payload, user_id: Optional[int] = None):
         for field in (
             "estate_id",
             "unit_number",
@@ -129,8 +135,16 @@ class Unit(db.Model):
         ):
             if field in payload:
                 setattr(self, field, payload[field])
+        if user_id is not None:
+            self.updated_by = user_id
         db.session.commit()
         return self
+
+    def delete(self) -> None:
+        from ..db import db
+
+        db.session.delete(self)
+        db.session.commit()
 
     def to_dict(self):
         return {

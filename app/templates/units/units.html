@@ -199,10 +199,11 @@ block breadcrumb %}
             <div class="flex items-center gap-2">
               <a href="{{ url_for('api_v1.unit_details_page', unit_id=u.id) }}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>
               {% if u.occupancy_status=='vacant' %}
-                <button onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>
+                <button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>
               {% else %}
-                <button onclick="editUnit(this)" class="text-gray-600 dark:text-gray-400 hover:text-primary text-sm">Edit</button>
+                <button type="button" onclick="editUnit(this)" class="text-gray-600 dark:text-gray-400 hover:text-primary text-sm"><i class="fas fa-edit mr-1"></i>Edit</button>
               {% endif %}
+              <button type="button" onclick="confirmDeleteUnit({{ u.id }})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>
             </div>
           </td>
         </tr>
@@ -282,6 +283,21 @@ block breadcrumb %}
         </div>
     </div>
 
+
+<!-- Delete Unit Confirmation Modal -->
+<div id="deleteUnitModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Unit</h3>
+    </div>
+    <div class="p-4 text-sm text-gray-700 dark:text-gray-300">Are you sure you want to delete this unit? This action cannot be undone.</div>
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+      <button type="button" onclick="hideDeleteUnitModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+      <button type="button" onclick="performDeleteUnit()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Unit Modal (prototype structure) -->
 <div
   id="addUnitModal"
@@ -343,12 +359,12 @@ block breadcrumb %}
                 Electricity Meter (E460)
                 <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
-              <input
-                name="electricity_meter_id"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="E460-XXX"
-              />
+              <select name="electricity_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select electricity meter</option>
+                {% for m in electricity_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
                             </div>
                             <div>
               <label
@@ -358,12 +374,12 @@ block breadcrumb %}
                 Water Meter
                 <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
-              <input
-                name="water_meter_id"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="WTR-XXX"
-              />
+              <select name="water_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select water meter</option>
+                {% for m in water_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
                             </div>
                             <div>
               <label
@@ -373,22 +389,33 @@ block breadcrumb %}
                 Solar Meter (E460)
                 <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
-              <input
-                name="solar_meter_id"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="SOL-XXX"
-              />
+              <select name="solar_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select solar meter</option>
+                {% for m in solar_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
                             </div>
                         </div>
                     </div>
 
-                    <div>
-          <label
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          >
-                            Floor/Location
-                        </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Resident</label>
+            <select name="resident_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+              <option value="">Unassigned</option>
+              {% for r in residents %}
+                <option value="{{ r.id }}">{{ r.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Size (sqm)</label>
+            <input name="size_sqm" type="number" step="0.01" min="0" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="e.g., 85.50" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Floor/Location</label>
           <input
             name="floor"
             type="text"
@@ -418,13 +445,8 @@ block breadcrumb %}
     </div>
 
 <!-- Edit Unit Modal (same structure) -->
-<div
-  id="editUnitModal"
-  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
->
-  <div
-    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-  >
+<div id="editUnitModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
         Edit Unit
@@ -452,10 +474,7 @@ block breadcrumb %}
               >Estate
               <span class="text-red-600 dark:text-red-400">*</span></label
             >
-            <select
-              id="edit_unit_estate"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
+            <select id="edit_unit_estate" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
               {% for e in estates %}
                 <option value="{{ e.id }}">{{ e.name }}</option>
               {% endfor %}
@@ -476,12 +495,12 @@ block breadcrumb %}
                 Meter (E460)
                 <span class="text-red-600 dark:text-red-400">*</span></label
               >
-              <input
-                id="edit_unit_emeter"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="E460-XXX"
-              />
+              <select id="edit_unit_emeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select electricity meter</option>
+                {% for m in electricity_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
             </div>
             <div>
               <label
@@ -489,12 +508,12 @@ block breadcrumb %}
                 ><i class="fas fa-tint text-blue-500 mr-1"></i>Water Meter
                 <span class="text-red-600 dark:text-red-400">*</span></label
               >
-              <input
-                id="edit_unit_wmeter"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="WTR-XXX"
-              />
+              <select id="edit_unit_wmeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select water meter</option>
+                {% for m in water_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
             </div>
             <div>
               <label
@@ -503,14 +522,23 @@ block breadcrumb %}
                 Meter (E460)
                 <span class="text-red-600 dark:text-red-400">*</span></label
               >
-              <input
-                id="edit_unit_smeter"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="SOL-XXX"
-              />
+              <select id="edit_unit_smeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                <option value="">Select solar meter</option>
+                {% for m in solar_meters %}
+                  <option value="{{ m.id }}" {% if m.disabled %}disabled{% endif %}>{{ m.serial_number }}{% if m.disabled %} (assigned){% endif %}</option>
+                {% endfor %}
+              </select>
             </div>
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Resident</label>
+          <select id="edit_unit_resident" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            <option value="">Unassigned</option>
+            {% for r in residents %}
+              <option value="{{ r.id }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div>
           <label
@@ -526,6 +554,7 @@ block breadcrumb %}
         </div>
       </form>
     </div>
+
     <div
       class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3"
     >
@@ -719,6 +748,7 @@ block breadcrumb %}
       const editEmeter = document.getElementById("edit_unit_emeter");
       const editWmeter = document.getElementById("edit_unit_wmeter");
       const editSmeter = document.getElementById("edit_unit_smeter");
+      const editResident = document.getElementById("edit_unit_resident");
 
       if (editUnitNumber) editUnitNumber.value = unitNumber || "";
       if (editUnitFloor) editUnitFloor.value = floor || "";
@@ -731,6 +761,16 @@ block breadcrumb %}
       if (editEmeter && emeter) editEmeter.value = emeter.textContent.trim();
       if (editWmeter && wmeter) editWmeter.value = wmeter.textContent.trim();
       if (editSmeter && smeter) editSmeter.value = smeter.textContent.trim();
+      if (editResident && row.hasAttribute('data-unit')) {
+        try {
+          const udata = JSON.parse(row.getAttribute('data-unit'));
+          if (udata && udata.resident && udata.resident.id) {
+            editResident.value = String(udata.resident.id);
+          } else {
+            editResident.value = '';
+          }
+        } catch (_) { editResident.value = ''; }
+      }
     }
 
     showEditUnitModal();
@@ -795,5 +835,31 @@ block breadcrumb %}
   function assignResident() {
     alert("Assign resident modal would open here");
         }
+
+  // Delete Unit flow
+  let deleteUnitId = null;
+  window.confirmDeleteUnit = function(unitId) {
+    try {
+      deleteUnitId = unitId;
+      const modal = document.getElementById('deleteUnitModal');
+      if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    } catch (e) { console.error(e); }
+  }
+  window.hideDeleteUnitModal = function() {
+    try {
+      const modal = document.getElementById('deleteUnitModal');
+      if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    } catch (e) { console.error(e); }
+  }
+  window.performDeleteUnit = async function() {
+    try {
+      if (!deleteUnitId) return;
+      const resp = await fetch(`/api/v1/units/${deleteUnitId}`, { method: 'DELETE' });
+      if (!resp.ok) { alert('Failed to delete unit'); return; }
+      window.hideDeleteUnitModal();
+      window.location.reload();
+    } catch (e) { console.error(e); }
+  }
     </script>
 {% endblock %}
+

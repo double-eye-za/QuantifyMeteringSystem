@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from flask import jsonify, request, render_template
-from flask_login import login_required
+from flask_login import login_required, current_user
 
-from ...models import Unit, Estate, Resident
+from ...models import Unit, Estate, Resident, Meter
 from ...utils.pagination import paginate_query
 from . import api_v1
 
@@ -48,10 +48,38 @@ def units_page():
         for e in Estate.get_all().order_by(Estate.name.asc()).all()
     ]
 
+    assigned_ids = set()
+    for u in Unit.query.with_entities(
+        Unit.electricity_meter_id, Unit.water_meter_id, Unit.solar_meter_id
+    ).all():
+        for mid in u:
+            if mid:
+                assigned_ids.add(mid)
+
+    def serialize_meter(m):
+        return {
+            "id": m.id,
+            "serial_number": m.serial_number,
+            "disabled": m.id in assigned_ids,
+        }
+
+    electricity_meters = [serialize_meter(m) for m in Meter.get_electricity_meters()]
+    water_meters = [serialize_meter(m) for m in Meter.get_water_meters()]
+    solar_meters = [serialize_meter(m) for m in Meter.get_solar_meters()]
+
+    residents = [
+        {"id": r.id, "name": f"{r.first_name} {r.last_name}"}
+        for r in Resident.get_all_for_dropdown()
+    ]
+
     return render_template(
         "units/units.html",
         units=units,
         estates=estates,
+        electricity_meters=electricity_meters,
+        water_meters=water_meters,
+        solar_meters=solar_meters,
+        residents=residents,
         pagination=meta,
         current_filters={
             "estate_id": estate_id,
@@ -115,7 +143,7 @@ def get_unit(unit_id: int):
 @login_required
 def create_unit():
     payload = request.get_json(force=True) or {}
-    unit = Unit.create_from_payload(payload)
+    unit = Unit.create_from_payload(payload, user_id=getattr(current_user, "id", None))
     return jsonify({"data": unit.to_dict()}), 201
 
 
@@ -126,5 +154,15 @@ def update_unit(unit_id: int):
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
-    unit.update_from_payload(payload)
+    unit.update_from_payload(payload, user_id=getattr(current_user, "id", None))
     return jsonify({"data": unit.to_dict()})
+
+
+@api_v1.delete("/units/<int:unit_id>")
+@login_required
+def delete_unit(unit_id: int):
+    unit = Unit.get_by_id(unit_id)
+    if not unit:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+    unit.delete()
+    return jsonify({"message": "Deleted"})

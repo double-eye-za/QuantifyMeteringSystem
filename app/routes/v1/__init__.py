@@ -22,6 +22,7 @@ from . import audit_logs  # noqa: F401
 from . import profile  # noqa: F401
 from . import settings  # noqa: F401
 from . import auth  # noqa: F401
+from . import residents  # noqa: F401
 
 
 @login_manager.unauthorized_handler
