@@ -79,7 +79,7 @@ endblock %} {% block breadcrumb %}
           type="text"
           id="rateName"
           placeholder="e.g., Residential Complex 2025"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -92,7 +92,7 @@ endblock %} {% block breadcrumb %}
         <select
           id="resourceType"
           onchange="updateRateTypes()"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
         >
           <option value="">Select Resource</option>
           <option value="electricity">Electricity</option>
@@ -111,7 +111,20 @@ endblock %} {% block breadcrumb %}
         <input
           type="date"
           id="effectiveDate"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Effective To
+        </label>
+        <input
+          type="date"
+          id="effectiveTo"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -123,7 +136,7 @@ endblock %} {% block breadcrumb %}
         </label>
         <select
           id="category"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
         >
           <option>Residential</option>
           <option>Commercial</option>
@@ -143,7 +156,7 @@ endblock %} {% block breadcrumb %}
         id="description"
         rows="3"
         placeholder="Brief description of this rate table"
-        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary"
+        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
       ></textarea>
     </div>
   </div>
@@ -151,7 +164,7 @@ endblock %} {% block breadcrumb %}
   <!-- Step 2: Rate Structure Configuration -->
   <div
     id="step2Content"
-    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+    class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
   >
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       <i class="fas fa-calculator text-primary mr-2"></i>Rate Structure
@@ -739,9 +752,17 @@ endblock %} {% block breadcrumb %}
     >
       Next<i class="fas fa-arrow-right ml-2"></i>
     </button>
+    <button
+      id="createBtn"
+      class="hidden ml-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+      onclick="createRateTable()"
+    >
+      Save Rate Table
+    </button>
   </div>
 </div>
 {% endblock %} {% block extra_js %}
+<script src="/static/js/flash.js"></script>
 <script>
   let currentStep = 1;
   let tierCount = 1;
@@ -766,6 +787,7 @@ endblock %} {% block breadcrumb %}
 
       if (currentStep === 3) {
         document.getElementById("nextBtn").classList.add("hidden");
+        document.getElementById("createBtn").classList.remove("hidden");
         generatePreview();
       }
     }
@@ -793,6 +815,7 @@ endblock %} {% block breadcrumb %}
 
       if (currentStep < 3) {
         document.getElementById("nextBtn").classList.remove("hidden");
+        document.getElementById("createBtn").classList.add("hidden");
       }
     }
   }
@@ -839,8 +862,8 @@ endblock %} {% block breadcrumb %}
 
     let previewHTML = `
                 <div class="mb-4">
-                    <h3 class="font-semibold text-lg">${rateName}</h3>
-                    <p class="text-sm text-gray-600">Resource: ${
+                    <h3 class="font-semibold text-lg text-gray-900 dark:text-white">${rateName}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Resource: ${
                       resourceType.charAt(0).toUpperCase() +
                       resourceType.slice(1)
                     }</p>
@@ -852,8 +875,8 @@ endblock %} {% block breadcrumb %}
     if (document.getElementById("tieredPricing").checked) {
       previewHTML += `
                     <div class="p-3 bg-white dark:bg-gray-800 rounded">
-                        <p class="font-medium text-sm mb-2">✓ Tiered Pricing Structure</p>
-                        <p class="text-xs text-gray-600">Multiple consumption tiers configured</p>
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Tiered Pricing Structure</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Multiple consumption tiers configured</p>
                     </div>
                 `;
     }
@@ -861,8 +884,8 @@ endblock %} {% block breadcrumb %}
     if (document.getElementById("touPricing").checked) {
       previewHTML += `
                     <div class="p-3 bg-white dark:bg-gray-800 rounded">
-                        <p class="font-medium text-sm mb-2">✓ Time of Use Pricing</p>
-                        <p class="text-xs text-gray-600">Peak, Standard, and Off-Peak rates</p>
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Time of Use Pricing</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Peak, Standard, and Off-Peak rates</p>
                     </div>
                 `;
     }
@@ -872,13 +895,90 @@ endblock %} {% block breadcrumb %}
   }
 
   function saveRateTable() {
-    alert("Rate table saved successfully! Redirecting to rate tables page...");
-    window.location.href = "rate-tables-simplified.html";
+    // Deprecated
   }
 
   function previewRates() {
     generatePreview();
     alert("Preview updated in Step 3");
+  }
+
+  function collectTieredStructure() {
+    const rows = Array.from(document.getElementById("tieredRates").children);
+    if (!document.getElementById("tieredPricing").checked || rows.length === 0)
+      return null;
+    const tiers = [];
+    let currentFrom = 0;
+    rows.forEach((row, idx) => {
+      const inputs = row.querySelectorAll("input");
+      // Expected order: from(disabled for first), to, rate
+      const toVal = parseFloat(inputs[1]?.value || "0");
+      const rateVal = parseFloat(inputs[2]?.value || "0");
+      const entry = {
+        from: currentFrom,
+        to: isFinite(toVal) ? toVal : null,
+        rate: rateVal,
+      };
+      tiers.push(entry);
+      currentFrom = isFinite(toVal) ? toVal : currentFrom;
+    });
+    return { tiers };
+  }
+
+  function collectFlatStructure() {
+    if (!document.getElementById("flatPricing").checked) return null;
+    const rateInput = document.querySelector(
+      '#flatSection input[type="number"]'
+    );
+    const rate = parseFloat(rateInput?.value || "0");
+    return { flat_rate: rate };
+  }
+
+  function collectStructure() {
+    // Merge enabled models; for now support tiered + flat
+    const out = {};
+    const tiered = collectTieredStructure();
+    if (tiered) Object.assign(out, tiered);
+    const flat = collectFlatStructure();
+    if (flat) Object.assign(out, flat);
+    return out;
+  }
+
+  async function createRateTable() {
+    try {
+      const name = document.getElementById("rateName").value.trim();
+      const utility = document.getElementById("resourceType").value;
+      const effFrom = document.getElementById("effectiveDate").value;
+      const effTo = document.getElementById("effectiveTo").value;
+      const category = document.getElementById("category").value;
+      const description = document.getElementById("description").value;
+      if (!name || !utility || !effFrom) {
+        showFlashMessage("Please complete the required fields", "error");
+        return;
+      }
+      const structure = collectStructure();
+      const payload = {
+        name,
+        utility_type: utility,
+        effective_from: effFrom,
+        effective_to: effTo || null,
+        category: category,
+        description: description,
+        is_active: true,
+        rate_structure: structure,
+      };
+      const res = await fetch("/api/v1/api/rate-tables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || "Failed to create");
+      showFlashMessage("Rate table created", "success", true);
+      window.location = "/api/v1/rate-tables";
+    } catch (e) {
+      showFlashMessage(e.message || "Failed to create rate table", "error");
+    }
   }
 </script>
 {% endblock %}

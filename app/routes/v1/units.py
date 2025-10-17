@@ -3,10 +3,11 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Unit, Estate, Resident, Meter
+from ...models import Unit, Estate, Resident, Meter, RateTable, SystemSetting
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from . import api_v1
+from ...utils.rates import calculate_estate_bill
 
 
 @api_v1.route("/units", methods=["GET"])
@@ -155,6 +156,114 @@ def get_unit(unit_id: int):
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": unit.to_dict()})
+
+
+@api_v1.post("/api/units/overrides")
+@login_required
+def apply_unit_overrides():
+    """Apply a rate table override to a list of units by id or by estate+unit_numbers list."""
+    payload = request.get_json(force=True) or {}
+    rate_table_id = payload.get("rate_table_id")
+    if not rate_table_id:
+        return jsonify({"error": "rate_table_id is required"}), 400
+    rt = RateTable.get_by_id(int(rate_table_id))
+    if not rt:
+        return jsonify({"error": "Invalid rate_table_id"}), 400
+
+    unit_ids = payload.get("unit_ids") or []
+    estate_id = payload.get("estate_id")
+    unit_numbers = payload.get("unit_numbers") or []
+
+    import json
+
+    setting_key = "unit_rate_overrides"
+    setting: SystemSetting = SystemSetting.query.filter_by(
+        setting_key=setting_key
+    ).first()
+    overrides = {}
+    if setting and setting.setting_value:
+        try:
+            overrides = json.loads(setting.setting_value) or {}
+        except Exception:
+            overrides = {}
+
+    def apply_override_to_unit(unit_obj: Unit):
+        uid = str(unit_obj.id)
+        entry = overrides.get(uid) or {}
+
+        if getattr(unit_obj, "electricity_meter_id", None):
+            entry["electricity_rate_table_id"] = int(rate_table_id)
+        if getattr(unit_obj, "water_meter_id", None):
+            entry["water_rate_table_id"] = int(rate_table_id)
+        overrides[uid] = entry
+
+    updated_unit_ids = []
+    if unit_ids:
+        for uid in unit_ids:
+            u = Unit.get_by_id(int(uid))
+            if u:
+                apply_override_to_unit(u)
+                updated_unit_ids.append(u.id)
+
+    if estate_id and unit_numbers:
+        for num in unit_numbers:
+            u = Unit.query.filter_by(
+                estate_id=int(estate_id), unit_number=str(num)
+            ).first()
+            if u:
+                apply_override_to_unit(u)
+                updated_unit_ids.append(u.id)
+
+    if not updated_unit_ids:
+        return jsonify({"error": "No units matched"}), 400
+
+    # Persist overrides
+    overrides_str = json.dumps(overrides)
+    if not setting:
+        setting = SystemSetting(
+            setting_key=setting_key,
+            setting_type="json",
+            setting_value=overrides_str,
+            updated_by=getattr(current_user, "id", None),
+        )
+        from ...db import db
+
+        db.session.add(setting)
+        db.session.commit()
+    else:
+        from ...db import db
+
+        setting.setting_value = overrides_str
+        setting.updated_by = getattr(current_user, "id", None)
+        db.session.commit()
+
+    for uid in updated_unit_ids:
+        log_action(
+            "unit.rate_override.apply",
+            entity_type="unit",
+            entity_id=uid,
+            new_values={"rate_table_id": rate_table_id},
+        )
+
+    return jsonify({"data": {"updated": updated_unit_ids}})
+
+
+@api_v1.get("/api/units/overrides")
+@login_required
+def list_unit_overrides():
+    import json
+
+    setting_key = "unit_rate_overrides"
+    setting: SystemSetting = SystemSetting.query.filter_by(
+        setting_key=setting_key
+    ).first()
+    overrides = {}
+    if setting and setting.setting_value:
+        try:
+            overrides = json.loads(setting.setting_value) or {}
+        except Exception:
+            overrides = {}
+    return jsonify({"data": overrides})
 
 
 @api_v1.post("/units")

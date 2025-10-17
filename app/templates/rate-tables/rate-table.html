@@ -5,300 +5,199 @@ breadcrumb %}
 <span class="mx-1">/</span>
 <span>Rate Tables</span>
 {% endblock %} {% block content %}
-<div class="p-6">
-  <div class="flex items-center justify-between mb-6">
-    <p class="text-sm text-gray-600 dark:text-gray-400">
-      Manage base rates and assign them to estates with custom markups
-    </p>
-    <a
-      href="{{ url_for('api_v1.rate_table_builder_page') }}"
-      class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700"
-    >
-      <i class="fas fa-plus mr-2"></i>New Rate Table
-    </a>
-  </div>
-  <!-- Available Rate Tables -->
-  <!-- Available Rate Tables -->
-  <div class="mb-8">
+<div class="flex items-center justify-between mb-6">
+  <p class="text-sm text-gray-600 dark:text-gray-400">
+    Manage base rates and assign them to estates with custom markups
+  </p>
+  <a
+    href="{{ url_for('api_v1.rate_table_builder_page') }}"
+    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700"
+  >
+                            <i class="fas fa-plus mr-2"></i>New Rate Table
+                        </a>
+                    </div>
+  <!-- Available Rate Tables (dynamic) -->
+                <div class="mb-8">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Available Rate Tables
     </h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {% for rt in rate_tables %}
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-2">
+                                <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ rt.name }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Utility: {{ rt.utility_type|capitalize }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+            <span class="px-2 py-1 text-xs rounded-full {{ 'bg-green-100 text-green-800' if rt.is_active else 'bg-gray-100 text-gray-700' }}">{{ 'Active' if rt.is_active else 'Inactive' }}</span>
+            <button title="Edit" onclick="gotoEditRateTable({{ rt.id }})" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300"><i class="fas fa-pen"></i></button>
+            <button title="Delete" onclick="openDeleteRateTable({{ rt.id }}, '{{ rt.name|escape }}')" class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+          Effective: {{ rt.effective_from }}{% if rt.effective_to %} - {{ rt.effective_to }}{% endif %}
+                                </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Standard Residential Rate Table -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="font-semibold text-gray-900 dark:text-white">
-              Standard Residential
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Base rates for residential units
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span
-              class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
-              >Active</span
-            >
-            <button class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-edit"></i>
-            </button>
-          </div>
-        </div>
+        {% set tiers = rate_table_tiers.get(rt.id) %}
+        {% if tiers and tiers|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Tiers</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+              <div class="px-3 py-2">Description</div>
+                                        </div>
+            {% for t in tiers %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from }}{% if t.to %}–{{ t.to }}{% else %}+{% endif %}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ '%.2f'|format(t.rate) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% else %}
+        {# Fallback: render tiers/energy rates from inline rate_structure if present #}
+        {% set rs = rt.rate_structure or {} %}
+        {% if rs.tiers and rs.tiers|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Tiers</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+              <div class="px-3 py-2">Description</div>
+                                </div>
+            {% for t in rs.tiers %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from or t.from_kwh }}{% if t.to or t.to_kwh %}–{{ t.to or t.to_kwh }}{% else %}+{% endif %}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ t.currency or 'R' }} {{ '%.2f'|format(t.rate or t.rate_per_kwh) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
+                            </div>
+            {% endfor %}
+                            </div>
+                        </div>
+        {% elif rs.energy_rates and rs.energy_rates|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Energy Rates</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Tier</div>
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate (Incl. VAT)</div>
+                                </div>
+            {% for r in rs.energy_rates %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ r.tier or r.name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ r.range or r.from_to or '-' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ r.currency or 'R' }} {{ '%.2f'|format(r.incl_vat or r.rate) }}</div>
+                                </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
+        {% endif %}
 
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Electricity Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity (per
-              kWh)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-150:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 1.15</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">151-350:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 1.60</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">351-600:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 2.10</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">601+:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 2.40</span
-                >
-              </div>
-            </div>
-          </div>
+        {% set tou = time_of_use_rates.get(rt.id) %}
+        {% if tou and tou|length %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-clock text-blue-500 mr-1"></i>Time-of-Use</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-4 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Period</div>
+              <div class="px-3 py-2">Hours</div>
+              <div class="px-3 py-2">Days</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+                                        </div>
+            {% for p in tou %}
+            <div class="grid grid-cols-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.start_time }}–{{ p.end_time }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ 'Weekdays' if p.weekdays else '' }}{{ ' / ' if p.weekdays and p.weekends else '' }}{{ 'Weekends' if p.weekends else '' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ '%.2f'|format(p.rate) }}</div>
+                                        </div>
+            {% endfor %}
+                                    </div>
+                                </div>
+        {% else %}
+        {% if rs and rs.time_of_use and rs.time_of_use|length %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-clock text-blue-500 mr-1"></i>Time-of-Use</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-4 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Period</div>
+              <div class="px-3 py-2">Hours</div>
+              <div class="px-3 py-2">Days</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+                            </div>
+            {% for p in rs.time_of_use %}
+            <div class="grid grid-cols-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.hours or (p.start_time ~ '–' ~ p.end_time) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.days or '-' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ p.currency or 'R' }} {{ '%.2f'|format(p.rate or p.rate_per_kwh) }}</div>
+                            </div>
+            {% endfor %}
+                                </div>
+                            </div>
+        {% endif %}
+        {% endif %}
 
-          <!-- Water Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-tint text-blue-500 mr-1"></i>Water (per kL)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-6:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 10.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">7-15:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 15.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">16-30:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 20.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">31+:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 25.00</span
-                >
-              </div>
-            </div>
-          </div>
-        </div>
+        {# Fixed/Additional charges from rate_structure if present #}
+        {% if rs and rs.fixed_charges and rs.fixed_charges|length %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-plug text-indigo-400 mr-1"></i>Fixed Charges</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Charge Type</div>
+              <div class="px-3 py-2 text-right">Amount (Incl. VAT)</div>
+                                        </div>
+            {% for c in rs.fixed_charges %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ '%.2f'|format(c.incl_vat or c.amount) }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
 
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Used by: 3 estates (Willow Creek, Parkview Gardens, Sunset Ridge)
-          </p>
-        </div>
-      </div>
+        {% if rs and rs.additional_charges and rs.additional_charges|length %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-receipt text-sky-400 mr-1"></i>Additional Charges</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Charge Type</div>
+              <div class="px-3 py-2 text-right">Excl. VAT</div>
+              <div class="px-3 py-2 text-right">Incl. VAT</div>
+                                        </div>
+            {% for c in rs.additional_charges %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.excl_vat is not none and ('%.2f'|format(c.excl_vat)) or 'TBC' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.incl_vat is not none and ('%.2f'|format(c.incl_vat)) or 'TBC' }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
+                                </div>
+      {% endfor %}
+                    </div>
+                </div>
 
-      <!-- Pensioner Rate Table -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="font-semibold text-gray-900 dark:text-white">
-              Pensioner Subsidized
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Discounted rates for pensioners
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span
-              class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full"
-              >-40%</span
-            >
-            <button class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-edit"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Electricity Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity (per
-              kWh)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-100:</span>
-                <span class="font-medium text-green-600">R 0.70</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">101+:</span>
-                <span class="font-medium text-green-600">R 1.00</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Water Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-tint text-blue-500 mr-1"></i>Water (per kL)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-10:</span>
-                <span class="font-medium text-green-600">R 7.00</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">11+:</span>
-                <span class="font-medium text-green-600">R 12.00</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Used for individual unit overrides
-          </p>
-        </div>
-      </div>
-
-      <!-- Commercial Standard Rate Table -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="font-semibold text-gray-900 dark:text-white">
-              Commercial Standard
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Standard rates for commercial tenants
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span
-              class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full"
-              >Commercial</span
-            >
-            <button class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-edit"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Electricity Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity (per
-              kWh)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-200:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 2.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">201-1000:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 2.60</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">1001+:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 3.20</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Water Rates -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <p
-              class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <i class="fas fa-tint text-blue-500 mr-1"></i>Water (per kL)
-            </p>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">0-30:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 18.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">31-100:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 22.00</span
-                >
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-400">101+:</span>
-                <span class="font-medium text-gray-900 dark:text-white"
-                  >R 28.00</span
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Used by: 1 estate (example)
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Estate Assignments -->
-  <div>
+                <!-- Estate Assignments -->
+                <div>
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Estate Rate Assignments
     </h2>
-
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-      <table class="w-full">
-        <thead class="bg-gray-50 dark:bg-gray-700">
-          <tr>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
             <th
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
             >
@@ -334,394 +233,496 @@ breadcrumb %}
             >
               Actions
             </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <!-- Willow Creek -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-6 py-4">
-              <div>
-                <p class="font-medium text-gray-900 dark:text-white">
-                  Willow Creek
-                </p>
-                <p class="text-xs text-gray-500">50 units</p>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <select
-                class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option selected>Standard Residential</option>
-                <option>Pensioner Subsidized</option>
-                <option>Commercial Standard</option>
-              </select>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="20"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="15"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="50"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">kWh</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <span class="text-sm text-gray-500">R</span>
-                <input
-                  type="number"
-                  value="150"
-                  class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <button
-                class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </td>
-          </tr>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for e in estates %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td class="px-6 py-4">
+                                        <div>
+                <p class="font-medium text-gray-900 dark:text-white">{{ e.name }}</p>
+                <p class="text-xs text-gray-500">Code: {{ e.code }}</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Electricity</label>
+                  <select id="elec_rate_{{ e.id }}" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select --</option>
+                    {% for rt in electricity_rate_tables %}
+                    <option value="{{ rt.id }}" {{ 'selected' if e.electricity_rate_table_id == rt.id else '' }}>{{ rt.name }}</option>
+                    {% endfor %}
+                                        </select>
+                                        </div>
+                                        <div>
+                  <label class="block text-xs text-gray-500 mb-1">Water</label>
+                  <select id="water_rate_{{ e.id }}" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select --</option>
+                    {% for rt in water_rate_tables %}
+                    <option value="{{ rt.id }}" {{ 'selected' if e.water_rate_table_id == rt.id else '' }}>{{ rt.name }}</option>
+                    {% endfor %}
+                                        </select>
+                                        </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="elec_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.electricity_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="water_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.water_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="solar_free_{{ e.id }}" type="number" step="0.01" value="{{ e.solar_free_allocation_kwh or 0 }}" class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">kWh</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+              <button onclick="saveEstateAssignment({{ e.id }})" class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-blue-700">Save</button>
+                                    </td>
+                                </tr>
+          {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-          <!-- Parkview Gardens -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-6 py-4">
-              <div>
-                <p class="font-medium text-gray-900 dark:text-white">
-                  Parkview Gardens
-                </p>
-                <p class="text-xs text-gray-500">50 units</p>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <select
-                class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option selected>Standard Residential</option>
-                <option>Pensioner Subsidized</option>
-                <option>Commercial Standard</option>
-              </select>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="20"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="15"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="50"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">kWh</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <span class="text-sm text-gray-500">R</span>
-                <input
-                  type="number"
-                  value="150"
-                  class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <button
-                class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </td>
-          </tr>
-
-          <!-- Sunset Ridge -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-6 py-4">
-              <div>
-                <p class="font-medium text-gray-900 dark:text-white">
-                  Sunset Ridge
-                </p>
-                <p class="text-xs text-gray-500">75 units</p>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <select
-                class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option selected>Standard Residential</option>
-                <option>Pensioner Subsidized</option>
-                <option>Commercial Standard</option>
-              </select>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="20"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="15"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">%</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <input
-                  type="number"
-                  value="50"
-                  class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <span class="text-sm text-gray-500">kWh</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-1">
-                <span class="text-sm text-gray-500">R</span>
-                <input
-                  type="number"
-                  value="150"
-                  class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <button
-                class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </td>
-          </tr>
-
-          <!-- Add New Estate Assignment -->
-          <tr class="bg-gray-50 dark:bg-gray-700/50">
-            <td class="px-6 py-4" colspan="7">
-              <button
-                class="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary"
-              >
-                <i class="fas fa-plus mr-2"></i>Add Estate Assignment
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Individual Unit Overrides -->
-  <div class="mt-8">
+                <!-- Individual Unit Overrides -->
+                <div class="mt-8">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Individual Unit Overrides
     </h2>
-
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <div class="mb-4">
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <div class="mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
           Override estate rates for specific units (e.g., pensioners, commercial
           units)
         </p>
-
-        <div class="flex gap-4">
-          <select
+                            
+                            <div class="flex gap-4">
+          <select id="overrideEstate"
             class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           >
-            <option>Select Estate</option>
-            <option>Willow Creek</option>
-            <option>Parkview Gardens</option>
-            <option>Sunset Ridge</option>
+            <option value="">Select Estate</option>
+            {% for e in estates %}
+            <option value="{{ e.id }}">{{ e.name }}</option>
+            {% endfor %}
+                                </select>
+                                
+          <select id="overrideUnitId"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">Select Unit</option>
           </select>
 
-          <input
-            type="text"
-            placeholder="Unit numbers (e.g., A-101, B-203)"
-            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
-          />
-
-          <select
+          <select id="overrideRateTable"
             class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           >
-            <option>Select Rate Table</option>
-            <option>Pensioner Subsidized</option>
-            <option>Commercial Standard</option>
-          </select>
-
-          <button
-            class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-green-700 text-sm"
+            <option value="">Select Rate Table</option>
+            {% for rt in rate_tables %}
+            <option value="{{ rt.id }}">{{ rt.name }}</option>
+            {% endfor %}
+                                </select>
+                                
+          <button id="applyOverrideBtn"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 text-sm"
           >
-            Apply Override
-          </button>
-        </div>
-      </div>
+                                    Apply Override
+                                </button>
+                            </div>
+                        </div>
 
-      <!-- Current Overrides -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <!-- Current Overrides -->
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Current Overrides
         </p>
-        <div class="space-y-2">
-          <div
-            class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
-          >
-            <div class="flex items-center gap-4">
-              <span class="text-sm font-medium text-gray-900 dark:text-white"
-                >Willow Creek - Unit A-101</span
-              >
-              <span
-                class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 text-xs rounded-full"
-                >Pensioner Subsidized</span
-              >
-            </div>
-            <button class="text-red-500 hover:text-red-700">
-              <i class="fas fa-trash text-sm"></i>
-            </button>
-          </div>
-          <div
-            class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
-          >
-            <div class="flex items-center gap-4">
-              <span class="text-sm font-medium text-gray-900 dark:text-white"
-                >Parkview Gardens - Shop 1</span
-              >
-              <span
-                class="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-xs rounded-full"
-                >Commercial Standard</span
-              >
-            </div>
-            <button class="text-red-500 hover:text-red-700">
-              <i class="fas fa-trash text-sm"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div id="currentOverrides" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Rate Preview Calculator -->
-  <div class="mt-8">
+                <!-- Rate Preview Calculator -->
+                <div class="mt-8">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Rate Preview Calculator
     </h2>
-
+                    
     <div
       class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6"
     >
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <select
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <select id="previewEstate"
           class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
-          <option>Willow Creek - Standard Residential</option>
-          <option>Parkview Gardens - Standard Residential</option>
-          <option>Sunset Ridge - Standard Residential</option>
-        </select>
-
-        <div class="flex items-center gap-2">
-          <input
+          <option value="">Select Estate</option>
+          {% for e in estates %}
+          <option value="{{ e.id }}">{{ e.name }}</option>
+          {% endfor %}
+                            </select>
+                            
+                            <div class="flex items-center gap-2">
+          <input id="previewKwh"
             type="number"
             value="250"
             class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          <span class="text-sm">kWh</span>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <input
+                                <span class="text-sm">kWh</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+          <input id="previewKl"
             type="number"
             value="12"
             class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          <span class="text-sm">kL</span>
-        </div>
-      </div>
+                                <span class="text-sm">kL</span>
+                            </div>
+                        </div>
+      <div class="mb-3">
+        <button id="previewCalcBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm">Preview</button>
+                        </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
             Electricity Cost
           </p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">
-            R 480.00
-          </p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewElecTotal">R 0.00</p>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             Incl. 20% markup + VAT
           </p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
             Water Cost
           </p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">
-            R 207.00
-          </p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewWaterTotal">R 0.00</p>
           <p class="text-xs text-gray-600 dark:text-gray-400">
             Incl. 15% markup + VAT
           </p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
             Service Fee
           </p>
-          <p class="text-lg font-bold text-gray-900 dark:text-white">
-            R 150.00
-          </p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">Monthly fixed</p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewServiceFee">R 0.00</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Monthly fixed</p>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
             Total Bill
           </p>
-          <p class="text-lg font-bold text-primary">R 837.00</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">For this month</p>
-        </div>
+          <p class="text-lg font-bold text-primary" id="previewTotal">R 0.00</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">For this month</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Delete Rate Table Modal -->
+<div id="deleteRateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+    <div class="flex items-center mb-4">
+      <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
       </div>
     </div>
-  </div>
-</div>
+    <div class="text-center">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Rate Table</h3>
+      <p id="deleteRateText" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        Are you sure you want to delete this rate table? This action cannot be undone.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="hideDeleteRateTable()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
+          Delete
+        </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="../../static/js/flash.js"></script>
+    <script>
+  async function saveEstateAssignment(estateId) {
+    const body = {
+      electricity_rate_table_id: document.getElementById(`elec_rate_${estateId}`).value || null,
+      water_rate_table_id: document.getElementById(`water_rate_${estateId}`).value || null,
+      electricity_markup_percentage: parseFloat(document.getElementById(`elec_markup_${estateId}`).value || '0'),
+      water_markup_percentage: parseFloat(document.getElementById(`water_markup_${estateId}`).value || '0'),
+      solar_free_allocation_kwh: parseFloat(document.getElementById(`solar_free_${estateId}`).value || '0'),
+    };
+    try {
+      const res = await fetch(`/api/v1/api/estates/${estateId}/rate-assignment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showFlashMessage('Estate rate assignment saved', 'success');
+      } else {
+        showFlashMessage(result.error || 'Failed to save assignment', 'error');
+      }
+    } catch (e) {
+      showFlashMessage('Network error while saving assignment', 'error');
+    }
+  }
+
+  // Rate Preview Calculator wiring
+  async function previewRates() {
+    const estateSelect = document.querySelector('#previewEstate');
+    const elecInput = document.querySelector('#previewKwh');
+    const waterInput = document.querySelector('#previewKl');
+    try {
+      const estateId = estateSelect ? (estateSelect.value || null) : null;
+      let elecRtId = null, waterRtId = null, elecMarkup = 0, waterMarkup = 0, fee = 0;
+      if (estateId) {
+        const res = await fetch(`/api/v1/estates/${estateId}`);
+        const js = await res.json();
+        if (res.ok && js.data) {
+          const e = js.data;
+          elecRtId = e.electricity_rate_table_id || null;
+          waterRtId = e.water_rate_table_id || null;
+          elecMarkup = e.electricity_markup_percentage || 0;
+          waterMarkup = e.water_markup_percentage || 0;
+          fee = 0; // optionally fetch a service fee system setting
+        }
+      }
+      const payload = {
+        electricity_kwh: parseFloat(elecInput ? (elecInput.value || '0') : '0'),
+        water_kl: parseFloat(waterInput ? (waterInput.value || '0') : '0'),
+        electricity_rate_table_id: elecRtId,
+        water_rate_table_id: waterRtId,
+        electricity_markup_percentage: elecMarkup,
+        water_markup_percentage: waterMarkup,
+        service_fee: fee,
+      };
+      const resp = await fetch('/api/v1/api/rate-tables/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      let out = await resp.json();
+      if (resp.status === 404) {
+        const resp2 = await fetch('/api/v1/rate-tables/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        out = await resp2.json();
+        if (!resp2.ok) throw new Error(out.error || 'Failed preview');
+        resp.ok = resp2.ok; // normalize
+      }
+      if (!resp.ok) throw new Error(out.error || 'Failed preview');
+      const d = out.data || {};
+      const elecEl = document.querySelector('#previewElecTotal');
+      const waterEl = document.querySelector('#previewWaterTotal');
+      const feeEl = document.querySelector('#previewServiceFee');
+      const totalEl = document.querySelector('#previewTotal');
+      if (elecEl) elecEl.textContent = `R ${Number(d.electricity_total || 0).toFixed(2)}`;
+      if (waterEl) waterEl.textContent = `R ${Number(d.water_total || 0).toFixed(2)}`;
+      if (feeEl) feeEl.textContent = `R ${Number(d.service_fee || 0).toFixed(2)}`;
+      if (totalEl) totalEl.textContent = `R ${Number(d.total || 0).toFixed(2)}`;
+    } catch (err) {
+      showFlashMessage('Failed to preview rates', 'error');
+    }
+  }
+
+  // Unit Overrides wiring
+  async function applyUnitOverrides() {
+    const estateSelect = document.querySelector('#overrideEstate');
+    const unitSelect = document.querySelector('#overrideUnitId');
+    const rateSelect = document.querySelector('#overrideRateTable');
+    const payload = {
+      estate_id: estateSelect ? (estateSelect.value || null) : null,
+      unit_ids: unitSelect && unitSelect.value ? [parseInt(unitSelect.value, 10)] : [],
+      rate_table_id: rateSelect ? (rateSelect.value || null) : null,
+    };
+    try {
+      const res = await fetch('/api/v1/api/units/overrides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showFlashMessage('Override applied', 'success');
+        await refreshOverrides();
+      } else {
+        showFlashMessage(result.error || 'Failed to apply override', 'error');
+      }
+    } catch (e) {
+      showFlashMessage('Network error while applying override', 'error');
+    }
+  }
+
+  async function refreshOverrides() {
+    try {
+      const res = await fetch('/api/v1/api/units/overrides');
+      const js = await res.json();
+      const data = js.data || {};
+      const container = document.querySelector('#currentOverrides');
+      if (!container) return;
+      container.innerHTML = '';
+      const entries = Object.entries(data);
+      if (!entries.length) {
+        container.innerHTML = '<p class="text-xs text-gray-500">No overrides found</p>';
+        return;
+      }
+      for (const [unitId, entry] of entries) {
+        const label = `Unit ${unitId}`;
+        const rtTags = [
+          entry.electricity_rate_table_id ? `<span class=\"px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs rounded-full\">Elec: #${entry.electricity_rate_table_id}</span>` : '',
+          entry.water_rate_table_id ? `<span class=\"px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded-full\">Water: #${entry.water_rate_table_id}</span>` : ''
+        ].filter(Boolean).join(' ');
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded';
+        row.innerHTML = `<div class=\"flex items-center gap-4\"><span class=\"text-sm font-medium text-gray-900 dark:text-white\">${label}</span>${rtTags}</div>`;
+        container.appendChild(row);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  async function openEditRateTable(id) {
+    try {
+      const res = await fetch(`/api/v1/api/rate-tables/${id}/details`);
+      const js = await res.json();
+      if (!res.ok) throw new Error(js.error || 'Failed to fetch');
+      const d = js.data || {};
+      document.getElementById('editRateId').value = d.id;
+      document.getElementById('editRateName').value = d.name || '';
+      document.getElementById('editRateUtility').value = d.utility_type || 'electricity';
+      document.getElementById('editRateFrom').value = (d.effective_from || '').substring(0,10);
+      document.getElementById('editRateTo').value = (d.effective_to || '').substring(0,10);
+      document.getElementById('editRateActive').checked = !!d.is_active;
+      const tiers = d.tiers && d.tiers.length ? { tiers: d.tiers } : (d.rate_structure || {});
+      document.getElementById('editRateTiers').value = JSON.stringify(tiers, null, 2);
+      const modal = document.getElementById('editRateModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    } catch (e) {
+      showFlashMessage(e.message || 'Failed to load rate table', 'error');
+    }
+  }
+
+  function hideEditRateModal() {
+    const modal = document.getElementById('editRateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  document.getElementById('editRateForm')?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const id = document.getElementById('editRateId').value;
+    try {
+      const payload = {
+        name: document.getElementById('editRateName').value,
+        utility_type: document.getElementById('editRateUtility').value,
+        effective_from: document.getElementById('editRateFrom').value || null,
+        effective_to: document.getElementById('editRateTo').value || null,
+        is_active: document.getElementById('editRateActive').checked,
+        rate_structure: JSON.parse(document.getElementById('editRateTiers').value || '{}')
+      };
+      const resp = await fetch(`/api/v1/api/rate-tables/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const out = await resp.json();
+      if (!resp.ok) throw new Error(out.error || 'Save failed');
+      showFlashMessage('Rate table saved', 'success');
+      hideEditRateModal();
+      location.reload();
+    } catch (e) {
+      showFlashMessage(e.message || 'Failed to save rate table', 'error');
+    }
+  });
+
+  function gotoEditRateTable(id) {
+    window.location = `/api/v1/rate-tables/${id}/edit`;
+  }
+
+  function openDeleteRateTable(id, name) {
+    const modal = document.getElementById('deleteRateModal');
+    document.getElementById('deleteRateText').textContent = `Are you sure you want to delete "${name}"? This cannot be undone.`;
+    modal.dataset.id = id;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function hideDeleteRateTable() {
+    const modal = document.getElementById('deleteRateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    delete modal.dataset.id;
+  }
+
+  document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+    const modal = document.getElementById('deleteRateModal');
+    const id = modal.dataset.id;
+    if (!id) return;
+    try {
+      const resp = await fetch(`/api/v1/api/rate-tables/${id}`, { method: 'DELETE' });
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.error || 'Delete failed');
+      showFlashMessage('Rate table deleted', 'success');
+      hideDeleteRateTable();
+      location.reload();
+    } catch (e) {
+      showFlashMessage(e.message || 'Failed to delete rate table', 'error');
+    }
+  });
+
+  // Attach events if the elements exist
+  document.addEventListener('DOMContentLoaded', () => {
+    const calcBtn = document.querySelector('#previewCalcBtn');
+    if (calcBtn) calcBtn.addEventListener('click', previewRates);
+    const applyBtn = document.querySelector('#applyOverrideBtn');
+    if (applyBtn) applyBtn.addEventListener('click', applyUnitOverrides);
+    const estateSel = document.querySelector('#overrideEstate');
+    if (estateSel) {
+      estateSel.addEventListener('change', async (e) => {
+        const estId = e.target.value;
+        const unitSel = document.querySelector('#overrideUnitId');
+        if (!unitSel) return;
+        unitSel.innerHTML = '<option value="">Loading units...</option>';
+        if (!estId) {
+          unitSel.innerHTML = '<option value="">Select Unit</option>';
+          return;
+        }
+        try {
+          const res = await fetch(`/api/v1/api/units?estate_id=${encodeURIComponent(estId)}`);
+          const js = await res.json();
+          const items = (js.data || []);
+          unitSel.innerHTML = '<option value="">Select Unit</option>';
+          for (const u of items) {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.unit_number || `Unit ${u.id}`;
+            unitSel.appendChild(opt);
+          }
+        } catch (err) {
+          unitSel.innerHTML = '<option value="">Select Unit</option>';
+        }
+      });
+    }
+    refreshOverrides();
+  });
+    </script>
 {% endblock %}
