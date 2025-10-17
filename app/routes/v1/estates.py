@@ -66,6 +66,42 @@ def get_estate(estate_id: int):
     return jsonify({"data": estate.to_dict()})
 
 
+@api_v1.patch("/api/estates/<int:estate_id>/rate-assignment")
+@login_required
+def update_estate_rate_assignment(estate_id: int):
+    estate = Estate.get_by_id(estate_id)
+    if not estate:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    payload = request.get_json(force=True) or {}
+    before = estate.to_dict()
+
+    updatable = (
+        "electricity_rate_table_id",
+        "water_rate_table_id",
+        "electricity_markup_percentage",
+        "water_markup_percentage",
+        "solar_free_allocation_kwh",
+    )
+    for f in updatable:
+        if f in payload:
+            setattr(estate, f, payload[f])
+
+    from ...db import db
+
+    estate.updated_by = getattr(current_user, "id", None)
+    db.session.commit()
+
+    log_action(
+        "estate.rate_assignment.update",
+        entity_type="estate",
+        entity_id=estate.id,
+        old_values=before,
+        new_values=payload,
+    )
+    return jsonify({"data": estate.to_dict()})
+
+
 @api_v1.post("/estates")
 @login_required
 def create_estate():
@@ -104,22 +140,6 @@ def delete_estate(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
-
-    from ...models import Unit
-
-    units = Unit.query.filter_by(estate_id=estate_id).all()
-    deleted_units = 0
-    for u in units:
-        u.delete()
-        deleted_units += 1
-
-    before = estate.to_dict()
     estate.delete()
-
-    log_action(
-        "estate.delete",
-        entity_type="estate",
-        entity_id=estate_id,
-        old_values={"estate": before, "deleted_units": deleted_units},
-    )
-    return jsonify({"message": "Deleted", "deleted_units": deleted_units}), 200
+    log_action("estate.delete", entity_type="estate", entity_id=estate_id)
+    return jsonify({"message": "Deleted"}), 200
