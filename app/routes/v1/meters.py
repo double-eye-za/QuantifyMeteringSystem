@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from flask import jsonify, request, render_template
+import io
+from flask import jsonify, request, render_template, Response
 from flask_login import login_required, current_user
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Resident
 from ...utils.pagination import paginate_query, parse_pagination_params
@@ -418,3 +424,177 @@ def meter_readings(meter_id: int):
     query = MeterReading.list_for_meter(meter_id, start=start_dt, end=end_dt)
     items, meta = paginate_query(query)
     return jsonify({"data": [r.to_dict() for r in items], **meta})
+
+
+@api_v1.route("/meters/export", methods=["GET"])
+@login_required
+def export_meters_pdf():
+    """Export meters data to PDF"""
+    try:
+        meter_type = request.args.get("meter_type") or None
+        comm_status = request.args.get("communication_status") or None
+        estate_id = request.args.get("estate_id", type=int) or None
+        credit_status = request.args.get("credit_status") or None
+
+        query = Meter.query
+        if meter_type:
+            query = query.filter(Meter.meter_type == meter_type)
+        if comm_status:
+            query = query.filter(Meter.communication_status == comm_status)
+        if estate_id:
+            query = query.join(Unit).filter(Unit.estate_id == estate_id)
+        if credit_status:
+            if credit_status == "low":
+                query = query.join(Unit).join(Wallet).filter(Wallet.balance < 50)
+            elif credit_status == "sufficient":
+                query = query.join(Unit).join(Wallet).filter(Wallet.balance >= 50)
+
+        meters = query.all()
+
+        # Create PDF buffer
+        buffer = io.BytesIO()
+
+        # Create PDF document
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = ParagraphStyle(
+            "CustomTitle",
+            parent=styles["Heading1"],
+            fontSize=18,
+            spaceAfter=30,
+            alignment=1,  # Center alignment
+        )
+        title = Paragraph("Meters Report", title_style)
+        story.append(title)
+
+        # Report info
+        info_style = ParagraphStyle(
+            "Info", parent=styles["Normal"], fontSize=10, spaceAfter=20, alignment=1
+        )
+        report_date = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+        info_text = f"Generated on {report_date}<br/>Total Meters: {len(meters)}"
+        info = Paragraph(info_text, info_style)
+        story.append(info)
+        story.append(Spacer(1, 20))
+
+        # Create table data
+        table_data = [
+            [
+                "Serial Number",
+                "Type",
+                "Status",
+                "Unit/Location",
+                "Estate",
+                "Credit Balance",
+                "Last Reading",
+            ]
+        ]
+
+        for meter in meters:
+            # Get unit and estate info
+            unit = Unit.find_by_meter_id(meter.id)
+            estate_name = ""
+            unit_location = ""
+
+            if unit:
+                estate = Estate.get_by_id(unit.estate_id)
+                estate_name = estate.name if estate else ""
+                unit_location = (
+                    f"{unit.unit_number}" if unit.unit_number else f"Unit {unit.id}"
+                )
+
+            # Get wallet balance
+            wallet = Wallet.query.filter_by(unit_id=unit.id).first() if unit else None
+            if wallet:
+                if meter.meter_type == "electricity":
+                    balance = f"R {wallet.electricity_balance:.2f}"
+                elif meter.meter_type == "water":
+                    balance = f"R {wallet.water_balance:.2f}"
+                elif meter.meter_type == "solar":
+                    balance = f"R {wallet.solar_balance:.2f}"
+                else:
+                    balance = f"R {wallet.balance:.2f}"
+            else:
+                balance = "N/A"
+
+            # Get last reading
+            readings_query = MeterReading.list_for_meter(meter.id)
+            last_reading = (
+                readings_query.first()
+            )  # First item is latest due to desc order
+            last_reading_text = (
+                last_reading.reading_date.strftime("%Y-%m-%d")
+                if last_reading
+                else "No readings"
+            )
+
+            # Status
+            status = "Active" if meter.is_active else "Inactive"
+
+            table_data.append(
+                [
+                    meter.serial_number,
+                    meter.meter_type.replace("_", " ").title(),
+                    status,
+                    unit_location,
+                    estate_name,
+                    balance,
+                    last_reading_text,
+                ]
+            )
+
+        # Create table
+        table = Table(
+            table_data,
+            colWidths=[
+                1.2 * inch,
+                0.8 * inch,
+                0.6 * inch,
+                1 * inch,
+                1 * inch,
+                1 * inch,
+                0.8 * inch,
+            ],
+        )
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTSIZE", (0, 1), (-1, -1), 8),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
+
+        story.append(table)
+
+        # Build PDF
+        doc.build(story)
+
+        # Log the export action
+        log_action(
+            "meter.export",
+            entity_type="meter",
+            entity_id=None,
+            new_values={"export_type": "pdf", "total_records": len(meters)},
+        )
+
+        # Return PDF response
+        response = Response(buffer.getvalue(), mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f"attachment; filename=meters_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        )
+        return response
+
+    except Exception as e:
+        return jsonify({"error": f"Export failed: {str(e)}"}), 500
