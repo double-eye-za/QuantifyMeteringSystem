@@ -22,6 +22,8 @@ from app.models import (
     Meter,
     Wallet,
     RateTable,
+    RateTableTier,
+    TimeOfUseRate,
     MeterReading,
     MeterAlert,
     Resident,
@@ -206,6 +208,157 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
         RateTable.query.count(),
     )
     return tables
+
+
+def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
+    """Create example tiers and TOU periods aligned with the screenshot for demo purposes."""
+
+    # Helper to ensure tier
+    def add_tier(
+        rt: RateTable,
+        tier_number: int,
+        from_kwh: float,
+        to_kwh,
+        rate: float,
+        desc: str = None,
+    ):
+        existing = RateTableTier.query.filter_by(
+            rate_table_id=rt.id, tier_number=tier_number
+        ).first()
+        if existing:
+            return
+        t = RateTableTier(
+            rate_table_id=rt.id,
+            tier_number=tier_number,
+            from_kwh=from_kwh,
+            to_kwh=to_kwh,
+            rate_per_kwh=rate,
+            description=desc,
+        )
+        db.session.add(t)
+
+    # Helper to ensure TOU
+    from datetime import time
+
+    def add_tou(
+        rt: RateTable,
+        name: str,
+        start: time,
+        end: time,
+        weekdays: bool,
+        weekends: bool,
+        rate: float,
+    ):
+        existing = TimeOfUseRate.query.filter_by(
+            rate_table_id=rt.id,
+            period_name=name,
+            start_time=start,
+            end_time=end,
+        ).first()
+        if existing:
+            return
+        p = TimeOfUseRate(
+            rate_table_id=rt.id,
+            period_name=name,
+            start_time=start,
+            end_time=end,
+            weekdays=weekdays,
+            weekends=weekends,
+            rate_per_kwh=rate,
+        )
+        db.session.add(p)
+
+    # Seed tiers/TOU for every rate table created above
+    # Use reasonable demo defaults by utility; numbers are illustrative
+    for rt in rate_tables.values():
+        if rt.utility_type == "electricity":
+            add_tier(rt, 1, 0, 600, 3.2926, "0–600 kWh")
+            add_tier(rt, 2, 600, None, 4.1332, ">600 kWh")
+            add_tier(rt, 3, 0, None, 3.7650, "Prepaid single rate")
+
+            add_tou(rt, "Off-peak", time(22, 0), time(6, 0), True, True, 2.432)
+            add_tou(rt, "Standard", time(6, 0), time(17, 0), True, False, 3.096)
+            add_tou(rt, "Peak", time(17, 0), time(22, 0), True, False, 4.996)
+        elif rt.utility_type == "water":
+            add_tier(rt, 1, 0, 6, 21.15, "0–6 kL")
+            add_tier(rt, 2, 6, 10.5, 29.06, ">6–10.5 kL")
+            add_tier(rt, 3, 10.5, 35, 43.44, ">10.5–35 kL")
+            add_tier(rt, 4, 35, None, 83.80, ">35 kL")
+
+    db.session.commit()
+
+
+def ensure_roles_and_super_admin() -> None:
+    """Create Super Administrator, Administrator, Standard User roles with full CRUD permissions and a super admin user."""
+    from app.models.permissions import Permission
+
+    full_crud = {"view": True, "create": True, "edit": True, "delete": True}
+    modules = [
+        "estates",
+        "units",
+        "residents",
+        "meters",
+        "wallets",
+        "transactions",
+        "notifications",
+        "rate_tables",
+        "reports",
+        "system_settings",
+        "users",
+        "roles",
+        "audit_logs",
+    ]
+    permissions_payload = {m: full_crud for m in modules}
+
+    def get_or_create_role(name: str, description: str) -> int:
+        role = Role.query.filter_by(name=name).first()
+        if role and role.permission_id:
+            return role.id
+        perm = Permission.query.filter_by(name=f"{name} Permissions").first()
+        if not perm:
+            perm = Permission.create_permission(
+                name=f"{name} Permissions",
+                description=f"Permissions for {name}",
+                permissions_data=permissions_payload,
+            )
+            db.session.flush()
+        if not role:
+            role = Role(
+                name=name,
+                description=description,
+                permission_id=perm.id,
+                is_system_role=(name.lower().startswith("super")),
+            )
+            db.session.add(role)
+        else:
+            role.permission_id = perm.id
+        db.session.commit()
+        return role.id
+
+    super_admin_role_id = get_or_create_role(
+        "Super Administrator", "Full system access"
+    )
+    admin_role_id = get_or_create_role("Administrator", "Administrative access")
+    standard_role_id = get_or_create_role("Standard User", "Standard user access")
+
+    # Ensure the requested super admin user
+    user = User.query.filter_by(email="takudzwa@metalogix.solutions").first()
+    if not user:
+        user = User.create_user(
+            username="takudzwa",
+            email="takudzwa@metalogix.solutions",
+            first_name="Takudzwa",
+            last_name="Maseva",
+            password="takudzwa",
+            role_id=super_admin_role_id,
+            is_active=True,
+        )
+        user.is_super_admin = True
+        db.session.commit()
+    else:
+        user.role_id = super_admin_role_id
+        user.is_super_admin = True
+        db.session.commit()
 
 
 def create_estates_and_units(
@@ -735,6 +888,8 @@ def main():
         admin_user = ensure_admin_user()
         logging.info("Admin user ensured: id=%s", admin_user.id)
         rate_tables = create_rate_tables(admin_user)
+        create_tiers_and_time_of_use(rate_tables)
+        ensure_roles_and_super_admin()
         counts = create_estates_and_units(admin_user, rate_tables)
         res_counts = create_residents_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
