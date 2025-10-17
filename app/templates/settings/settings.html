@@ -4,716 +4,674 @@
 <span class="mx-1">/</span>
 <span>Settings</span>
 {% endblock %} {% block content %}
-<main class="flex-1 overflow-y-auto p-6">
-  <div class="max-w-7xl mx-auto">
-    <!-- Settings Navigation -->
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6"
-    >
-      <div class="p-4">
-        <div class="flex flex-wrap gap-2">
-          <button
-            onclick="showSettingSection('general')"
-            class="setting-btn px-4 py-2 rounded-lg bg-primary text-white"
-            data-section="general"
+<!-- Settings Navigation -->
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6"
+>
+  <div class="p-4">
+    <div class="flex flex-wrap gap-2">
+      <button
+        onclick="showSettingSection('general')"
+        class="setting-btn px-4 py-2 rounded-lg bg-primary text-white"
+        data-section="general"
+      >
+        <i class="fas fa-sliders-h mr-2"></i> General
+      </button>
+      <button
+        onclick="showSettingSection('security')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="security"
+      >
+        <i class="fas fa-shield-alt mr-2"></i> Security
+      </button>
+      <button
+        onclick="showSettingSection('notifications')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="notifications"
+      >
+        <i class="fas fa-bell mr-2"></i> Notifications
+      </button>
+      <!-- Commented out for now - will implement later
+      <button
+        onclick="showSettingSection('api')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="api"
+      >
+                                    <i class="fas fa-plug mr-2"></i> API & Integrations
+                                </button>
+      <button
+        onclick="showSettingSection('backup')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="backup"
+      >
+                                    <i class="fas fa-database mr-2"></i> Backup & Recovery
+                                </button>
+      -->
+    </div>
+  </div>
+</div>
+
+<!-- General Settings -->
+<div
+  id="general-section"
+  class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      General Settings
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Configure basic system settings and preferences
+    </p>
+  </div>
+  <div class="p-6 space-y-6">
+    <!-- Organization Info -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Organization Information
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            <i class="fas fa-sliders-h mr-2"></i> General
-          </button>
-          <button
-            onclick="showSettingSection('security')"
-            class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            data-section="security"
+            Organization Name
+          </label>
+          <input
+            type="text"
+            id="org_name"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="Enter organization name"
+          />
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            <i class="fas fa-shield-alt mr-2"></i> Security
-          </button>
-          <button
-            onclick="showSettingSection('notifications')"
-            class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            data-section="notifications"
-          >
-            <i class="fas fa-bell mr-2"></i> Notifications
-          </button>
-          <button
-            onclick="showSettingSection('api')"
-            class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            data-section="api"
-          >
-            <i class="fas fa-plug mr-2"></i> API & Integrations
-          </button>
-          <button
-            onclick="showSettingSection('backup')"
-            class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            data-section="backup"
-          >
-            <i class="fas fa-database mr-2"></i> Backup & Recovery
-          </button>
+            Contact Email
+          </label>
+          <input
+            type="email"
+            id="contact_email"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="admin@company.com"
+          />
         </div>
       </div>
     </div>
 
-    <!-- General Settings -->
-    <div
-      id="general-section"
-      class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          General Settings
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configure basic system settings and preferences
-        </p>
-      </div>
-      <div class="p-6 space-y-6">
-        <!-- Organization Info -->
+    <!-- System Preferences -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        System Preferences
+      </h3>
+      <div class="space-y-4">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Organization Information
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Organization Name
-              </label>
-              <input
-                type="text"
-                value="Quantify Metering"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Contact Email
-              </label>
-              <input
-                type="email"
-                value="admin@quantifymetering.com"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- System Preferences -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            System Preferences
-          </h3>
-          <div class="space-y-4">
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Default Language
-              </label>
-              <select
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                <option selected>English</option>
-                <option>Afrikaans</option>
-                <option>Zulu</option>
-                <option>Xhosa</option>
-              </select>
-            </div>
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Time Zone
-              </label>
-              <select
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                <option selected>Africa/Johannesburg (GMT+2)</option>
-                <option>UTC</option>
-              </select>
-            </div>
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Date Format
-              </label>
-              <select
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                <option>DD/MM/YYYY</option>
-                <option selected>YYYY-MM-DD</option>
-                <option>MM/DD/YYYY</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Session Settings -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Session Management
-          </h3>
-          <div class="space-y-4">
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Session Timeout (minutes)
-              </label>
-              <input
-                type="number"
-                value="15"
-                min="5"
-                max="120"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Auto-logout after 15 minutes of inactivity
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+            Default Language
+          </label>
+          <select
+            id="default_language"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
           >
-            Save Changes
-          </button>
+            <option value="English">English</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="German">German</option>
+          </select>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Timezone
+          </label>
+          <select
+            id="timezone"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+          >
+            <option value="Africa/Johannesburg (GMT+2)">
+              Africa/Johannesburg (GMT+2)
+            </option>
+            <option value="UTC (GMT+0)">UTC (GMT+0)</option>
+            <option value="America/New_York (GMT-5)">
+              America/New_York (GMT-5)
+            </option>
+            <option value="Europe/London (GMT+0)">Europe/London (GMT+0)</option>
+          </select>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Date Format
+          </label>
+          <select
+            id="date_format"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+          >
+            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+            <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+          </select>
         </div>
       </div>
     </div>
 
-    <!-- Security Settings -->
-    <div
-      id="security-section"
-      class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Security Settings
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configure security and access control settings
-        </p>
-      </div>
-      <div class="p-6 space-y-6">
-        <!-- Password Policy -->
+    <!-- Session Settings -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Session Management
+      </h3>
+      <div class="space-y-4">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Password Policy
-          </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Minimum Password Length
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Minimum characters required
-                </p>
-              </div>
-              <input
-                type="number"
-                value="8"
-                min="6"
-                max="20"
-                class="w-20 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Require Uppercase Letters
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  At least one capital letter
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Require Numbers
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  At least one numeric character
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Require Special Characters
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  At least one special character
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Login Security -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Login Security
-          </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Two-Factor Authentication
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Require 2FA for all users
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Failed Login Attempts
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Lock account after failed attempts
-                </p>
-              </div>
-              <input
-                type="number"
-                value="5"
-                min="3"
-                max="10"
-                class="w-20 px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- IP Restrictions -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            IP Restrictions
-          </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Enable IP Whitelist
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Only allow access from specific IPs
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notification Settings -->
-    <div
-      id="notifications-section"
-      class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Notification Settings
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configure system notifications and alerts
-        </p>
-      </div>
-      <div class="p-6 space-y-6">
-        <!-- Email Notifications -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Email Notifications
-          </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  New User Registration
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Notify when new users register
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Security Alerts
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Failed login attempts and security issues
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  System Updates
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Important system changes and updates
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- SMS Settings -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            SMS Configuration
-          </h3>
-          <div class="space-y-4">
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                SMS Provider
-              </label>
-              <select
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                <option>None</option>
-                <option>Twilio</option>
-                <option>Clickatell</option>
-                <option>BulkSMS</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- API Settings -->
-    <div
-      id="api-section"
-      class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          API & Integrations
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Manage API keys and third-party integrations
-        </p>
-      </div>
-      <div class="p-6 space-y-6">
-        <!-- API Keys -->
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              API Keys
-            </h3>
-            <button
-              class="px-3 py-1 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <i class="fas fa-plus mr-1"></i> Generate New Key
-            </button>
-          </div>
-          <div class="space-y-3">
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    Production API Key
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Created: Jan 15, 2025
-                  </p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button class="text-sm text-primary hover:underline">
-                    View
-                  </button>
-                  <button class="text-sm text-error hover:underline">
-                    Revoke
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    Development API Key
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Created: Dec 10, 2024
-                  </p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button class="text-sm text-primary hover:underline">
-                    View
-                  </button>
-                  <button class="text-sm text-error hover:underline">
-                    Revoke
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Webhooks -->
-        <div>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              Webhooks
-            </h3>
-            <button
-              class="px-3 py-1 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <i class="fas fa-plus mr-1"></i> Add Webhook
-            </button>
-          </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            No webhooks configured
-          </p>
-        </div>
-
-        <div
-          class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Backup Settings -->
-    <div
-      id="backup-section"
-      class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
-    >
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Backup & Recovery
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configure data backup and recovery options
-        </p>
-      </div>
-      <div class="p-6 space-y-6">
-        <!-- Automatic Backups -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Automatic Backups
-          </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  Enable Automatic Backups
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Daily backups at 2:00 AM
-                </p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer" />
-                <div
-                  class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
-                ></div>
-              </label>
-            </div>
-            <div>
-              <label
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Backup Retention (days)
-              </label>
-              <input
-                type="number"
-                value="30"
-                min="7"
-                max="365"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-primary"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Recent Backups -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Backups
-          </h3>
-          <div class="space-y-3">
-            <div
-              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg"
-            >
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  backup_2025_01_15_02_00.sql
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Size: 125 MB • Today at 2:00 AM
-                </p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="text-sm text-primary hover:underline">
-                  Download
-                </button>
-                <button class="text-sm text-success hover:underline">
-                  Restore
-                </button>
-              </div>
-            </div>
-            <div
-              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg"
-            >
-              <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  backup_2025_01_14_02_00.sql
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Size: 124 MB • Yesterday at 2:00 AM
-                </p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button class="text-sm text-primary hover:underline">
-                  Download
-                </button>
-                <button class="text-sm text-success hover:underline">
-                  Restore
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Manual Backup -->
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Manual Backup
-          </h3>
-          <button
-            class="px-4 py-2 bg-success hover:bg-green-600 text-white rounded-lg transition-colors"
-          >
-            <i class="fas fa-download mr-2"></i> Create Backup Now
-          </button>
-        </div>
-
-        <div
-          class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Save Changes
-          </button>
+            Session Timeout (minutes)
+          </label>
+          <input
+            type="number"
+            id="session_timeout"
+            min="5"
+            max="120"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="15"
+          />
         </div>
       </div>
     </div>
   </div>
-</main>
+  <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex justify-end space-x-3">
+      <button
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveGeneralSettings()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Security Settings -->
+<div
+  id="security-section"
+  class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Security Settings
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Configure security and access control settings
+    </p>
+  </div>
+  <div class="p-6 space-y-6">
+    <!-- Password Policy -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Password Policy
+      </h3>
+      <div class="space-y-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Minimum Password Length
+          </label>
+          <input
+            type="number"
+            id="min_password_length"
+            min="6"
+            max="32"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="8"
+          />
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Require Uppercase Letters
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Passwords must contain at least one uppercase letter
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="require_uppercase"
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Require Numbers
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Passwords must contain at least one number
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="require_numbers" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Require Special Characters
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Passwords must contain at least one special character
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="require_special_chars"
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Security -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Login Security
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Enable Two-Factor Authentication
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Require 2FA for all user accounts
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="enable_2fa" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Account Lockout
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Lock accounts after 5 failed attempts
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="account_lockout"
+              checked
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- IP Restrictions -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        IP Restrictions
+      </h3>
+      <div class="space-y-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Allowed IP Addresses
+          </label>
+          <textarea
+            id="allowed_ips"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="192.168.1.0/24&#10;10.0.0.0/8"
+          ></textarea>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Enter one IP address or CIDR block per line
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex justify-end space-x-3">
+      <button
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveSecuritySettings()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Settings -->
+<div
+  id="notifications-section"
+  class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Notification Settings
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Configure system notifications and alerts
+    </p>
+  </div>
+  <div class="p-6 space-y-6">
+    <!-- Email Notifications -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Email Notifications
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              System Alerts
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Critical system errors and warnings
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="system_alerts" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              Security Alerts
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Failed login attempts and security issues
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="security_alerts" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              System Updates
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Important system changes and updates
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="system_updates" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS Settings -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        SMS Configuration
+      </h3>
+      <div class="space-y-4">
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            SMS Provider
+          </label>
+          <select
+            id="sms_provider"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+          >
+            <option value="twilio">Twilio</option>
+            <option value="aws_sns">AWS SNS</option>
+            <option value="nexmo">Nexmo</option>
+          </select>
+        </div>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Emergency Contact Number
+          </label>
+          <input
+            type="tel"
+            id="emergency_contact"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+            placeholder="+1234567890"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex justify-end space-x-3">
+      <button
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveNotificationSettings()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block extra_js %}
+<script src="/static/js/flash.js"></script>
 <script>
+  // Load settings from database on page load
+  document.addEventListener("DOMContentLoaded", function () {
+    loadSettings();
+  });
+
+  // Load settings from database
+  async function loadSettings() {
+    try {
+      const response = await fetch("/api/v1/api/settings");
+      const result = await response.json();
+
+      if (response.ok) {
+        const settings = result.settings;
+
+        // General settings
+        document.getElementById("org_name").value = settings.org_name || "";
+        document.getElementById("contact_email").value =
+          settings.contact_email || "";
+        document.getElementById("default_language").value =
+          settings.default_language || "English";
+        document.getElementById("timezone").value =
+          settings.timezone || "Africa/Johannesburg (GMT+2)";
+        document.getElementById("date_format").value =
+          settings.date_format || "YYYY-MM-DD";
+        document.getElementById("session_timeout").value =
+          settings.session_timeout || 15;
+
+        // Security settings
+        document.getElementById("min_password_length").value =
+          settings.min_password_length || 8;
+        document.getElementById("require_uppercase").checked =
+          settings.require_uppercase || false;
+        document.getElementById("require_numbers").checked =
+          settings.require_numbers || false;
+        document.getElementById("require_special_chars").checked =
+          settings.require_special_chars || false;
+        document.getElementById("enable_2fa").checked =
+          settings.enable_2fa || false;
+        document.getElementById("account_lockout").checked =
+          settings.account_lockout || false;
+        document.getElementById("allowed_ips").value =
+          settings.allowed_ips || "";
+
+        // Notification settings
+        document.getElementById("sms_provider").value =
+          settings.sms_provider || "twilio";
+        document.getElementById("emergency_contact").value =
+          settings.emergency_contact || "";
+        document.getElementById("system_alerts").checked =
+          settings.system_alerts || false;
+        document.getElementById("security_alerts").checked =
+          settings.security_alerts || false;
+        document.getElementById("system_updates").checked =
+          settings.system_updates || false;
+      } else {
+        console.error("Failed to load settings:", result.error);
+      }
+    } catch (error) {
+      console.error("Error loading settings:", error);
+    }
+  }
+
+  // Save general settings
+  async function saveGeneralSettings() {
+    try {
+      const data = {
+        org_name: document.getElementById("org_name").value,
+        contact_email: document.getElementById("contact_email").value,
+        default_language: document.getElementById("default_language").value,
+        timezone: document.getElementById("timezone").value,
+        date_format: document.getElementById("date_format").value,
+        session_timeout: parseInt(
+          document.getElementById("session_timeout").value
+        ),
+      };
+
+      const response = await fetch("/api/v1/settings/general", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        showFlashMessage("General settings saved successfully", "success");
+      } else {
+        showFlashMessage(result.error || "Failed to save settings", "error");
+      }
+    } catch (error) {
+      showFlashMessage("Network error while saving settings", "error");
+    }
+  }
+
+  // Save security settings
+  async function saveSecuritySettings() {
+    try {
+      const data = {
+        min_password_length: parseInt(
+          document.getElementById("min_password_length").value
+        ),
+        require_uppercase: document.getElementById("require_uppercase").checked,
+        require_numbers: document.getElementById("require_numbers").checked,
+        require_special_chars: document.getElementById("require_special_chars")
+          .checked,
+        enable_2fa: document.getElementById("enable_2fa").checked,
+        account_lockout: document.getElementById("account_lockout").checked,
+        allowed_ips: document.getElementById("allowed_ips").value,
+      };
+
+      const response = await fetch("/api/v1/settings/security", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        showFlashMessage("Security settings saved successfully", "success");
+      } else {
+        showFlashMessage(result.error || "Failed to save settings", "error");
+      }
+    } catch (error) {
+      showFlashMessage("Network error while saving settings", "error");
+    }
+  }
+
+  // Save notification settings
+  async function saveNotificationSettings() {
+    try {
+      const data = {
+        sms_provider: document.getElementById("sms_provider").value,
+        emergency_contact: document.getElementById("emergency_contact").value,
+        system_alerts: document.getElementById("system_alerts").checked,
+        security_alerts: document.getElementById("security_alerts").checked,
+        system_updates: document.getElementById("system_updates").checked,
+      };
+
+      const response = await fetch("/api/v1/settings/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        showFlashMessage("Notification settings saved successfully", "success");
+      } else {
+        showFlashMessage(result.error || "Failed to save settings", "error");
+      }
+    } catch (error) {
+      showFlashMessage("Network error while saving settings", "error");
+    }
+  }
+
   // Settings Section Toggle
   function showSettingSection(sectionName) {
     // Hide all sections

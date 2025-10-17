@@ -42,3 +42,85 @@ class SystemSetting(db.Model):
             name="ck_system_settings_type",
         ),
     )
+
+    @staticmethod
+    def get_all_settings():
+        """Get all system settings as a dictionary"""
+        settings = SystemSetting.query.all()
+        settings_dict = {}
+
+        for setting in settings:
+            # Convert value based on type
+            if setting.setting_type == "boolean":
+                settings_dict[setting.setting_key] = (
+                    setting.setting_value.lower() == "true"
+                )
+            elif setting.setting_type == "number":
+                settings_dict[setting.setting_key] = (
+                    float(setting.setting_value) if setting.setting_value else 0
+                )
+            else:
+                settings_dict[setting.setting_key] = setting.setting_value
+
+        return settings_dict
+
+    @staticmethod
+    def save_settings(settings_data, category, updated_by):
+        """Save multiple settings for a category"""
+        for key, value, setting_type in settings_data:
+            setting = SystemSetting.query.filter_by(setting_key=key).first()
+            if setting:
+                setting.setting_value = value
+                setting.setting_type = setting_type
+                setting.updated_by = updated_by
+            else:
+                setting = SystemSetting(
+                    setting_key=key,
+                    setting_value=value,
+                    setting_type=setting_type,
+                    category=category,
+                    updated_by=updated_by,
+                )
+                db.session.add(setting)
+
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def get_setting(key, default_value=None):
+        """Get a single setting by key"""
+        setting = SystemSetting.query.filter_by(setting_key=key).first()
+        if not setting:
+            return default_value
+
+        # Convert value based on type
+        if setting.setting_type == "boolean":
+            return setting.setting_value.lower() == "true"
+        elif setting.setting_type == "number":
+            return float(setting.setting_value) if setting.setting_value else 0
+        else:
+            return setting.setting_value
+
+    @staticmethod
+    def save_setting(key, value, setting_type, category, updated_by, description=None):
+        """Save a single setting"""
+        setting = SystemSetting.query.filter_by(setting_key=key).first()
+        if setting:
+            setting.setting_value = value
+            setting.setting_type = setting_type
+            setting.updated_by = updated_by
+            if description:
+                setting.description = description
+        else:
+            setting = SystemSetting(
+                setting_key=key,
+                setting_value=value,
+                setting_type=setting_type,
+                category=category,
+                updated_by=updated_by,
+                description=description,
+            )
+            db.session.add(setting)
+
+        db.session.commit()
+        return setting
