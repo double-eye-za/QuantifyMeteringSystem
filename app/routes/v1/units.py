@@ -6,12 +6,14 @@ from flask_login import login_required, current_user
 from ...models import Unit, Estate, Resident, Meter, RateTable, SystemSetting
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
+from ...utils.decorators import requires_permission
 from . import api_v1
 from ...utils.rates import calculate_estate_bill
 
 
 @api_v1.route("/units", methods=["GET"])
 @login_required
+@requires_permission("units.view")
 def units_page():
     """Render the units page with units, estates, filters and pagination."""
     estate_id = request.args.get("estate_id", type=int)
@@ -93,6 +95,7 @@ def units_page():
 
 @api_v1.get("/api/units")
 @login_required
+@requires_permission("units.view")
 def list_units():
     estate_id = request.args.get("estate_id", type=int)
     occupancy_status = request.args.get("occupancy_status")
@@ -113,6 +116,7 @@ def list_units():
 
 @api_v1.route("/units/<unit_id>/wallet-statement", methods=["GET"])
 @login_required
+@requires_permission("units.view")
 def wallet_statement_page(unit_id: str):
     """Render the wallet statement page"""
     return render_template("wallets/wallet-statement.html", unit_id=unit_id)
@@ -120,6 +124,7 @@ def wallet_statement_page(unit_id: str):
 
 @api_v1.route("/units/<unit_id>/visual", methods=["GET"])
 @login_required
+@requires_permission("units.view")
 def unit_visual_page(unit_id: str):
     """Render the unit visual diagram page"""
     return render_template("units/unit-visual.html", unit_id=unit_id)
@@ -127,6 +132,7 @@ def unit_visual_page(unit_id: str):
 
 @api_v1.route("/units/<int:unit_id>", methods=["GET"])
 @login_required
+@requires_permission("units.view")
 def unit_details_page(unit_id: int):
     """Render the unit details page with dynamic unit and resident info"""
     unit = Unit.get_by_id(unit_id)
@@ -151,6 +157,7 @@ def unit_details_page(unit_id: int):
 
 @api_v1.get("/api/units/<int:unit_id>")
 @login_required
+@requires_permission("units.view")
 def get_unit(unit_id: int):
     unit = Unit.get_by_id(unit_id)
     if not unit:
@@ -160,6 +167,7 @@ def get_unit(unit_id: int):
 
 @api_v1.post("/api/units/overrides")
 @login_required
+@requires_permission("units.edit")
 def apply_unit_overrides():
     """Apply a rate table override to a list of units by id or by estate+unit_numbers list."""
     payload = request.get_json(force=True) or {}
@@ -226,6 +234,7 @@ def apply_unit_overrides():
 
 @api_v1.get("/api/units/overrides")
 @login_required
+@requires_permission("units.view")
 def list_unit_overrides():
     """Get all units with rate table overrides (non-null rate table IDs)"""
     from ...db import db
@@ -254,6 +263,7 @@ def list_unit_overrides():
 
 @api_v1.delete("/api/units/overrides")
 @login_required
+@requires_permission("units.edit")
 def remove_unit_overrides():
     """Remove rate table overrides from units (set to None to inherit from estate)"""
     payload = request.get_json(force=True) or {}
@@ -311,6 +321,7 @@ def remove_unit_overrides():
 
 @api_v1.post("/units")
 @login_required
+@requires_permission("units.create")
 def create_unit():
     payload = request.get_json(force=True) or {}
     unit = Unit.create_from_payload(payload, user_id=getattr(current_user, "id", None))
@@ -320,6 +331,7 @@ def create_unit():
 
 @api_v1.put("/units/<int:unit_id>")
 @login_required
+@requires_permission("units.edit")
 def update_unit(unit_id: int):
     unit = Unit.get_by_id(unit_id)
     if not unit:
@@ -339,6 +351,7 @@ def update_unit(unit_id: int):
 
 @api_v1.delete("/units/<int:unit_id>")
 @login_required
+@requires_permission("units.delete")
 def delete_unit(unit_id: int):
     unit = Unit.get_by_id(unit_id)
     if not unit:

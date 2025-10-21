@@ -6,11 +6,13 @@ from flask_login import login_required
 from ...models.audit_log import AuditLog
 from ...models.user import User
 from ...utils.pagination import paginate_query
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/audit-logs", methods=["GET"])
 @login_required
+@requires_permission("audit_logs.view")
 def audit_logs_page():
     action = (request.args.get("action") or "").strip() or None
     user_id = request.args.get("user_id", type=int) or None
@@ -93,6 +95,7 @@ def audit_logs_page():
 
 @api_v1.get("/api/audit-logs")
 @login_required
+@requires_permission("audit_logs.view")
 def list_audit_logs():
     action = request.args.get("action")
     user_id = request.args.get("user_id", type=int)
@@ -127,6 +130,7 @@ def list_audit_logs():
 
 @api_v1.get("/api/audit-logs/<int:audit_id>")
 @login_required
+@requires_permission("audit_logs.view")
 def get_audit_log(audit_id: int):
     a = AuditLog.query.get(audit_id)
     if not a:

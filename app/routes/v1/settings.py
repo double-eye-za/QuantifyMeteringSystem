@@ -5,17 +5,20 @@ from flask_login import login_required, current_user
 
 from ...models import SystemSetting
 from ...utils.audit import log_action
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/settings", methods=["GET"])
 @login_required
+@requires_permission("settings.view")
 def settings_page():
     return render_template("settings/settings.html")
 
 
 @api_v1.route("/api/settings", methods=["GET"])
 @login_required
+@requires_permission("settings.view")
 def get_settings():
     """Get all system settings"""
     try:
@@ -27,6 +30,7 @@ def get_settings():
 
 @api_v1.route("/settings/general", methods=["POST"])
 @login_required
+@requires_permission("settings.edit")
 def save_general_settings():
     """Save general settings"""
     try:
@@ -62,6 +66,7 @@ def save_general_settings():
 
 @api_v1.route("/settings/security", methods=["POST"])
 @login_required
+@requires_permission("settings.edit")
 def save_security_settings():
     """Save security settings"""
     try:
@@ -114,6 +119,7 @@ def save_security_settings():
 
 @api_v1.route("/settings/notifications", methods=["POST"])
 @login_required
+@requires_permission("settings.edit")
 def save_notification_settings():
     """Save notification settings"""
     try:

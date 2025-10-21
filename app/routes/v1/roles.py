@@ -4,7 +4,7 @@ from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 from app.models.role import Role
 from app.models.permissions import Permission
-from app.utils.decorators import requires_permissions
+from app.utils.decorators import requires_permission
 from app.utils.audit import log_action
 from app.utils.pagination import paginate_query
 
@@ -13,7 +13,7 @@ from . import api_v1
 
 @api_v1.route("/roles", methods=["GET"])
 @login_required
-@requires_permissions("roles.view")
+@requires_permission("roles.view")
 def roles_page():
     search = request.args.get("search", "").strip()
 
@@ -78,7 +78,7 @@ def roles_page():
 
 @api_v1.route("/api/roles", methods=["POST"])
 @login_required
-@requires_permissions("roles.create")
+@requires_permission("roles.create")
 def create_role():
     data = request.get_json()
 
@@ -109,7 +109,7 @@ def create_role():
 
 @api_v1.route("/api/roles/<int:role_id>", methods=["PUT"])
 @login_required
-@requires_permissions("roles.edit")
+@requires_permission("roles.edit")
 def update_role(role_id):
     data = request.get_json()
 
@@ -132,7 +132,7 @@ def update_role(role_id):
 
 @api_v1.route("/api/roles/<int:role_id>", methods=["DELETE"])
 @login_required
-@requires_permissions("roles.delete")
+@requires_permission("roles.delete")
 def delete_role(role_id):
     try:
         Role.delete_role(role_id)

@@ -7,6 +7,7 @@ from app.auth import login_manager
 import os
 from flask_migrate import Migrate
 from datetime import timedelta
+from flask_login import current_user
 
 
 def create_app() -> Flask:
@@ -22,8 +23,37 @@ def create_app() -> Flask:
     Migrate(app, db)
     login_manager.init_app(app)
 
+    @app.template_global()
+    def has_permission(permission_code: str):
+        """Check if current user has a specific permission."""
+        user = current_user
+        if not getattr(user, "is_authenticated", False):
+            return False
+        if getattr(user, "is_super_admin", False):
+            return True
+        role = getattr(user, "role", None)
+        permission_set = getattr(role, "permission", None)
+        permissions_json = getattr(permission_set, "permissions", {}) or {}
+
+        # Check if user has the required permission
+        allowed = permissions_json
+        for key in permission_code.split("."):
+            if isinstance(allowed, dict) and key in allowed:
+                allowed = allowed[key]
+            else:
+                allowed = False
+                break
+        return bool(allowed)
+
+    @app.template_global()
+    def is_super_admin():
+        """Check if current user is a super admin."""
+        user = current_user
+        return getattr(user, "is_authenticated", False) and getattr(
+            user, "is_super_admin", False
+        )
+
     with app.app_context():
-        # Import models so tables are registered
         from app.models import (  # noqa: F401
             User,
             Role,
@@ -77,7 +107,6 @@ def configure_session_timeout(app: Flask):
             print("Using default session timeout: 15 minutes")
 
     except Exception as e:
-        
         app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=15)
         print(f"Warning: Could not load session timeout setting, using default: {e}")
 

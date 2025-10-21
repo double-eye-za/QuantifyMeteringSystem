@@ -7,7 +7,9 @@ from flask import abort
 from flask_login import current_user
 
 
-def requires_permissions(*required_codes: str) -> Callable:
+def requires_permission(permission_code: str):
+    """Decorator to require a specific permission for a route."""
+
     def decorator(view_func: Callable) -> Callable:
         @wraps(view_func)
         def wrapper(*args, **kwargs):
@@ -19,19 +21,19 @@ def requires_permissions(*required_codes: str) -> Callable:
             role = getattr(user, "role", None)
             permission_set = getattr(role, "permission", None)
             permissions_json = getattr(permission_set, "permissions", {}) or {}
-            for code in required_codes:
-                allowed = permissions_json
-                for key in code.split("."):
-                    if isinstance(allowed, dict) and key in allowed:
-                        allowed = allowed[key]
-                    else:
-                        allowed = False
-                        break
-                if not bool(allowed):
-                    abort(403)
+
+            # Check if user has the required permission
+            allowed = permissions_json
+            for key in permission_code.split("."):
+                if isinstance(allowed, dict) and key in allowed:
+                    allowed = allowed[key]
+                else:
+                    allowed = False
+                    break
+            if not bool(allowed):
+                abort(403)
             return view_func(*args, **kwargs)
 
         return wrapper
 
     return decorator
-

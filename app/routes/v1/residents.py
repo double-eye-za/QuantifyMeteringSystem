@@ -6,11 +6,13 @@ from flask_login import login_required, current_user
 from ...models import Resident, Unit, Estate
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query, parse_pagination_params
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/residents", methods=["GET"])
 @login_required
+@requires_permission("residents.view")
 def residents_page():
     search = request.args.get("q") or None
     is_active = request.args.get("is_active")
@@ -70,6 +72,7 @@ def residents_page():
 
 @api_v1.get("/api/residents")
 @login_required
+@requires_permission("residents.view")
 def list_residents():
     search = request.args.get("q") or None
     items, meta = paginate_query(Resident.get_all(search=search))
@@ -78,6 +81,7 @@ def list_residents():
 
 @api_v1.post("/residents")
 @login_required
+@requires_permission("residents.create")
 def create_resident():
     payload = request.get_json(force=True) or {}
     required = ["first_name", "last_name", "email", "phone"]
@@ -93,6 +97,7 @@ def create_resident():
 
 @api_v1.put("/residents/<int:resident_id>")
 @login_required
+@requires_permission("residents.edit")
 def update_resident(resident_id: int):
     r = Resident.get_by_id(resident_id)
     if not r:
@@ -112,6 +117,7 @@ def update_resident(resident_id: int):
 
 @api_v1.delete("/residents/<int:resident_id>")
 @login_required
+@requires_permission("residents.delete")
 def delete_resident(resident_id: int):
     r = Resident.get_by_id(resident_id)
     if not r:

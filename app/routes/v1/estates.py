@@ -6,11 +6,13 @@ from flask_login import login_required, current_user
 from ...models import Estate
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/estates", methods=["GET"])
 @login_required
+@requires_permission("estates.view")
 def estates_page():
     """Render the estates page with paginated estates and summary counts"""
     q = request.args.get("q")
@@ -59,6 +61,7 @@ def estates_page():
 
 @api_v1.get("/estates/<int:estate_id>")
 @login_required
+@requires_permission("estates.view")
 def get_estate(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:
@@ -68,6 +71,7 @@ def get_estate(estate_id: int):
 
 @api_v1.patch("/api/estates/<int:estate_id>/rate-assignment")
 @login_required
+@requires_permission("estates.edit")
 def update_estate_rate_assignment(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:
@@ -104,6 +108,7 @@ def update_estate_rate_assignment(estate_id: int):
 
 @api_v1.post("/estates")
 @login_required
+@requires_permission("estates.create")
 def create_estate():
     payload = request.get_json(force=True) or {}
     estate = Estate.create_from_payload(
@@ -117,6 +122,7 @@ def create_estate():
 
 @api_v1.put("/estates/<int:estate_id>")
 @login_required
+@requires_permission("estates.edit")
 def update_estate(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:
@@ -136,6 +142,7 @@ def update_estate(estate_id: int):
 
 @api_v1.delete("/estates/<int:estate_id>")
 @login_required
+@requires_permission("estates.delete")
 def delete_estate(estate_id: int):
     estate = Estate.get_by_id(estate_id)
     if not estate:

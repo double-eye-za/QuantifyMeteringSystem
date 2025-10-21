@@ -7,11 +7,13 @@ from ...models import RateTable, Estate, RateTableTier, TimeOfUseRate
 from ...utils.pagination import paginate_query
 from ...utils.rates import calculate_estate_bill
 from ...utils.audit import log_action
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/rate-tables", methods=["GET"])
 @login_required
+@requires_permission("rate_tables.view")
 def rate_tables_page():
     """Render the rate tables page with available rate tables and estate assignments"""
 
@@ -75,6 +77,7 @@ def rate_tables_page():
 
 @api_v1.route("/rate-tables/builder", methods=["GET"])
 @login_required
+@requires_permission("rate_tables.create")
 def rate_table_builder_page():
     """Render the rate table builder page"""
     return render_template("rate-tables/rate-table-builder.html")
@@ -82,6 +85,7 @@ def rate_table_builder_page():
 
 @api_v1.route("/rate-tables/<int:rate_table_id>/edit", methods=["GET"])
 @login_required
+@requires_permission("rate_tables.edit")
 def rate_table_edit_page(rate_table_id: int):
     """Render the edit page for a specific rate table"""
     rt = RateTable.get_by_id(rate_table_id)
@@ -96,6 +100,7 @@ def rate_table_edit_page(rate_table_id: int):
 
 @api_v1.get("/api/rate-tables")
 @login_required
+@requires_permission("rate_tables.view")
 def list_rate_tables():
     utility_type = request.args.get("utility_type")
     is_active = request.args.get("is_active")
@@ -109,6 +114,7 @@ def list_rate_tables():
 
 @api_v1.get("/api/rate-tables/<int:rate_table_id>")
 @login_required
+@requires_permission("rate_tables.view")
 def get_rate_table(rate_table_id: int):
     rt = RateTable.get_by_id(rate_table_id)
     if not rt:
@@ -118,6 +124,7 @@ def get_rate_table(rate_table_id: int):
 
 @api_v1.get("/api/rate-tables/<int:rate_table_id>/details")
 @login_required
+@requires_permission("rate_tables.view")
 def get_rate_table_details(rate_table_id: int):
     rt = RateTable.get_by_id(rate_table_id)
     if not rt:
@@ -164,6 +171,7 @@ def get_rate_table_details(rate_table_id: int):
 
 @api_v1.post("/api/rate-tables")
 @login_required
+@requires_permission("rate_tables.create")
 def create_rate_table():
     payload = request.get_json(force=True) or {}
     required = ["name", "utility_type", "rate_structure", "effective_from"]
@@ -212,6 +220,7 @@ def create_rate_table():
 
 @api_v1.post("/api/rate-tables/preview")
 @login_required
+@requires_permission("rate_tables.view")
 def rate_preview():
     payload = request.get_json(force=True) or {}
     # Inputs: estate fields and two rate table structures by id (optional) or inline
@@ -273,6 +282,7 @@ def rate_preview():
 
 @api_v1.put("/api/rate-tables/<int:rate_table_id>")
 @login_required
+@requires_permission("rate_tables.edit")
 def update_rate_table(rate_table_id: int):
     try:
         rt = RateTable.get_by_id(rate_table_id)
@@ -323,6 +333,7 @@ def update_rate_table(rate_table_id: int):
 
 @api_v1.delete("/api/rate-tables/<int:rate_table_id>")
 @login_required
+@requires_permission("rate_tables.delete")
 def delete_rate_table(rate_table_id: int):
     rt = RateTable.get_by_id(rate_table_id)
     if not rt:

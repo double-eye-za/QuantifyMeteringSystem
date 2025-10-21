@@ -4,7 +4,7 @@ from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 from app.models.user import User
 from app.models.role import Role
-from app.utils.decorators import requires_permissions
+from app.utils.decorators import requires_permission
 from app.utils.audit import log_action
 from app.utils.pagination import paginate_query
 
@@ -13,7 +13,7 @@ from . import api_v1
 
 @api_v1.route("/users", methods=["GET"])
 @login_required
-@requires_permissions("users.view")
+@requires_permission("users.view")
 def users_page():
     search = request.args.get("search", "").strip()
     status = request.args.get("status", "").strip().lower()
@@ -84,7 +84,7 @@ def users_page():
 
 @api_v1.route("/api/users", methods=["POST"])
 @login_required
-@requires_permissions("users.create")
+@requires_permission("users.create")
 def create_user():
     data = request.get_json()
 
@@ -127,7 +127,7 @@ def create_user():
 
 @api_v1.route("/api/users/<int:user_id>", methods=["PUT"])
 @login_required
-@requires_permissions("users.edit")
+@requires_permission("users.edit")
 def update_user(user_id):
     data = request.get_json()
 
@@ -150,7 +150,7 @@ def update_user(user_id):
 
 @api_v1.route("/api/users/<int:user_id>", methods=["DELETE"])
 @login_required
-@requires_permissions("users.delete")
+@requires_permission("users.delete")
 def delete_user(user_id):
     try:
         User.delete_user(user_id)
@@ -163,7 +163,7 @@ def delete_user(user_id):
 
 @api_v1.route("/api/users/<int:user_id>/enable", methods=["PUT"])
 @login_required
-@requires_permissions("users.enable")
+@requires_permission("users.enable")
 def enable_user(user_id):
     try:
         User.set_active_status(user_id, True)
@@ -176,7 +176,7 @@ def enable_user(user_id):
 
 @api_v1.route("/api/users/<int:user_id>/disable", methods=["PUT"])
 @login_required
-@requires_permissions("users.disable")
+@requires_permission("users.disable")
 def disable_user(user_id):
     try:
         User.set_active_status(user_id, False)

@@ -13,11 +13,13 @@ from reportlab.lib.units import inch
 from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Resident
 from ...utils.pagination import paginate_query, parse_pagination_params
 from ...utils.audit import log_action
+from ...utils.decorators import requires_permission
 from . import api_v1
 
 
 @api_v1.route("/meters", methods=["GET"])
 @login_required
+@requires_permission("meters.view")
 def meters_page():
     """Render the meters page with meters, unit assignments, balances, filters and stats."""
     meter_type = request.args.get("meter_type") or None
@@ -189,6 +191,7 @@ def meters_page():
 
 @api_v1.route("/meters/<meter_id>/details", methods=["GET"])
 @login_required
+@requires_permission("meters.view")
 def meter_details_page(meter_id: str):
     """Render the meter details page with enriched data for the selected meter."""
     # Lookup by serial_number first, fallback to numeric id
@@ -266,6 +269,7 @@ def meter_details_page(meter_id: str):
 
 @api_v1.get("/meters/<int:meter_id>")
 @login_required
+@requires_permission("meters.view")
 def get_meter(meter_id: int):
     meter = Meter.get_by_id(meter_id)
     if not meter:
@@ -310,6 +314,7 @@ def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
 
 @api_v1.post("/meters")
 @login_required
+@requires_permission("meters.create")
 def create_meter():
     payload = request.get_json(force=True) or {}
     required = ["serial_number", "meter_type"]
@@ -336,6 +341,7 @@ def create_meter():
 
 @api_v1.put("/meters/<int:meter_id>")
 @login_required
+@requires_permission("meters.edit")
 def update_meter(meter_id: int):
     meter = Meter.get_by_id(meter_id)
     if not meter:
@@ -373,6 +379,7 @@ def update_meter(meter_id: int):
 
 @api_v1.delete("/meters/<int:meter_id>")
 @login_required
+@requires_permission("meters.delete")
 def delete_meter(meter_id: int):
     meter = Meter.get_by_id(meter_id)
     if not meter:
@@ -392,6 +399,7 @@ def delete_meter(meter_id: int):
 
 @api_v1.get("/meters/available")
 @login_required
+@requires_permission("meters.view")
 def available_meters():
     meter_type = request.args.get("meter_type")
     if not meter_type:
@@ -413,6 +421,7 @@ def available_meters():
 
 @api_v1.get("/meters/<int:meter_id>/readings")
 @login_required
+@requires_permission("meters.view")
 def meter_readings(meter_id: int):
     start = request.args.get("start_date")
     end = request.args.get("end_date")
@@ -425,6 +434,7 @@ def meter_readings(meter_id: int):
 
 @api_v1.route("/meters/export", methods=["GET"])
 @login_required
+@requires_permission("meters.view")
 def export_meters_pdf():
     """Export meters data to PDF"""
     try:
