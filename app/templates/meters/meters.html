@@ -54,61 +54,114 @@ block breadcrumb %}
             </div>
         </div>
 
-        <!-- Filters and Actions -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
-  <div
-    class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0"
-  >
-    <form id="meterFilters" method="get" action="{{ url_for('api_v1.meters_page') }}" class="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-                    <div class="relative">
-        <select name="estate_id" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
-          <option value="">All Estates</option>
-          {% for e in estates %}
-          <option value="{{ e.id }}" {% if current_filters.estate_id==e.id %}selected{% endif %}>{{ e.name }}</option>
-          {% endfor %}
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
-                    </div>
-                    <div class="relative">
-        <select name="meter_type" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
-          <option value="">All Types</option>
-          {% for t in meter_types %}
-          <option value="{{ t.value }}" {% if current_filters.meter_type==t.value %}selected{% endif %}>{{ t.label }}</option>
-          {% endfor %}
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
-                    </div>
-                    <div class="relative">
-        <select name="communication_status" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
-          <option value="">All Comm</option>
-          <option value="online" {% if current_filters.communication_status=='online' %}selected{% endif %}>Online</option>
-          <option value="offline" {% if current_filters.communication_status=='offline' %}selected{% endif %}>Offline</option>
-          <option value="error" {% if current_filters.communication_status=='error' %}selected{% endif %}>Error</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
-                    </div>
-      <div class="relative">
-        <select name="credit_status" onchange="this.form.submit()" class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8">
-          <option value="">All Credit</option>
-          <option value="ok" {% if current_filters.credit_status=='ok' %}selected{% endif %}>Active</option>
-          <option value="low" {% if current_filters.credit_status=='low' %}selected{% endif %}>Low Credit</option>
-          <option value="disconnected" {% if current_filters.credit_status=='disconnected' %}selected{% endif %}>Disconnected</option>
-        </select>
-        <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+        <!-- Header Row - Action Buttons -->
+        <div class="flex justify-end mb-4">
+          <div class="flex items-center gap-3">
+            <a
+              href="/api/v1/meters/export"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm transition-colors"
+              title="Export to PDF"
+            >
+              <i class="fas fa-file-pdf"></i>
+              Export PDF
+            </a>
+            <button 
+              type="button" 
+              onclick="showCreateMeter()" 
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-plus mr-2"></i>Create Meter
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <form id="meterFilters" method="get" action="{{ url_for('api_v1.meters_page') }}">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <!-- Left side - Filters -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Estate Filter -->
+                <div class="relative">
+                  <select 
+                    id="estateFilter"
+                    name="estate_id" 
+                    class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
+                  >
+                    <option value="">All Estates</option>
+                    {% for e in estates %}
+                    <option value="{{ e.id }}" {% if current_filters.estate_id==e.id %}selected{% endif %}>{{ e.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                 </div>
-    </form>
-                <div class="flex space-x-2">
-                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
-                        <i class="fas fa-sync mr-2"></i>Refresh All
-                    </button>
-                    <button class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
-                        <i class="fas fa-download mr-2"></i>Export
-                    </button>
-                    <button type="button" onclick="showCreateMeter()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                        <i class="fas fa-plus mr-2"></i>Create Meter
-                    </button>
+
+                <!-- Meter Type Filter -->
+                <div class="relative">
+                  <select 
+                    id="meterTypeFilter"
+                    name="meter_type" 
+                    class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
+                  >
+                    <option value="">All Types</option>
+                    {% for t in meter_types %}
+                    <option value="{{ t.value }}" {% if current_filters.meter_type==t.value %}selected{% endif %}>{{ t.label }}</option>
+                    {% endfor %}
+                  </select>
+                  <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                 </div>
+
+                <!-- Communication Status Filter -->
+                <div class="relative">
+                  <select 
+                    id="commStatusFilter"
+                    name="communication_status" 
+                    class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
+                  >
+                    <option value="">All Comm</option>
+                    <option value="online" {% if current_filters.communication_status=='online' %}selected{% endif %}>Online</option>
+                    <option value="offline" {% if current_filters.communication_status=='offline' %}selected{% endif %}>Offline</option>
+                    <option value="error" {% if current_filters.communication_status=='error' %}selected{% endif %}>Error</option>
+                  </select>
+                  <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                </div>
+
+                <!-- Credit Status Filter -->
+                <div class="relative">
+                  <select 
+                    id="creditStatusFilter"
+                    name="credit_status" 
+                    class="appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-8"
+                  >
+                    <option value="">All Credit</option>
+                    <option value="ok" {% if current_filters.credit_status=='ok' %}selected{% endif %}>Active</option>
+                    <option value="low" {% if current_filters.credit_status=='low' %}selected{% endif %}>Low Credit</option>
+                    <option value="disconnected" {% if current_filters.credit_status=='disconnected' %}selected{% endif %}>Disconnected</option>
+                  </select>
+                  <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
+                </div>
+              </div>
+
+              <!-- Right side - Action Buttons -->
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  onclick="applyFilters()"
+                  class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                >
+                  <i class="fas fa-filter mr-2"></i> Apply Filters
+                </button>
+                
+                <button
+                  type="button"
+                  onclick="clearFilters()"
+                  class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+                >
+                  <i class="fas fa-times mr-2"></i> Clear Filters
+                </button>
+              </div>
             </div>
+          </form>
         </div>
 
         <!-- Real-time Meters Grid -->
@@ -119,14 +172,6 @@ block breadcrumb %}
         Live Meter Readings
       </h2>
                     <div class="flex items-center gap-3">
-                        <a
-                            href="/api/v1/meters/export"
-                            class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                            title="Export to PDF"
-                        >
-                            <i class="fas fa-file-pdf"></i>
-                            Export PDF
-                        </a>
                         <span class="text-sm text-gray-500 dark:text-gray-400">
                             <i class="fas fa-circle text-green-500 text-xs mr-1 animate-pulse"></i>
                             Live
@@ -470,6 +515,17 @@ block breadcrumb %}
           hideDeleteMeter();
           window.location.reload();
           showFlashMessage("Meter deleted successfully", "success", true);
+        }
+
+        // Filter Functions
+        function applyFilters() {
+          const form = document.getElementById('meterFilters');
+          form.submit();
+        }
+
+        function clearFilters() {
+          
+          window.location.href = '/api/v1/meters';
         }
     </script>
 {% endblock %}
