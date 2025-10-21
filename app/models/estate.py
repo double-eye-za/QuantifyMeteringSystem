@@ -104,6 +104,12 @@ class Estate(db.Model):
         return estate
 
     def update_from_payload(self, payload, user_id: Optional[int] = None):
+        from .unit import Unit
+
+        # Check if rate table assignments are changing
+        old_electricity_rate_table_id = self.electricity_rate_table_id
+        old_water_rate_table_id = self.water_rate_table_id
+
         for field in (
             "code",
             "name",
@@ -128,6 +134,28 @@ class Estate(db.Model):
         if user_id is not None:
             self.updated_by = user_id
         db.session.commit()
+
+        # Update all units in this estate to inherit new rate table assignments only if they don't already have overrides
+        if (
+            old_electricity_rate_table_id != self.electricity_rate_table_id
+            or old_water_rate_table_id != self.water_rate_table_id
+        ):
+            units = Unit.query.filter_by(estate_id=self.id).all()
+            for unit in units:
+                # Only update if unit doesn't have an override 
+                if (
+                    unit.electricity_rate_table_id is None
+                    and self.electricity_rate_table_id is not None
+                ):
+                    unit.electricity_rate_table_id = self.electricity_rate_table_id
+                if (
+                    unit.water_rate_table_id is None
+                    and self.water_rate_table_id is not None
+                ):
+                    unit.water_rate_table_id = self.water_rate_table_id
+
+            db.session.commit()
+
         return self
 
     def delete(self):

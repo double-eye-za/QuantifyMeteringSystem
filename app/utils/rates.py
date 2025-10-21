@@ -86,5 +86,84 @@ def calculate_estate_bill(
     }
 
 
+def calculate_unit_bill(
+    *,
+    unit_id: int,
+    electricity_kwh: float,
+    water_kl: float,
+    electricity_structure: Optional[Dict[str, Any]] = None,
+    water_structure: Optional[Dict[str, Any]] = None,
+    electricity_markup_percent: Optional[float] = None,
+    water_markup_percent: Optional[float] = None,
+    service_fee: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Calculate bill for a specific unit using its rate table assignments."""
+    from ..models import Unit, Estate, RateTable
+
+    unit = Unit.get_by_id(unit_id)
+    if not unit:
+        raise ValueError(f"Unit {unit_id} not found")
+
+    estate = Estate.get_by_id(unit.estate_id)
+    if not estate:
+        raise ValueError(f"Estate {unit.estate_id} not found")
+
+    # Use unit's rate table assignments, fall back to estate if unit has None
+    electricity_rate_table_id = (
+        unit.electricity_rate_table_id or estate.electricity_rate_table_id
+    )
+    water_rate_table_id = unit.water_rate_table_id or estate.water_rate_table_id
+
+    # Get rate structures from rate tables
+    electricity_structure = electricity_structure or {}
+    water_structure = water_structure or {}
+
+    if electricity_rate_table_id:
+        electricity_rate_table = RateTable.get_by_id(electricity_rate_table_id)
+        if electricity_rate_table and electricity_rate_table.rate_structure:
+            electricity_structure = electricity_rate_table.rate_structure
+
+    if water_rate_table_id:
+        water_rate_table = RateTable.get_by_id(water_rate_table_id)
+        if water_rate_table and water_rate_table.rate_structure:
+            water_structure = water_rate_table.rate_structure
+
+    # Use estate markups if not provided
+    electricity_markup_percent = (
+        electricity_markup_percent or estate.electricity_markup_percentage
+    )
+    water_markup_percent = water_markup_percent or estate.water_markup_percentage
+
+    return calculate_estate_bill(
+        electricity_kwh=electricity_kwh,
+        water_kl=water_kl,
+        electricity_structure=electricity_structure,
+        water_structure=water_structure,
+        electricity_markup_percent=electricity_markup_percent,
+        water_markup_percent=water_markup_percent,
+        service_fee=service_fee,
+    )
 
 
+def calculate_bill_breakdown(
+    *,
+    consumption: float,
+    rate_structure: Dict[str, Any],
+    markup_percent: Optional[float] = None,
+    service_fee: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Calculate detailed bill breakdown for a single utility type."""
+    base_amount = compute_from_structure(consumption, rate_structure)
+    total_amount = apply_markup(base_amount, markup_percent)
+    fee = float(service_fee or 0.0)
+    final_total = round(total_amount + fee, 2)
+
+    return {
+        "consumption": consumption,
+        "base_amount": base_amount,
+        "markup_percent": markup_percent or 0.0,
+        "markup_amount": round(total_amount - base_amount, 2),
+        "total_amount": total_amount,
+        "service_fee": fee,
+        "final_total": final_total,
+    }

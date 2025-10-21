@@ -25,6 +25,8 @@ class Unit(db.Model):
     electricity_meter_id: Optional[int]
     water_meter_id: Optional[int]
     solar_meter_id: Optional[int]
+    electricity_rate_table_id: Optional[int]
+    water_rate_table_id: Optional[int]
     is_active: Optional[bool]
     created_by: Optional[int]
     updated_by: Optional[int]
@@ -50,6 +52,8 @@ class Unit(db.Model):
     electricity_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     solar_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
+    electricity_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
+    water_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     updated_by = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -92,10 +96,14 @@ class Unit(db.Model):
 
     @staticmethod
     def create_from_payload(payload, user_id: Optional[int] = None):
+        from .estate import Estate
+
         resident_id_val = payload.get("resident_id")
         occupancy = payload.get("occupancy_status")
         if occupancy is None and resident_id_val:
             occupancy = "occupied"
+
+        estate = Estate.get_by_id(payload["estate_id"])
 
         unit = Unit(
             estate_id=payload["estate_id"],
@@ -110,6 +118,10 @@ class Unit(db.Model):
             electricity_meter_id=payload.get("electricity_meter_id"),
             water_meter_id=payload.get("water_meter_id"),
             solar_meter_id=payload.get("solar_meter_id"),
+            electricity_rate_table_id=payload.get("electricity_rate_table_id")
+            or (estate.electricity_rate_table_id if estate else None),
+            water_rate_table_id=payload.get("water_rate_table_id")
+            or (estate.water_rate_table_id if estate else None),
             is_active=payload.get("is_active", True),
             created_by=user_id,
         )
@@ -131,6 +143,8 @@ class Unit(db.Model):
             "electricity_meter_id",
             "water_meter_id",
             "solar_meter_id",
+            "electricity_rate_table_id",
+            "water_rate_table_id",
             "is_active",
         ):
             if field in payload:
@@ -168,6 +182,8 @@ class Unit(db.Model):
             "electricity_meter_id": self.electricity_meter_id,
             "water_meter_id": self.water_meter_id,
             "solar_meter_id": self.solar_meter_id,
+            "electricity_rate_table_id": self.electricity_rate_table_id,
+            "water_rate_table_id": self.water_rate_table_id,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

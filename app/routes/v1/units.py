@@ -164,8 +164,11 @@ def apply_unit_overrides():
     """Apply a rate table override to a list of units by id or by estate+unit_numbers list."""
     payload = request.get_json(force=True) or {}
     rate_table_id = payload.get("rate_table_id")
+    utility_type = payload.get("utility_type", "electricity")
+
     if not rate_table_id:
         return jsonify({"error": "rate_table_id is required"}), 400
+
     rt = RateTable.get_by_id(int(rate_table_id))
     if not rt:
         return jsonify({"error": "Invalid rate_table_id"}), 400
@@ -174,36 +177,22 @@ def apply_unit_overrides():
     estate_id = payload.get("estate_id")
     unit_numbers = payload.get("unit_numbers") or []
 
-    import json
-
-    setting_key = "unit_rate_overrides"
-    setting: SystemSetting = SystemSetting.query.filter_by(
-        setting_key=setting_key
-    ).first()
-    overrides = {}
-    if setting and setting.setting_value:
-        try:
-            overrides = json.loads(setting.setting_value) or {}
-        except Exception:
-            overrides = {}
+    updated_unit_ids = []
 
     def apply_override_to_unit(unit_obj: Unit):
-        uid = str(unit_obj.id)
-        entry = overrides.get(uid) or {}
+        if utility_type == "electricity":
+            unit_obj.electricity_rate_table_id = int(rate_table_id)
+        elif utility_type == "water":
+            unit_obj.water_rate_table_id = int(rate_table_id)
 
-        if getattr(unit_obj, "electricity_meter_id", None):
-            entry["electricity_rate_table_id"] = int(rate_table_id)
-        if getattr(unit_obj, "water_meter_id", None):
-            entry["water_rate_table_id"] = int(rate_table_id)
-        overrides[uid] = entry
+        unit_obj.update_from_payload({}, current_user.id)
+        updated_unit_ids.append(unit_obj.id)
 
-    updated_unit_ids = []
     if unit_ids:
         for uid in unit_ids:
             u = Unit.get_by_id(int(uid))
             if u:
                 apply_override_to_unit(u)
-                updated_unit_ids.append(u.id)
 
     if estate_id and unit_numbers:
         for num in unit_numbers:
@@ -212,58 +201,112 @@ def apply_unit_overrides():
             ).first()
             if u:
                 apply_override_to_unit(u)
-                updated_unit_ids.append(u.id)
 
     if not updated_unit_ids:
         return jsonify({"error": "No units matched"}), 400
 
-    # Persist overrides
-    overrides_str = json.dumps(overrides)
-    if not setting:
-        setting = SystemSetting(
-            setting_key=setting_key,
-            setting_type="json",
-            setting_value=overrides_str,
-            updated_by=getattr(current_user, "id", None),
-        )
-        from ...db import db
+    log_action(
+        "unit.rate_override.apply",
+        entity_type="unit",
+        entity_id=None,
+        new_values={
+            "rate_table_id": int(rate_table_id),
+            "utility_type": utility_type,
+            "updated_unit_ids": updated_unit_ids,
+        },
+    )
 
-        db.session.add(setting)
-        db.session.commit()
-    else:
-        from ...db import db
-
-        setting.setting_value = overrides_str
-        setting.updated_by = getattr(current_user, "id", None)
-        db.session.commit()
-
-    for uid in updated_unit_ids:
-        log_action(
-            "unit.rate_override.apply",
-            entity_type="unit",
-            entity_id=uid,
-            new_values={"rate_table_id": rate_table_id},
-        )
-
-    return jsonify({"data": {"updated": updated_unit_ids}})
+    return jsonify(
+        {
+            "message": f"Rate table override applied to {len(updated_unit_ids)} units",
+            "updated_unit_ids": updated_unit_ids,
+        }
+    )
 
 
 @api_v1.get("/api/units/overrides")
 @login_required
 def list_unit_overrides():
-    import json
+    """Get all units with rate table overrides (non-null rate table IDs)"""
+    from ...db import db
 
-    setting_key = "unit_rate_overrides"
-    setting: SystemSetting = SystemSetting.query.filter_by(
-        setting_key=setting_key
-    ).first()
+    # Get all units that have rate table overrides
+    units_with_overrides = Unit.query.filter(
+        db.or_(
+            Unit.electricity_rate_table_id.isnot(None),
+            Unit.water_rate_table_id.isnot(None),
+        )
+    ).all()
+
     overrides = {}
-    if setting and setting.setting_value:
-        try:
-            overrides = json.loads(setting.setting_value) or {}
-        except Exception:
-            overrides = {}
+    for unit in units_with_overrides:
+        unit_data = {
+            "unit_id": unit.id,
+            "unit_number": unit.unit_number,
+            "estate_id": unit.estate_id,
+            "electricity_rate_table_id": unit.electricity_rate_table_id,
+            "water_rate_table_id": unit.water_rate_table_id,
+        }
+        overrides[str(unit.id)] = unit_data
+
     return jsonify({"data": overrides})
+
+
+@api_v1.delete("/api/units/overrides")
+@login_required
+def remove_unit_overrides():
+    """Remove rate table overrides from units (set to None to inherit from estate)"""
+    payload = request.get_json(force=True) or {}
+    utility_type = payload.get("utility_type", "electricity")
+
+    unit_ids = payload.get("unit_ids") or []
+    estate_id = payload.get("estate_id")
+    unit_numbers = payload.get("unit_numbers") or []
+
+    updated_unit_ids = []
+
+    def remove_override_from_unit(unit_obj: Unit):
+        if utility_type == "electricity":
+            unit_obj.electricity_rate_table_id = None
+        elif utility_type == "water":
+            unit_obj.water_rate_table_id = None
+
+        unit_obj.update_from_payload({}, current_user.id)
+        updated_unit_ids.append(unit_obj.id)
+
+    if unit_ids:
+        for uid in unit_ids:
+            u = Unit.get_by_id(int(uid))
+            if u:
+                remove_override_from_unit(u)
+
+    if estate_id and unit_numbers:
+        for num in unit_numbers:
+            u = Unit.query.filter_by(
+                estate_id=int(estate_id), unit_number=str(num)
+            ).first()
+            if u:
+                remove_override_from_unit(u)
+
+    if not updated_unit_ids:
+        return jsonify({"error": "No units matched"}), 400
+
+    log_action(
+        "unit.rate_override.remove",
+        entity_type="unit",
+        entity_id=None,
+        new_values={
+            "utility_type": utility_type,
+            "updated_unit_ids": updated_unit_ids,
+        },
+    )
+
+    return jsonify(
+        {
+            "message": f"Rate table override removed from {len(updated_unit_ids)} units",
+            "updated_unit_ids": updated_unit_ids,
+        }
+    )
 
 
 @api_v1.post("/units")
