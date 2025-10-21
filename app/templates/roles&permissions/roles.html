@@ -34,30 +34,48 @@ Roles & Permissions
                 </div>
             </div>
 
-    <!-- Search Section -->
-    <div class="mb-6">
-      <form id="filters" class="flex flex-col sm:flex-row gap-4" method="GET">
-        <div class="flex-1 max-w-md">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
-                </div>
-      <input
-        name="search"
-        id="search"
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              placeholder="Search roles by name or description..."
-        aria-label="Search by name or description"
-        value="{{ current_filters.search }}"
-      />
-                    </div>
-                </div>
-    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
-      <i class="fa-solid fa-search mr-2"></i>
-      Search
-    </button>
-  </form>
+    <!-- Filters Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+      <form id="filters" method="GET">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <!-- Left side - Search -->
+          <div class="flex-1 max-w-md">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
+              </div>
+              <input
+                name="search"
+                id="search"
+                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Search roles by name or description..."
+                aria-label="Search by name or description"
+                value="{{ current_filters.search }}"
+              />
             </div>
+          </div>
+
+          <!-- Right side - Action Buttons -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              onclick="applyFilters()"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+            
+            <button
+              type="button"
+              onclick="clearFilters()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-times mr-2"></i> Clear Filters
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
 
   <!-- Desktop View - Table -->
     <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
@@ -816,5 +834,29 @@ async function deleteRole(roleId) {
         showFlashMessage('Failed to delete role', 'error', true);
             }
         }
+
+    
+    function applyFilters() {
+      const form = document.getElementById('filters');
+      form.submit();
+    }
+
+    function clearFilters() {
+      
+      window.location.href = '/api/v1/roles';
+    }
+
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('search');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyFilters();
+          }
+        });
+      }
+    });
     </script>
 {% endblock %}
