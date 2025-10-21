@@ -72,6 +72,14 @@ class User(UserMixin, db.Model):
             return False, "New passwords do not match"
         if not user.check_password(current_password):
             return False, "Current password is incorrect"
+
+        # Validate new password against security settings
+        from ..utils.password import validate_password_policy
+
+        is_valid, error_message = validate_password_policy(new_password)
+        if not is_valid:
+            return False, error_message
+
         user.set_password(new_password)
         db.session.commit()
         return True, None

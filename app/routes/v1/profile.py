@@ -61,3 +61,13 @@ def profile_change_password():
     if not ok:
         return jsonify({"error": err}), 400
     return jsonify({"message": "Password updated successfully"})
+
+
+@api_v1.route("/profile/password-requirements", methods=["GET"])
+@login_required
+def get_password_requirements():
+    """Get password requirements for the current user"""
+    from ...utils.password import get_password_requirements
+
+    requirements = get_password_requirements()
+    return jsonify({"requirements": requirements})
