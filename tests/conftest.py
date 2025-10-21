@@ -14,7 +14,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from application import create_app
 from app.db import db
-from app.models import User
+from app.models import User, Role
+from scripts.seed import ensure_roles_and_super_admin
 
 
 @pytest.fixture(scope="session")
@@ -36,19 +37,29 @@ def app():
     )
     with app.app_context():
         db.create_all()
-        # create a default user
-        user = User(
-            username="admin",
-            email="admin@example.com",
-            first_name="Admin",
-            last_name="User",
-            password_hash="",
-        )
-        from app.auth import set_password
 
-        set_password(user, "password")
-        db.session.add(user)
-        db.session.commit()
+        # Create roles and super admin user
+        ensure_roles_and_super_admin()
+
+        # Get the super admin user that was created (username: takudzwa)
+        user = User.query.filter_by(username="takudzwa").first()
+        if not user:
+            # Fallback: create admin user manually
+            admin_role = Role.query.filter_by(name="Super Administrator").first()
+            user = User(
+                username="admin",
+                email="admin@example.com",
+                first_name="Admin",
+                last_name="User",
+                password_hash="",
+                role=admin_role,
+                is_super_admin=True,
+            )
+            from app.auth import set_password
+
+            set_password(user, "password")
+            db.session.add(user)
+            db.session.commit()
     yield app
 
 
@@ -59,5 +70,5 @@ def client(app):
 
 def login(client):
     return client.post(
-        "/api/v1/auth/login", json={"username": "admin", "password": "password"}
+        "/api/v1/auth/login", json={"username": "takudzwa", "password": "takudzwa"}
     )
