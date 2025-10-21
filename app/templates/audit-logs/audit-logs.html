@@ -9,77 +9,96 @@
     <div
       class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6"
     >
-      <div
-        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
-      >
-                          <!-- Filters -->
-                          <div class="flex flex-wrap items-center gap-3">
-          <form id="auditFilters" method="get" action="{{ url_for('api_v1.audit_logs_page') }}" class="w-full flex flex-wrap items-end gap-6">
-                              <!-- Date Range -->
-          <div class="flex items-end gap-4">
-            <div>
-              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
-              <input name="start_date" value="{{ current_filters.start_date or '' }}"
-                type="date"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-              />
+      <form id="auditFilters" method="get" action="{{ url_for('api_v1.audit_logs_page') }}">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <!-- Left side - Filters -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Date Range -->
+            <div class="flex items-end gap-4">
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
+                <input 
+                  name="start_date" 
+                  value="{{ current_filters.start_date or '' }}"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
+                <input 
+                  name="end_date" 
+                  value="{{ current_filters.end_date or '' }}"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
             </div>
+
+            <!-- Action Type -->
             <div>
-              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
-              <input name="end_date" value="{{ current_filters.end_date or '' }}"
-                type="date"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-              />
+              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Action</label>
+              <select 
+                id="actionFilter"
+                name="action" 
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="" {% if not current_filters.action %}selected{% endif %}>All Actions</option>
+                <option value="user.create" {% if current_filters.action=='user.create' %}selected{% endif %}>User Created</option>
+                <option value="user.update" {% if current_filters.action=='user.update' %}selected{% endif %}>User Updated</option>
+                <option value="user.delete" {% if current_filters.action=='user.delete' %}selected{% endif %}>User Deleted</option>
+                <option value="role.create" {% if current_filters.action=='role.create' %}selected{% endif %}>Role Created</option>
+                <option value="role.update" {% if current_filters.action=='role.update' %}selected{% endif %}>Role Updated</option>
+                <option value="role.delete" {% if current_filters.action=='role.delete' %}selected{% endif %}>Role Deleted</option>
+                <option value="unit.create" {% if current_filters.action=='unit.create' %}selected{% endif %}>Unit Created</option>
+                <option value="unit.update" {% if current_filters.action=='unit.update' %}selected{% endif %}>Unit Updated</option>
+                <option value="unit.delete" {% if current_filters.action=='unit.delete' %}selected{% endif %}>Unit Deleted</option>
+                <option value="estate.create" {% if current_filters.action=='estate.create' %}selected{% endif %}>Estate Created</option>
+                <option value="estate.update" {% if current_filters.action=='estate.update' %}selected{% endif %}>Estate Updated</option>
+                <option value="estate.delete" {% if current_filters.action=='estate.delete' %}selected{% endif %}>Estate Deleted</option>
+                <option value="resident.create" {% if current_filters.action=='resident.create' %}selected{% endif %}>Resident Created</option>
+                <option value="resident.update" {% if current_filters.action=='resident.update' %}selected{% endif %}>Resident Updated</option>
+                <option value="resident.delete" {% if current_filters.action=='resident.delete' %}selected{% endif %}>Resident Deleted</option>
+              </select>
             </div>
-          
-          <!-- Action Type -->
-          <div>
-          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Action</label>
-          <select name="action" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-            <option value="" {% if not current_filters.action %}selected{% endif %}>All Actions</option>
-            <option value="user.create" {% if current_filters.action=='user.create' %}selected{% endif %}>User Created</option>
-            <option value="user.update" {% if current_filters.action=='user.update' %}selected{% endif %}>User Updated</option>
-            <option value="user.delete" {% if current_filters.action=='user.delete' %}selected{% endif %}>User Deleted</option>
-            <option value="role.create" {% if current_filters.action=='role.create' %}selected{% endif %}>Role Created</option>
-            <option value="role.update" {% if current_filters.action=='role.update' %}selected{% endif %}>Role Updated</option>
-            <option value="role.delete" {% if current_filters.action=='role.delete' %}selected{% endif %}>Role Deleted</option>
-            <option value="unit.create" {% if current_filters.action=='unit.create' %}selected{% endif %}>Unit Created</option>
-            <option value="unit.update" {% if current_filters.action=='unit.update' %}selected{% endif %}>Unit Updated</option>
-            <option value="unit.delete" {% if current_filters.action=='unit.delete' %}selected{% endif %}>Unit Deleted</option>
-            <option value="estate.create" {% if current_filters.action=='estate.create' %}selected{% endif %}>Estate Created</option>
-            <option value="estate.update" {% if current_filters.action=='estate.update' %}selected{% endif %}>Estate Updated</option>
-            <option value="estate.delete" {% if current_filters.action=='estate.delete' %}selected{% endif %}>Estate Deleted</option>
-            <option value="resident.create" {% if current_filters.action=='resident.create' %}selected{% endif %}>Resident Created</option>
-            <option value="resident.update" {% if current_filters.action=='resident.update' %}selected{% endif %}>Resident Updated</option>
-            <option value="resident.delete" {% if current_filters.action=='resident.delete' %}selected{% endif %}>Resident Deleted</option>
-          </select>
+
+            <!-- User Filter -->
+            <div>
+              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">User</label>
+              <select 
+                id="userFilter"
+                name="user_id" 
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="" {% if not current_filters.user_id %}selected{% endif %}>All Users</option>
+                {% for u in users %}
+                <option value="{{ u.id }}" {% if current_filters.user_id==u.id %}selected{% endif %}>{{ u.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
-  
-          <!-- User Filter -->
-          <div>
-          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">User</label>
-          <select name="user_id" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-            <option value="" {% if not current_filters.user_id %}selected{% endif %}>All Users</option>
-            {% for u in users %}
-            <option value="{{ u.id }}" {% if current_filters.user_id==u.id %}selected{% endif %}>{{ u.name }}</option>
-            {% endfor %}
-          </select>
+
+          <!-- Right side - Action Buttons -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              onclick="applyFilters()"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+            
+            <button
+              type="button"
+              onclick="clearFilters()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-times mr-2"></i> Clear Filters
+            </button>
           </div>
-  
-          <div class="ml-auto self-end flex items-end gap-2">
-            <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">Apply</button>
-            <a href="{{ url_for('api_v1.audit_logs_page') }}" class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-600">Clear</a>
-          </div>
-          </form>
-                              </div>
-  
-                              
-                          </div>
-  
-                          <!-- Actions -->
-        <div class="flex items-center gap-3"></div>
-                      </div>
-                  </div>
+        </div>
+      </form>
+    </div>
   
                   <!-- Audit Log Table -->
     <div
@@ -462,6 +481,17 @@
         changesEl.innerHTML = html;
         showDetails();
       } catch (e) {}
+    }
+
+    // Filter Functions
+    function applyFilters() {
+      const form = document.getElementById('auditFilters');
+      form.submit();
+    }
+
+    function clearFilters() {
+      // Redirect to clean audit logs page
+      window.location.href = '/api/v1/audit-logs';
     }
       </script>
   {% endblock %}
