@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 
 from . import api_v1
 from ...models.user import User
+from ...utils.audit import log_action
 
 
 @api_v1.route("/profile", methods=["GET"])
@@ -32,7 +33,25 @@ def profile_page():
 @login_required
 def update_profile():
     payload = request.get_json(force=True) or {}
+
+    before_data = {
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+    }
+
     user = User.update_profile(current_user, payload)
+
+    # Audit log profile update
+    log_action(
+        "user.profile.update",
+        entity_type="user",
+        entity_id=user.id,
+        old_values=before_data,
+        new_values=payload,
+    )
+
     return jsonify(
         {
             "data": {
@@ -60,6 +79,17 @@ def profile_change_password():
     )
     if not ok:
         return jsonify({"error": err}), 400
+
+    log_action(
+        "user.profile.password_change",
+        entity_type="user",
+        entity_id=current_user.id,
+        new_values={
+            "username": current_user.username,
+            "email": current_user.email,
+        },
+    )
+
     return jsonify({"message": "Password updated successfully"})
 
 

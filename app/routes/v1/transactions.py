@@ -5,6 +5,7 @@ from flask_login import login_required
 
 from ...models import Transaction
 from ...utils.pagination import paginate_query
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -65,5 +66,18 @@ def reverse_transaction(txn_id: int):
     if not t:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
+
+    before_status = t.status
+    before_amount = float(t.amount)
+
     t.reverse(reason=payload.get("reason"))
+
+    log_action(
+        "transaction.reverse",
+        entity_type="transaction",
+        entity_id=txn_id,
+        old_values={"status": before_status, "amount": before_amount},
+        new_values={"status": t.status, "reason": payload.get("reason")},
+    )
+
     return jsonify({"data": {"id": t.id, "status": t.status}})

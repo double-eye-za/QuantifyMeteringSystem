@@ -5,6 +5,7 @@ from flask_login import login_required
 
 from ...models import Wallet, Transaction
 from ...utils.pagination import paginate_query
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -58,6 +59,19 @@ def topup_wallet(wallet_id: int):
         payment_method=payment_method,
         metadata=metadata,
     )
+
+    log_action(
+        "wallet.topup",
+        entity_type="wallet",
+        entity_id=wallet_id,
+        new_values={
+            "amount": amount,
+            "payment_method": payment_method,
+            "reference": reference,
+            "transaction_id": txn.id,
+        },
+    )
+
     return jsonify(
         {
             "data": {

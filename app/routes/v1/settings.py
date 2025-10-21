@@ -4,6 +4,7 @@ from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
 from ...models import SystemSetting
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -45,6 +46,14 @@ def save_general_settings():
         ]
 
         SystemSetting.save_settings(settings_to_save, "general", current_user.id)
+
+        log_action(
+            "settings.general.update",
+            entity_type="system_setting",
+            entity_id=None,
+            new_values={"settings_category": "general", "settings_data": data},
+        )
+
         return jsonify({"message": "General settings saved successfully"})
 
     except Exception as e:
@@ -89,6 +98,14 @@ def save_security_settings():
         ]
 
         SystemSetting.save_settings(settings_to_save, "security", current_user.id)
+
+        log_action(
+            "settings.security.update",
+            entity_type="system_setting",
+            entity_id=None,
+            new_values={"settings_category": "security", "settings_data": data},
+        )
+
         return jsonify({"message": "Security settings saved successfully"})
 
     except Exception as e:
@@ -123,6 +140,14 @@ def save_notification_settings():
         ]
 
         SystemSetting.save_settings(settings_to_save, "notifications", current_user.id)
+
+        log_action(
+            "settings.notifications.update",
+            entity_type="system_setting",
+            entity_id=None,
+            new_values={"settings_category": "notifications", "settings_data": data},
+        )
+
         return jsonify({"message": "Notification settings saved successfully"})
 
     except Exception as e:

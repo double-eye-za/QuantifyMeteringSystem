@@ -264,9 +264,6 @@ def meter_details_page(meter_id: str):
     )
 
 
-# Removed separate list endpoint; logic consolidated into meters_page
-
-
 @api_v1.get("/meters/<int:meter_id>")
 @login_required
 def get_meter(meter_id: int):

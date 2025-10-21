@@ -13,6 +13,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 from ...models import User
 from ...db import db
+from ...utils.audit import log_action
 from . import api_v1
 
 
@@ -161,6 +162,17 @@ def login():
         session["_user_id"] = str(user.id)
         session["_fresh"] = True
 
+    log_action(
+        "user.login",
+        entity_type="user",
+        entity_id=user.id,
+        new_values={
+            "username": user.username,
+            "email": user.email,
+            "login_method": "password",
+        },
+    )
+
     # Check if this is a web request (HTML form) or API request (JSON)
     if request.headers.get("Content-Type") == "application/json":
         return jsonify({"message": "Logged in", "data": {"user_id": user.id}})
@@ -171,7 +183,19 @@ def login():
 @api_v1.route("/auth/logout", methods=["POST", "GET"])
 @login_required
 def logout():
+    user_id = current_user.id
+    username = current_user.username
+    email = current_user.email
+
     logout_user()
+
+    log_action(
+        "user.logout",
+        entity_type="user",
+        entity_id=user_id,
+        new_values={"username": username, "email": email},
+    )
+
     # Check if this is a web request or API request
     if request.headers.get("Content-Type") == "application/json":
         return jsonify({"message": "Logged out"})
@@ -193,4 +217,12 @@ def change_password():
 
     current_user.set_password(new_password)
     db.session.commit()
+
+    log_action(
+        "user.password_change",
+        entity_type="user",
+        entity_id=current_user.id,
+        new_values={"username": current_user.username, "email": current_user.email},
+    )
+
     return jsonify({"message": "Password changed"})
