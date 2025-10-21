@@ -292,28 +292,101 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
 
 
 def ensure_roles_and_super_admin() -> None:
-    """Create Super Administrator, Administrator, Standard User roles with full CRUD permissions and a super admin user."""
+    """Create Super Administrator, Administrator, Standard User roles with appropriate permissions and a super admin user."""
     from app.models.permissions import Permission
 
+    # Define permissions for each module
     full_crud = {"view": True, "create": True, "edit": True, "delete": True}
-    modules = [
-        "estates",
-        "units",
-        "residents",
-        "meters",
-        "wallets",
-        "transactions",
-        "notifications",
-        "rate_tables",
-        "reports",
-        "system_settings",
-        "users",
-        "roles",
-        "audit_logs",
-    ]
-    permissions_payload = {m: full_crud for m in modules}
+    view_only = {"view": True}
 
-    def get_or_create_role(name: str, description: str) -> int:
+    # Super Admin gets all permissions
+    super_admin_permissions = {
+        "estates": full_crud,
+        "units": full_crud,
+        "meters": full_crud,
+        "residents": full_crud,
+        "rate_tables": full_crud,
+        "settings": {"view": True, "edit": True},
+        "audit_logs": view_only,
+        "wallets": view_only,
+        "transactions": view_only,
+        "notifications": view_only,
+        "reports": view_only,
+        "users": {
+            "view": True,
+            "create": True,
+            "edit": True,
+            "delete": True,
+            "enable": True,
+            "disable": True,
+        },
+        "roles": full_crud,
+    }
+
+    admin_permissions = {
+        "estates": full_crud,
+        "units": full_crud,
+        "meters": full_crud,
+        "residents": full_crud,
+        "rate_tables": full_crud,
+        "settings": {
+            "view": False,
+            "edit": False,
+        },
+        "audit_logs": {
+            "view": False,
+        },
+        "wallets": {"view": False},
+        "transactions": {"view": False},
+        "notifications": view_only,
+        "reports": {"view": False},
+        "users": {
+            "view": True,
+            "create": True,
+            "edit": True,
+            "delete": True,
+            "enable": True,
+            "disable": True,
+        },
+        "roles": full_crud,
+    }
+
+    standard_permissions = {
+        "estates": {"view": True, "create": False, "edit": False, "delete": False},
+        "units": {"view": True, "create": False, "edit": False, "delete": False},
+        "meters": {"view": True, "create": False, "edit": False, "delete": False},
+        "residents": {"view": False, "create": False, "edit": False, "delete": False},
+        "rate_tables": {"view": True, "create": False, "edit": False, "delete": False},
+        "settings": {
+            "view": False,
+            "edit": False,
+        },  
+        "audit_logs": {
+            "view": False,
+        }, 
+        "wallets": {"view": True},
+        "transactions": {"view": True},
+        "notifications": {
+            "view": True,
+        },
+        "reports": {
+            "view": False,
+        },
+        "users": {
+            "view": False,
+            "create": False,
+            "edit": False,
+            "delete": False,
+        },  
+        "roles": {
+            "view": False,
+            "create": False,
+            "edit": False,
+            "delete": False,
+        }, 
+    }
+
+    def get_or_create_role(name: str, description: str, permissions_data: dict):
         role = Role.query.filter_by(name=name).first()
         if role and role.permission_id:
             return role.id
@@ -322,7 +395,7 @@ def ensure_roles_and_super_admin() -> None:
             perm = Permission.create_permission(
                 name=f"{name} Permissions",
                 description=f"Permissions for {name}",
-                permissions_data=permissions_payload,
+                permissions_data=permissions_data,
             )
             db.session.flush()
         if not role:
@@ -339,10 +412,14 @@ def ensure_roles_and_super_admin() -> None:
         return role.id
 
     super_admin_role_id = get_or_create_role(
-        "Super Administrator", "Full system access"
+        "Super Administrator", "Full system access", super_admin_permissions
     )
-    admin_role_id = get_or_create_role("Administrator", "Administrative access")
-    standard_role_id = get_or_create_role("Standard User", "Standard user access")
+    admin_role_id = get_or_create_role(
+        "Administrator", "Administrative access", admin_permissions
+    )
+    standard_role_id = get_or_create_role(
+        "Standard User", "Standard user access", standard_permissions
+    )
 
     # Ensure the requested super admin user
     user = User.query.filter_by(email="takudzwa@metalogix.solutions").first()
