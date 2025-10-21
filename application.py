@@ -1,5 +1,5 @@
 from __future__ import annotations
-from flask import Flask
+from flask import Flask, render_template
 from config import Config
 from app.db import db
 from app.routes.v1 import api_v1
@@ -81,6 +81,9 @@ def create_app() -> Flask:
         # Configure session timeout from settings
         configure_session_timeout(app)
 
+        # Register error handlers
+        register_error_handlers(app)
+
     return app
 
 
@@ -109,6 +112,30 @@ def configure_session_timeout(app: Flask):
     except Exception as e:
         app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=15)
         print(f"Warning: Could not load session timeout setting, using default: {e}")
+
+
+def register_error_handlers(app: Flask):
+    """Register custom error handlers for better user experience"""
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """Handle 404 Not Found errors with custom template"""
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handle 500 Internal Server errors with custom template"""
+        return render_template("errors/500.html"), 500
+
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        """Handle 403 Forbidden errors"""
+        return render_template("errors/403.html"), 403
+
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        """Handle any other unhandled exceptions"""
+        return render_template("errors/error.html"), 500
 
 
 if __name__ == "__main__":
