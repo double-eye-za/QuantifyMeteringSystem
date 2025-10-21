@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import date
+from datetime import date, time
+from typing import Optional
 import json
 import logging
 
@@ -220,12 +221,14 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
         from_kwh: float,
         to_kwh,
         rate: float,
-        desc: str = None,
+        desc: Optional[str] = None,
     ):
         existing = RateTableTier.query.filter_by(
             rate_table_id=rt.id, tier_number=tier_number
         ).first()
         if existing:
+            return
+        if rt.id is None:
             return
         t = RateTableTier(
             rate_table_id=rt.id,
@@ -238,8 +241,6 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
         db.session.add(t)
 
     # Helper to ensure TOU
-    from datetime import time
-
     def add_tou(
         rt: RateTable,
         name: str,
@@ -256,6 +257,8 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
             end_time=end,
         ).first()
         if existing:
+            return
+        if rt.id is None:
             return
         p = TimeOfUseRate(
             rate_table_id=rt.id,
@@ -367,14 +370,14 @@ def create_estates_and_units(
     # Estates inspired by prototype
     estates_data = [
         {
-            "code": "WCRK",
-            "name": "Willow Creek Estate",
+            "code": "OAKR",
+            "name": "Oak Ridge Estate",
             "address": "123 Main Road",
             "city": "Johannesburg",
             "postal_code": "2000",
             "contact_name": "John Smith",
             "contact_phone": "+27 11 123 4567",
-            "contact_email": "manager.willow@example.com",
+            "contact_email": "manager.oakridge@example.com",
             "total_units": 50,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
@@ -383,14 +386,14 @@ def create_estates_and_units(
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
-            "code": "PKVG",
-            "name": "Parkview Gardens",
+            "code": "GRNV",
+            "name": "Green Valley Gardens",
             "address": "456 Park Avenue",
             "city": "Pretoria",
             "postal_code": "0083",
             "contact_name": "Jane Doe",
             "contact_phone": "+27 12 345 6789",
-            "contact_email": "manager.parkview@example.com",
+            "contact_email": "manager.greenvalley@example.com",
             "total_units": 50,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
@@ -399,14 +402,14 @@ def create_estates_and_units(
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
-            "code": "SNSR",
-            "name": "Sunset Ridge Estate",
-            "address": "789 Ridge Road",
-            "city": "Cape Town",
-            "postal_code": "7441",
+            "code": "DRBN",
+            "name": "Durban Heights Estate",
+            "address": "789 Beach Road",
+            "city": "Durban",
+            "postal_code": "4001",
             "contact_name": "Peter Brown",
-            "contact_phone": "+27 21 555 0101",
-            "contact_email": "manager.sunset@example.com",
+            "contact_phone": "+27 31 555 0101",
+            "contact_email": "manager.durban@example.com",
             "total_units": 75,
             "electricity_markup_percentage": 20.0,
             "water_markup_percentage": 15.0,
@@ -415,14 +418,14 @@ def create_estates_and_units(
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
         },
         {
-            "code": "RVMD",
-            "name": "Riverside Meadows",
-            "address": "12 River Close",
-            "city": "Johannesburg",
-            "postal_code": "2191",
+            "code": "PEBA",
+            "name": "Port Elizabeth Bayview",
+            "address": "12 Bay Close",
+            "city": "Port Elizabeth",
+            "postal_code": "6001",
             "contact_name": "Sarah Johnson",
-            "contact_phone": "+27 10 555 0000",
-            "contact_email": "manager.riverside@example.com",
+            "contact_phone": "+27 41 555 0000",
+            "contact_email": "manager.pebayview@example.com",
             "total_units": 20,
             "electricity_markup_percentage": 15.0,
             "water_markup_percentage": 10.0,
@@ -435,11 +438,12 @@ def create_estates_and_units(
     estates: dict[str, Estate] = {}
     estates_created = 0
     for ed in estates_data:
-        estate = Estate.query.filter_by(code=ed["code"]).first()
+        estate_code: str = ed["code"]
+        estate = Estate.query.filter_by(code=estate_code).first()
         if not estate:
             estate = Estate.create_from_payload(ed)
             estates_created += 1
-        estates[ed["code"]] = estate
+        estates[estate_code] = estate
 
     # Create sample meters and units matching prototype examples
     meters_created = 0
@@ -456,14 +460,14 @@ def create_estates_and_units(
         meters_created += 1
         return m
 
-    # Willow Creek examples + bulk meters
-    blk_e_wcrk = ensure_meter("BULK-E-WCRK", "bulk_electricity")
-    blk_w_wcrk = ensure_meter("BULK-W-WCRK", "bulk_water")
-    wcrk = estates["WCRK"]
-    if not wcrk.bulk_electricity_meter_id:
-        wcrk.bulk_electricity_meter_id = blk_e_wcrk.id
-    if not wcrk.bulk_water_meter_id:
-        wcrk.bulk_water_meter_id = blk_w_wcrk.id
+    # Oak Ridge examples + bulk meters
+    blk_e_oakr = ensure_meter("BULK-E-OAKR", "bulk_electricity")
+    blk_w_oakr = ensure_meter("BULK-W-OAKR", "bulk_water")
+    oakr = estates["OAKR"]
+    if not oakr.bulk_electricity_meter_id:
+        oakr.bulk_electricity_meter_id = blk_e_oakr.id
+    if not oakr.bulk_water_meter_id:
+        oakr.bulk_water_meter_id = blk_w_oakr.id
     db.session.commit()
 
     e_e460_001 = ensure_meter("E460-001", "electricity")
@@ -471,18 +475,20 @@ def create_estates_and_units(
     e_sol_001 = ensure_meter("SOL-001", "solar")
 
     unit_a101 = Unit.query.filter_by(
-        estate_id=estates["WCRK"].id, unit_number="A-101"
+        estate_id=estates["OAKR"].id, unit_number="A-101"
     ).first()
     if not unit_a101:
         unit_a101 = Unit.create_from_payload(
             {
-                "estate_id": estates["WCRK"].id,
+                "estate_id": estates["OAKR"].id,
                 "unit_number": "A-101",
                 "floor": "Ground Floor",
                 "occupancy_status": "occupied",
                 "electricity_meter_id": e_e460_001.id,
                 "water_meter_id": e_wtr_001.id,
                 "solar_meter_id": e_sol_001.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
@@ -492,67 +498,73 @@ def create_estates_and_units(
     e_wtr_002 = ensure_meter("WTR-002", "water")
     e_sol_002 = ensure_meter("SOL-002", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["WCRK"].id, unit_number="A-102"
+        estate_id=estates["OAKR"].id, unit_number="A-102"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["WCRK"].id,
+                "estate_id": estates["OAKR"].id,
                 "unit_number": "A-102",
                 "floor": "Ground Floor",
                 "occupancy_status": "occupied",
                 "electricity_meter_id": e_e460_002.id,
                 "water_meter_id": e_wtr_002.id,
                 "solar_meter_id": e_sol_002.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
 
-    # Parkview + bulk
-    blk_e_pkvg = ensure_meter("BULK-E-PKVG", "bulk_electricity")
-    blk_w_pkvg = ensure_meter("BULK-W-PKVG", "bulk_water")
-    pkvg = estates["PKVG"]
-    if not pkvg.bulk_electricity_meter_id:
-        pkvg.bulk_electricity_meter_id = blk_e_pkvg.id
-    if not pkvg.bulk_water_meter_id:
-        pkvg.bulk_water_meter_id = blk_w_pkvg.id
+    # Green Valley Gardens + bulk
+    blk_e_grnv = ensure_meter("BULK-E-GRNV", "bulk_electricity")
+    blk_w_grnv = ensure_meter("BULK-W-GRNV", "bulk_water")
+    grnv = estates["GRNV"]
+    if not grnv.bulk_electricity_meter_id:
+        grnv.bulk_electricity_meter_id = blk_e_grnv.id
+    if not grnv.bulk_water_meter_id:
+        grnv.bulk_water_meter_id = blk_w_grnv.id
     db.session.commit()
 
-    # Vacant example in Parkview
-    pk_e460_051 = ensure_meter("E460-051", "electricity")
-    pk_wtr_051 = ensure_meter("WTR-051", "water")
-    pk_sol_051 = ensure_meter("SOL-051", "solar")
+    # Vacant example in Green Valley Gardens
+    gv_e460_051 = ensure_meter("E460-051", "electricity")
+    gv_wtr_051 = ensure_meter("WTR-051", "water")
+    gv_sol_051 = ensure_meter("SOL-051", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["PKVG"].id, unit_number="B-201"
+        estate_id=estates["GRNV"].id, unit_number="B-201"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["PKVG"].id,
+                "estate_id": estates["GRNV"].id,
                 "unit_number": "B-201",
                 "floor": "Second Floor",
                 "occupancy_status": "vacant",
-                "electricity_meter_id": pk_e460_051.id,
-                "water_meter_id": pk_wtr_051.id,
-                "solar_meter_id": pk_sol_051.id,
+                "electricity_meter_id": gv_e460_051.id,
+                "water_meter_id": gv_wtr_051.id,
+                "solar_meter_id": gv_sol_051.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
 
-    # Another Parkview occupied unit
-    pk_e460_052 = ensure_meter("E460-052", "electricity")
-    pk_wtr_052 = ensure_meter("WTR-052", "water")
-    pk_sol_052 = ensure_meter("SOL-052", "solar")
+    # Another Green Valley Gardens occupied unit
+    gv_e460_052 = ensure_meter("E460-052", "electricity")
+    gv_wtr_052 = ensure_meter("WTR-052", "water")
+    gv_sol_052 = ensure_meter("SOL-052", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["PKVG"].id, unit_number="B-202"
+        estate_id=estates["GRNV"].id, unit_number="B-202"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["PKVG"].id,
+                "estate_id": estates["GRNV"].id,
                 "unit_number": "B-202",
                 "floor": "Second Floor",
                 "occupancy_status": "occupied",
-                "electricity_meter_id": pk_e460_052.id,
-                "water_meter_id": pk_wtr_052.id,
-                "solar_meter_id": pk_sol_052.id,
+                "electricity_meter_id": gv_e460_052.id,
+                "water_meter_id": gv_wtr_052.id,
+                "solar_meter_id": gv_sol_052.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
@@ -560,100 +572,108 @@ def create_estates_and_units(
     # Additional meters
     ensure_meter("WAT-025", "water")
 
-    # Sunset Ridge + bulk
-    blk_e_snsr = ensure_meter("BULK-E-SNSR", "bulk_electricity")
-    blk_w_snsr = ensure_meter("BULK-W-SNSR", "bulk_water")
-    snsr = estates["SNSR"]
-    if not snsr.bulk_electricity_meter_id:
-        snsr.bulk_electricity_meter_id = blk_e_snsr.id
-    if not snsr.bulk_water_meter_id:
-        snsr.bulk_water_meter_id = blk_w_snsr.id
+    # Durban Heights + bulk
+    blk_e_drbn = ensure_meter("BULK-E-DRBN", "bulk_electricity")
+    blk_w_drbn = ensure_meter("BULK-W-DRBN", "bulk_water")
+    drbn = estates["DRBN"]
+    if not drbn.bulk_electricity_meter_id:
+        drbn.bulk_electricity_meter_id = blk_e_drbn.id
+    if not drbn.bulk_water_meter_id:
+        drbn.bulk_water_meter_id = blk_w_drbn.id
     db.session.commit()
 
-    # Sunset Ridge two units
-    sn_e460_050 = ensure_meter("E460-050", "electricity")
-    sn_wtr_050 = ensure_meter("WTR-050", "water")
-    sn_sol_050 = ensure_meter("SOL-050", "solar")
+    # Durban Heights two units
+    dh_e460_050 = ensure_meter("E460-050", "electricity")
+    dh_wtr_050 = ensure_meter("WTR-050", "water")
+    dh_sol_050 = ensure_meter("SOL-050", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["SNSR"].id, unit_number="C-301"
+        estate_id=estates["DRBN"].id, unit_number="C-301"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["SNSR"].id,
+                "estate_id": estates["DRBN"].id,
                 "unit_number": "C-301",
                 "floor": "Third Floor",
                 "occupancy_status": "occupied",
-                "electricity_meter_id": sn_e460_050.id,
-                "water_meter_id": sn_wtr_050.id,
-                "solar_meter_id": sn_sol_050.id,
+                "electricity_meter_id": dh_e460_050.id,
+                "water_meter_id": dh_wtr_050.id,
+                "solar_meter_id": dh_sol_050.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
 
-    sn_e460_075 = ensure_meter("E460-075", "electricity")
-    sn_wtr_075 = ensure_meter("WTR-075", "water")
-    sn_sol_075 = ensure_meter("SOL-075", "solar")
+    dh_e460_075 = ensure_meter("E460-075", "electricity")
+    dh_wtr_075 = ensure_meter("WTR-075", "water")
+    dh_sol_075 = ensure_meter("SOL-075", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["SNSR"].id, unit_number="C-302"
+        estate_id=estates["DRBN"].id, unit_number="C-302"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["SNSR"].id,
+                "estate_id": estates["DRBN"].id,
                 "unit_number": "C-302",
                 "floor": "Third Floor",
                 "occupancy_status": "occupied",
-                "electricity_meter_id": sn_e460_075.id,
-                "water_meter_id": sn_wtr_075.id,
-                "solar_meter_id": sn_sol_075.id,
+                "electricity_meter_id": dh_e460_075.id,
+                "water_meter_id": dh_wtr_075.id,
+                "solar_meter_id": dh_sol_075.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
 
-    # Riverside Meadows + bulk
-    blk_e_rvmd = ensure_meter("BULK-E-RVMD", "bulk_electricity")
-    blk_w_rvmd = ensure_meter("BULK-W-RVMD", "bulk_water")
-    rvmd = estates["RVMD"]
-    if not rvmd.bulk_electricity_meter_id:
-        rvmd.bulk_electricity_meter_id = blk_e_rvmd.id
-    if not rvmd.bulk_water_meter_id:
-        rvmd.bulk_water_meter_id = blk_w_rvmd.id
+    # Port Elizabeth Bayview + bulk
+    blk_e_peba = ensure_meter("BULK-E-PEBA", "bulk_electricity")
+    blk_w_peba = ensure_meter("BULK-W-PEBA", "bulk_water")
+    peba = estates["PEBA"]
+    if not peba.bulk_electricity_meter_id:
+        peba.bulk_electricity_meter_id = blk_e_peba.id
+    if not peba.bulk_water_meter_id:
+        peba.bulk_water_meter_id = blk_w_peba.id
     db.session.commit()
 
-    # New estate Riverside Meadows with two units
-    rv_e460_001 = ensure_meter("E460-RV-001", "electricity")
-    rv_wtr_001 = ensure_meter("WTR-RV-001", "water")
-    rv_sol_001 = ensure_meter("SOL-RV-001", "solar")
+    # Port Elizabeth Bayview with two units
+    pe_e460_001 = ensure_meter("E460-PE-001", "electricity")
+    pe_wtr_001 = ensure_meter("WTR-PE-001", "water")
+    pe_sol_001 = ensure_meter("SOL-PE-001", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["RVMD"].id, unit_number="D-101"
+        estate_id=estates["PEBA"].id, unit_number="D-101"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["RVMD"].id,
+                "estate_id": estates["PEBA"].id,
                 "unit_number": "D-101",
                 "floor": "Ground Floor",
                 "occupancy_status": "occupied",
-                "electricity_meter_id": rv_e460_001.id,
-                "water_meter_id": rv_wtr_001.id,
-                "solar_meter_id": rv_sol_001.id,
+                "electricity_meter_id": pe_e460_001.id,
+                "water_meter_id": pe_wtr_001.id,
+                "solar_meter_id": pe_sol_001.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
 
-    rv_e460_002 = ensure_meter("E460-RV-002", "electricity")
-    rv_wtr_002 = ensure_meter("WTR-RV-002", "water")
-    rv_sol_002 = ensure_meter("SOL-RV-002", "solar")
+    pe_e460_002 = ensure_meter("E460-PE-002", "electricity")
+    pe_wtr_002 = ensure_meter("WTR-PE-002", "water")
+    pe_sol_002 = ensure_meter("SOL-PE-002", "solar")
     if not Unit.query.filter_by(
-        estate_id=estates["RVMD"].id, unit_number="D-102"
+        estate_id=estates["PEBA"].id, unit_number="D-102"
     ).first():
         Unit.create_from_payload(
             {
-                "estate_id": estates["RVMD"].id,
+                "estate_id": estates["PEBA"].id,
                 "unit_number": "D-102",
                 "floor": "Ground Floor",
                 "occupancy_status": "vacant",
-                "electricity_meter_id": rv_e460_002.id,
-                "water_meter_id": rv_wtr_002.id,
-                "solar_meter_id": rv_sol_002.id,
+                "electricity_meter_id": pe_e460_002.id,
+                "water_meter_id": pe_wtr_002.id,
+                "solar_meter_id": pe_sol_002.id,
+                "electricity_rate_table_id": rate_tables["Standard Residential"].id,
+                "water_rate_table_id": rate_tables["Standard Residential Water"].id,
             }
         )
         units_created += 1
@@ -777,7 +797,7 @@ def create_residents_and_assign(admin_user: User) -> dict[str, int]:
         "Jane",
         "Peter",
         "Anna",
-        "David",
+        "Takudzwa",
         "Emily",
         "Tom",
         "Grace",
