@@ -14,6 +14,8 @@ from . import api_v1
 def residents_page():
     search = request.args.get("q") or None
     is_active = request.args.get("is_active")
+    unit_id = request.args.get("unit_id", type=int)
+
     if is_active == "true":
         is_active_val = True
     elif is_active == "false":
@@ -21,7 +23,10 @@ def residents_page():
     else:
         is_active_val = None
 
-    query = Resident.get_all(search=search, is_active=is_active_val)
+    if not unit_id:
+        unit_id = None
+
+    query = Resident.get_all(search=search, is_active=is_active_val, unit_id=unit_id)
     items, meta = paginate_query(query)
 
     residents = []
@@ -39,11 +44,27 @@ def residents_page():
             rd["unit"] = None
         residents.append(rd)
 
+    units = []
+    for unit in (
+        Unit.query.join(Estate, Unit.estate_id == Estate.id)
+        .order_by(Estate.name.asc(), Unit.unit_number.asc())
+        .all()
+    ):
+        estate = Estate.query.get(unit.estate_id)
+        units.append(
+            {
+                "id": unit.id,
+                "unit_number": unit.unit_number,
+                "estate_name": estate.name if estate else "Unknown",
+            }
+        )
+
     return render_template(
         "residents/residents.html",
         residents=residents,
+        units=units,
         pagination=meta,
-        current_filters={"q": search, "is_active": is_active},
+        current_filters={"q": search, "is_active": is_active, "unit_id": unit_id},
     )
 
 

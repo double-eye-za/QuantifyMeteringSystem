@@ -52,7 +52,11 @@ class Resident(db.Model):
     )
 
     @staticmethod
-    def get_all(search: Optional[str] = None, is_active: Optional[bool] = None):
+    def get_all(
+        search: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        unit_id: Optional[int] = None,
+    ):
         query = Resident.query
         if search:
             like = f"%{search}%"
@@ -67,6 +71,12 @@ class Resident(db.Model):
             )
         if is_active is not None:
             query = query.filter(Resident.is_active == is_active)
+        if unit_id is not None:
+            from .unit import Unit
+
+            query = query.join(Unit, Resident.id == Unit.resident_id).filter(
+                Unit.id == unit_id
+            )
         return query.order_by(Resident.first_name.asc(), Resident.last_name.asc())
 
     @staticmethod
