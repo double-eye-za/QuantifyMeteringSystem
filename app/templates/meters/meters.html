@@ -65,6 +65,7 @@ block breadcrumb %}
               <i class="fas fa-file-pdf"></i>
               Export PDF
             </a>
+            {% if has_permission('meters.create') %}
             <button 
               type="button" 
               onclick="showCreateMeter()" 
@@ -72,6 +73,7 @@ block breadcrumb %}
             >
               <i class="fas fa-plus mr-2"></i>Create Meter
             </button>
+            {% endif %}
           </div>
         </div>
 
@@ -239,8 +241,12 @@ block breadcrumb %}
                             </td>
                             <td class="px-6 py-4">
             <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.serial_number) }}"><i class="fas fa-eye"></i></a>
+            {% if has_permission('meters.edit') %}
             <button class="text-primary hover:text-blue-700 mr-3" title="Edit" onclick="openEditMeter(this)"><i class="fas fa-edit"></i></button>
+            {% endif %}
+            {% if has_permission('meters.delete') %}
             <button class="text-red-600 dark:text-red-400 hover:text-red-700" title="Delete" onclick="confirmDeleteMeter(this)"><i class="fas fa-trash"></i></button>
+            {% endif %}
                             </td>
                         </tr>
         {% endfor %}

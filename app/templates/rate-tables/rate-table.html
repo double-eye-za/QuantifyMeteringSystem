@@ -9,12 +9,14 @@ breadcrumb %}
   <p class="text-sm text-gray-600 dark:text-gray-400">
     Manage base rates and assign them to estates with custom markups
   </p>
+  {% if has_permission('rate_tables.create') %}
   <a
     href="{{ url_for('api_v1.rate_table_builder_page') }}"
     class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700"
   >
-                            <i class="fas fa-plus mr-2"></i>New Rate Table
-                        </a>
+    <i class="fas fa-plus mr-2"></i>New Rate Table
+  </a>
+  {% endif %}
                     </div>
   <!-- Available Rate Tables (dynamic) -->
                 <div class="mb-8">
@@ -31,8 +33,12 @@ breadcrumb %}
                                 </div>
                                 <div class="flex items-center gap-2">
             <span class="px-2 py-1 text-xs rounded-full {{ 'bg-green-100 text-green-800' if rt.is_active else 'bg-gray-100 text-gray-700' }}">{{ 'Active' if rt.is_active else 'Inactive' }}</span>
+            {% if has_permission('rate_tables.edit') %}
             <button title="Edit" onclick="gotoEditRateTable({{ rt.id }})" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300"><i class="fas fa-pen"></i></button>
+            {% endif %}
+            {% if has_permission('rate_tables.delete') %}
             <button title="Delete" onclick="openDeleteRateTable({{ rt.id }}, '{{ rt.name|escape }}')" class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"><i class="fas fa-trash"></i></button>
+            {% endif %}
                                 </div>
                             </div>
         <div class="text-xs text-gray-600 dark:text-gray-300 mb-3">

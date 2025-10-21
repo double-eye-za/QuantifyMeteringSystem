@@ -9,6 +9,7 @@
 {% block content %}
   <!-- Header Row - Add Resident Button -->
   <div class="flex justify-end mb-4">
+    {% if has_permission('residents.create') %}
     <button 
       type="button" 
       onclick="showCreateResident()" 
@@ -16,6 +17,7 @@
     >
       <i class="fas fa-plus mr-2"></i> Add Resident
     </button>
+    {% endif %}
   </div>
 
   <!-- Filters Bar -->
@@ -122,8 +124,12 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-3 text-sm">
+                {% if has_permission('residents.edit') %}
                 <button class="text-primary hover:underline" onclick="openEditResident(this)"><i class="fas fa-edit mr-1"></i>Edit</button>
+                {% endif %}
+                {% if has_permission('residents.delete') %}
                 <button class="text-red-600 dark:text-red-400 hover:underline" onclick="confirmDeleteResident(this)"><i class="fas fa-trash mr-1"></i>Delete</button>
+                {% endif %}
               </div>
             </td>
           </tr>

@@ -21,14 +21,14 @@ Roles & Permissions
     <div class="mb-8">
       <div class="flex items-center justify-end">
     
-    {% if current_user.has_permission("roles.create") %}
+    {% if has_permission('roles.create') %}
     <button
       id="create-role-open"
       type="button"
-          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+      class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
     >
       <i class="fa-solid fa-plus"></i>
-          <span>New Role</span>
+      <span>New Role</span>
     </button>
     {% endif %}
                 </div>
@@ -123,7 +123,7 @@ Roles & Permissions
               </td>
               <td class="p-3 whitespace-nowrap text-sm font-medium">
                 <div class="flex items-center space-x-2">
-              {% if current_user.has_permission("roles.edit") %}
+              {% if has_permission('roles.edit') %}
               <button
                     data-role='{{role | tojson}}'
                     class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
@@ -133,7 +133,7 @@ Roles & Permissions
                     Edit
               </button>
               {% endif %}
-              {% if current_user.has_permission("roles.delete") and not role.is_system_role %}
+              {% if has_permission('roles.delete') and not role.is_system_role %}
               <button
                 data-role-id="{{role.id}}"
                 data-role-data='{{role | tojson}}'
@@ -142,9 +142,9 @@ Roles & Permissions
               >
                     <i class="fa-solid fa-trash mr-1"></i>
                     Delete
-                                </button>
+              </button>
               {% endif %}
-                            </div>
+                </div>
           </td>
         </tr>
         {% endfor %}
@@ -186,6 +186,7 @@ Roles & Permissions
 
         <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
           <div class="flex items-center space-x-2">
+        {% if has_permission('roles.edit') %}
         <button
           type="button"
               data-role-mobile='{{ role | tojson }}'
@@ -194,7 +195,8 @@ Roles & Permissions
               <i class="fa-solid fa-pen-to-square mr-2"></i>
           Edit
         </button>
-        {% if not role.is_system_role %}
+        {% endif %}
+        {% if has_permission('roles.delete') and not role.is_system_role %}
         <button
           type="button"
           data-role-id="{{role.id}}"
@@ -569,9 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             'billing': {
                 'view': { icon: 'fa-file-invoice', desc: 'View billing and invoices' },
-                'create': { icon: 'fa-plus', desc: 'Generate bills' },
-                'edit': { icon: 'fa-edit', desc: 'Edit billing details' },
-                'delete': { icon: 'fa-trash', desc: 'Delete billing records' }
             },
             'reports': {
                 'view': { icon: 'fa-chart-bar', desc: 'View reports and analytics' },
@@ -581,9 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             'settings': {
                 'view': { icon: 'fa-cog', desc: 'View system settings' },
-                'create': { icon: 'fa-plus', desc: 'Add new settings' },
                 'edit': { icon: 'fa-edit', desc: 'Modify system settings' },
-                'delete': { icon: 'fa-trash', desc: 'Remove settings' }
             },
             'rate_tables': {
                 'view': { icon: 'fa-table', desc: 'View rate tables' },
