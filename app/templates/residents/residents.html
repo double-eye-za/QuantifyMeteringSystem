@@ -7,19 +7,81 @@
 <span>Residents</span>
 {% endblock %}
 {% block content %}
+  <!-- Header Row - Add Resident Button -->
+  <div class="flex justify-end mb-4">
+    <button 
+      type="button" 
+      onclick="showCreateResident()" 
+      class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+    >
+      <i class="fas fa-plus mr-2"></i> Add Resident
+    </button>
+  </div>
+
   <!-- Filters Bar -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-    <form method="get" action="{{ url_for('api_v1.residents_page') }}" class="flex flex-wrap items-center gap-3">
-      <div class="relative">
-        <input name="q" value="{{ current_filters.q or '' }}" type="text" placeholder="Search name, email, phone" class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" />
-        <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+    <form id="filters" method="get" action="{{ url_for('api_v1.residents_page') }}">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Left side - Search -->
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <input 
+              name="q" 
+              id="searchInput"
+              value="{{ current_filters.q or '' }}" 
+              type="text" 
+              placeholder="Search name, email, phone" 
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" 
+            />
+            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+          </div>
+        </div>
+
+        <!-- Right side - Filters and Buttons -->
+        <div class="flex items-center gap-3">
+          <!-- Unit Filter -->
+          <select 
+            id="unitFilter"
+            name="unit_id" 
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Units</option>
+            {% for unit in units %}
+            <option value="{{ unit.id }}" {% if current_filters.unit_id==unit.id %}selected{% endif %}>
+              {{ unit.unit_number }} - {{ unit.estate_name }}
+            </option>
+            {% endfor %}
+          </select>
+
+          <!-- Status Filter -->
+          <select 
+            id="statusFilter"
+            name="is_active" 
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Status</option>
+            <option value="true" {% if current_filters.is_active=='true' %}selected{% endif %}>Active</option>
+            <option value="false" {% if current_filters.is_active=='false' %}selected{% endif %}>Inactive</option>
+          </select>
+
+          <!-- Action Buttons -->
+          <button
+            type="button"
+            onclick="applyFilters()"
+            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          >
+            <i class="fas fa-filter mr-2"></i> Apply Filters
+          </button>
+          
+          <button
+            type="button"
+            onclick="clearFilters()"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+          >
+            <i class="fas fa-times mr-2"></i> Clear Filters
+          </button>
+        </div>
       </div>
-      <select name="is_active" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" onchange="this.form.submit()">
-        <option value="">All</option>
-        <option value="true" {% if current_filters.is_active=='true' %}selected{% endif %}>Active</option>
-        <option value="false" {% if current_filters.is_active=='false' %}selected{% endif %}>Inactive</option>
-      </select>
-      <button type="button" onclick="showCreateResident()" class="ml-auto px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"><i class="fas fa-plus mr-2"></i> Add Resident</button>
     </form>
   </div>
 
@@ -77,11 +139,11 @@
         of <span class="font-medium">{{ pagination.total }}</span> residents
       </div>
       <div class="flex items-center gap-2">
-        <a href="{{ url_for('api_v1.residents_page', page=(pagination.prev_page or 1), q=current_filters.q, is_active=current_filters.is_active) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+        <a href="{{ url_for('api_v1.residents_page', page=(pagination.prev_page or 1), q=current_filters.q, is_active=current_filters.is_active, unit_id=current_filters.unit_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
           <i class="fas fa-chevron-left"></i>
         </a>
         <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
-        <a href="{{ url_for('api_v1.residents_page', page=(pagination.next_page or pagination.page), q=current_filters.q, is_active=current_filters.is_active) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+        <a href="{{ url_for('api_v1.residents_page', page=(pagination.next_page or pagination.page), q=current_filters.q, is_active=current_filters.is_active, unit_id=current_filters.unit_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
           <i class="fas fa-chevron-right"></i>
         </a>
       </div>
@@ -253,6 +315,29 @@ async function performResidentDelete(){
   window.location.reload();
   showFlashMessage("Resident deleted successfully", "success", true);
 }
+
+
+function applyFilters() {
+  const form = document.getElementById('filters');
+  form.submit();
+}
+
+function clearFilters() {
+  window.location.href = '/api/v1/residents';
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyFilters();
+      }
+    });
+  }
+});
 </script>
 {% endblock %}
 
