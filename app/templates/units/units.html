@@ -9,57 +9,82 @@ block breadcrumb %}
                                 <span class="mx-1">/</span>
                                 <span>Units</span>
 {% endblock %} {% block content %}
+                
+<div class="flex justify-end mb-4">
+  <button
+    onclick="showAddUnitModal()"
+    class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+    type="button"
+  >
+    <i class="fas fa-plus mr-2"></i> Add Unit
+                        </button>
+                    </div>
+
                 <!-- Filters Bar -->
 <div
   class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6"
 >
-  <div
-    class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
-  >
-                        <div class="flex flex-wrap items-center gap-3">
-                            <!-- Estate Filter -->
-      <form id="unitFilters" method="get" action="{{ url_for('api_v1.units_page') }}" class="flex items-center gap-3">
-        <select name="estate_id" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300" onchange="this.form.submit()">
+  <form id="unitFilters" method="get" action="{{ url_for('api_v1.units_page') }}">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      
+      <div class="flex-1 max-w-md">
+                            <div class="relative">
+          <input 
+            id="searchInput"
+            name="q" 
+            value="{{ current_filters.q or '' }}" 
+            type="text" 
+            placeholder="Search unit number..." 
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" 
+          />
+                                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+                            </div>
+      </div>
+
+      
+      <div class="flex items-center gap-3">
+        
+        <select 
+          id="estateFilter"
+          name="estate_id" 
+          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+        >
           <option value="">All Estates</option>
           {% for e in estates %}
           <option value="{{ e.id }}" {% if current_filters.estate_id==e.id %}selected{% endif %}>{{ e.name }}</option>
           {% endfor %}
-                            </select>
-
-                            <!-- Search -->
-                            <div class="relative">
-        <input name="q" value="{{ current_filters.q or '' }}" type="text" placeholder="Search unit number..." class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" />
-        <i
-          class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"
-        ></i>
-                            </div>
+        </select>
 
                             <!-- Status Filter -->
-      <select name="occupancy_status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" onchange="this.form.submit()">
-        <option value="">All Status</option>
-        <option value="occupied" {% if current_filters.occupancy_status=='occupied' %}selected{% endif %}>Occupied</option>
-        <option value="vacant" {% if current_filters.occupancy_status=='vacant' %}selected{% endif %}>Vacant</option>
+        <select 
+          id="statusFilter"
+          name="occupancy_status" 
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="">All Status</option>
+          <option value="occupied" {% if current_filters.occupancy_status=='occupied' %}selected{% endif %}>Occupied</option>
+          <option value="vacant" {% if current_filters.occupancy_status=='vacant' %}selected{% endif %}>Vacant</option>
                             </select>
 
-                            <!-- Meter Status -->
-      </form>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-      <button
-        class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 text-sm transition-colors"
-      >
-                                <i class="fas fa-file-import mr-2"></i> Import CSV
-                            </button>
-      <button
-        onclick="showAddUnitModal()"
-        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-        type="button"
-      >
-                                <i class="fas fa-plus mr-2"></i> Add Unit
+        
+        <button
+          type="button"
+          onclick="applyFilters()"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+        >
+          <i class="fas fa-filter mr-2"></i> Apply Filters
+        </button>
+        
+        <button
+          type="button"
+          onclick="clearFilters()"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+        >
+          <i class="fas fa-times mr-2"></i> Clear Filters
                             </button>
                         </div>
                     </div>
+  </form>
                 </div>
 
                 <!-- Units Table -->
@@ -125,27 +150,27 @@ block breadcrumb %}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-unit='{{ u | tojson }}'>
           <td class="px-4 py-3"><input type="checkbox" class="rounded border-gray-300 dark:border-gray-600"/></td>
                                     <td class="px-4 py-3">
-            <div>
+                                        <div>
               <a href="{{ url_for('api_v1.unit_details_page', unit_id=u.id) }}" class="text-sm font-medium text-primary hover:text-blue-700 hover:underline cursor-pointer">Unit {{ u.unit_number }}</a>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ u.floor or '' }}</p>
-            </div>
+                                        </div>
                                     </td>
           <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">{% for e in estates %}{% if e.id==u.estate_id %}{{ e.name }}{% endif %}{% endfor %}</td>
-          <td class="px-4 py-3">
-            <div>
+                                    <td class="px-4 py-3">
+                                        <div>
               <p class="text-sm text-gray-900 dark:text-white">{{ (u.resident.first_name ~ ' ' ~ u.resident.last_name) if (u.resident and u.occupancy_status!='vacant') else 'No resident' }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ (u.resident.phone) if (u.resident and u.occupancy_status!='vacant') else '' }}</p>
-            </div>
-          </td>
-          <td class="px-4 py-3 text-center">
-            <div class="flex flex-col items-center">
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex flex-col items-center">
               <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ u.electricity_meter_id or '—' }}</span>
               {% if u.occupancy_status=='vacant' %}
-              <span class="text-xs font-semibold text-gray-500">-</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
+                                            <span class="text-xs font-semibold text-gray-500">-</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
                 <i class="fas fa-pause-circle mr-1" style="font-size: 8px"></i>
-                Inactive
-              </span>
+                                                Inactive
+                                            </span>
               {% else %}
               {% set eb = (u.wallet.electricity_balance if u.wallet else 0) %}
               <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if eb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if eb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(eb|float) }}</span>
@@ -154,17 +179,17 @@ block breadcrumb %}
                 {{ 'Disconnected' if eb|float <= 0 else ('Low' if eb|float < 50 else 'Active') }}
               </span>
               {% endif %}
-            </div>
-          </td>
-          <td class="px-4 py-3 text-center">
-            <div class="flex flex-col items-center">
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex flex-col items-center">
               <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ u.water_meter_id or '—' }}</span>
               {% if u.occupancy_status=='vacant' %}
-              <span class="text-xs font-semibold text-gray-500">-</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
+                                            <span class="text-xs font-semibold text-gray-500">-</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
                 <i class="fas fa-pause-circle mr-1" style="font-size: 8px"></i>
-                Inactive
-              </span>
+                                                Inactive
+                                            </span>
               {% else %}
               {% set wb = (u.wallet.water_balance if u.wallet else 0) %}
               <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if wb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if wb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(wb|float) }}</span>
@@ -173,30 +198,30 @@ block breadcrumb %}
                 {{ 'Disconnected' if wb|float <= 0 else ('Low' if wb|float < 50 else 'Active') }}
               </span>
               {% endif %}
-            </div>
-          </td>
-          <td class="px-4 py-3 text-center">
-            <div class="flex flex-col items-center">
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <div class="flex flex-col items-center">
               <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ u.solar_meter_id or '—' }}</span>
               {% if u.occupancy_status=='vacant' %}
-              <span class="text-xs font-semibold text-gray-500">-</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
+                                            <span class="text-xs font-semibold text-gray-500">-</span>
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
                 <i class="fas fa-pause-circle mr-1" style="font-size: 8px"></i>
-                Inactive
-              </span>
+                                                Inactive
+                                            </span>
               {% else %}
               {% set sb = (u.wallet.solar_balance if u.wallet else 0) %}
               <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if sb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if sb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(sb|float) }}</span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if sb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if sb|float < 50 else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
                 <i class="fas {{ 'fa-times-circle' if sb|float <= 0 else ('fa-exclamation-triangle' if sb|float < 50 else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
                 {{ 'Disconnected' if sb|float <= 0 else ('Low' if sb|float < 50 else 'Active') }}
-              </span>
+                                        </span>
               {% endif %}
-            </div>
-          </td>
+                                        </div>
+                                    </td>
           <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' if u.occupancy_status=='occupied' else 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">{{ u.occupancy_status|capitalize }}</span></td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-2">
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2">
               <a href="{{ url_for('api_v1.unit_details_page', unit_id=u.id) }}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>
               {% if u.occupancy_status=='vacant' %}
                 <button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>
@@ -204,9 +229,9 @@ block breadcrumb %}
                 <button type="button" onclick="editUnit(this)" class="text-gray-600 dark:text-gray-400 hover:text-primary text-sm"><i class="fas fa-edit mr-1"></i>Edit</button>
               {% endif %}
               <button type="button" onclick="confirmDeleteUnit({{ u.id }})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>
-            </div>
-          </td>
-        </tr>
+                                        </div>
+                                    </td>
+                                </tr>
        {% endfor %}
                             </tbody>
                         </table>
@@ -414,7 +439,7 @@ block breadcrumb %}
             <input name="size_sqm" type="number" step="0.01" min="0" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="e.g., 85.50" />
           </div>
         </div>
-        <div>
+                    <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Floor/Location</label>
           <input
             name="floor"
@@ -700,7 +725,7 @@ block breadcrumb %}
           showFlashMessage('Failed to create unit', 'error', true);
         }
         await resp.json();
-        hideAddUnitModal();
+            hideAddUnitModal();
         window.location.reload();
         showFlashMessage('Unit created successfully', 'success', true);
       } catch (e) {
@@ -837,9 +862,9 @@ block breadcrumb %}
       solar_meter_id: document.getElementById('edit_unit_smeter')?.value || null,
     };
     return payload;
-  }
+        }
 
-  function assignResident() {
+        function assignResident() {
     alert("Assign resident modal would open here");
         }
 
@@ -869,7 +894,37 @@ block breadcrumb %}
       window.location.reload();
       showFlashMessage("Unit deleted successfully.", "success", true)
     } catch (e) { console.error(e); showFlashMessage("Error deleting unit. Try again later.", "error", true) }
+        }
+
+  // Filter Functions
+  function applyFilters() {
+    const form = document.getElementById('unitFilters');
+    form.submit();
   }
+
+  function clearFilters() {
+    // Reset all form fields
+    document.getElementById('searchInput').value = '';
+    document.getElementById('estateFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    
+    // Submit the form with cleared values
+    const form = document.getElementById('unitFilters');
+    form.submit();
+  }
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyFilters();
+        }
+      });
+    }
+  });
     </script>
 {% endblock %}
 
