@@ -1,6 +1,4 @@
-console.log("Hello from flash.js");
 function showFlashMessage(message, type = "success", persist = false) {
-  console.log("Showing flash message:");
   if (persist) {
     const flashData = {
       message: message,
@@ -19,8 +17,17 @@ function showFlashMessage(message, type = "success", persist = false) {
   const flashDiv = document.createElement("div");
   flashDiv.className = `flash-message fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
 
-  const bgColor = type === "success" ? "bg-green-500" : "bg-red-500";
-  const icon = type === "success" ? "fa-check-circle" : "fa-exclamation-circle";
+  let bgColor, icon;
+  if (type === "success") {
+    bgColor = "bg-green-500";
+    icon = "fa-check-circle";
+  } else if (type === "warning") {
+    bgColor = "bg-yellow-500";
+    icon = "fa-exclamation-triangle";
+  } else {
+    bgColor = "bg-red-500";
+    icon = "fa-exclamation-circle";
+  }
 
   flashDiv.innerHTML = `
         <div class="flex items-center space-x-3 text-white">

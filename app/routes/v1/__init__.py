@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, redirect, url_for, flash, request
 from ...auth import login_manager
 
 
@@ -27,4 +27,20 @@ from . import residents  # noqa: F401
 
 @login_manager.unauthorized_handler
 def _unauthorized():
-    return jsonify({"error": "Unauthorized", "code": 401}), 401
+    """Handle unauthorized access - redirect to login with flash message"""
+    flash("Your session has expired. Please log in again to continue.", "warning")
+    return redirect(url_for("api_v1.login_page"))
+
+
+@api_v1.errorhandler(401)
+def handle_unauthorized(error):
+    """Handle 401 Unauthorized errors"""
+    flash("Your session has expired. Please log in again to continue.", "warning")
+    return redirect(url_for("api_v1.login_page"))
+
+
+@api_v1.errorhandler(403)
+def handle_forbidden(error):
+    """Handle 403 Forbidden errors"""
+    flash("You don't have permission to access this resource.", "error")
+    return redirect(url_for("api_v1.dashboard"))

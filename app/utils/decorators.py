@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Callable
 
-from flask import abort
+from flask import abort, request, jsonify, redirect, url_for, flash
 from flask_login import current_user
 
 
@@ -15,7 +15,24 @@ def requires_permission(permission_code: str):
         def wrapper(*args, **kwargs):
             user = current_user
             if not getattr(user, "is_authenticated", False):
-                abort(401)
+                if (
+                    request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                    or request.is_json
+                ):
+                    return jsonify(
+                        {
+                            "error": "Session expired. Please log in again.",
+                            "code": 401,
+                            "redirect": url_for("api_v1.login_page"),
+                        }
+                    ), 401
+                else:
+                    flash(
+                        "Your session has expired. Please log in again to continue.",
+                        "warning",
+                    )
+                    return redirect(url_for("api_v1.login_page"))
+
             if getattr(user, "is_super_admin", False):
                 return view_func(*args, **kwargs)
             role = getattr(user, "role", None)
@@ -31,7 +48,19 @@ def requires_permission(permission_code: str):
                     allowed = False
                     break
             if not bool(allowed):
-                abort(403)
+                if (
+                    request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                    or request.is_json
+                ):
+                    return jsonify(
+                        {
+                            "error": "You don't have permission to access this resource.",
+                            "code": 403,
+                        }
+                    ), 403
+                else:
+                    flash("You don't have permission to access this resource.", "error")
+                    return redirect(url_for("api_v1.dashboard"))
             return view_func(*args, **kwargs)
 
         return wrapper

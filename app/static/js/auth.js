@@ -3,7 +3,60 @@ const API_BASE_URL = "/api/v1";
 document.addEventListener("DOMContentLoaded", function () {
   setupLoginForm();
   setupLogoutButtons();
+  setupSessionHandling();
 });
+
+// Global session handling for AJAX requests
+function setupSessionHandling() {
+  const originalFetch = window.fetch;
+  window.fetch = async function (...args) {
+    const response = await originalFetch.apply(this, args);
+
+    if (response.status === 401) {
+      try {
+        const errorData = await response.json();
+        if (errorData.redirect) {
+          showFlashMessage(
+            "Your session has expired. Please log in again to continue.",
+            "warning"
+          );
+          setTimeout(() => {
+            window.location.href = errorData.redirect;
+          }, 1000);
+        } else {
+          window.location.href = "/api/v1/login";
+        }
+      } catch (e) {
+        window.location.href = "/api/v1/login";
+      }
+    }
+
+    return response;
+  };
+
+  // Periodic session check (every 5 minutes)
+  setInterval(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/status`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        // Session expired, redirect to login
+        showFlashMessage(
+          "Your session has expired. Please log in again to continue.",
+          "warning"
+        );
+        setTimeout(() => {
+          window.location.href = "/api/v1/login";
+        }, 2000);
+      }
+    } catch (error) {
+      console.log("Session check failed:", error);
+    }
+  }, 5 * 60 * 1000);
+}
 
 function setupLoginForm() {
   const loginForm = document.getElementById("loginForm");
