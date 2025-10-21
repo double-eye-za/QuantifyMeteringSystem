@@ -44,59 +44,70 @@
                 class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 <option value="" {% if not current_filters.action %}selected{% endif %}>All Actions</option>
-                <!-- User Actions -->
-                <option value="user.create" {% if current_filters.action=='user.create' %}selected{% endif %}>User Created</option>
-                <option value="user.update" {% if current_filters.action=='user.update' %}selected{% endif %}>User Updated</option>
-                <option value="user.delete" {% if current_filters.action=='user.delete' %}selected{% endif %}>User Deleted</option>
-                <option value="user.enable" {% if current_filters.action=='user.enable' %}selected{% endif %}>User Enabled</option>
-                <option value="user.disable" {% if current_filters.action=='user.disable' %}selected{% endif %}>User Disabled</option>
-                <option value="user.login" {% if current_filters.action=='user.login' %}selected{% endif %}>User Login</option>
-                <option value="user.logout" {% if current_filters.action=='user.logout' %}selected{% endif %}>User Logout</option>
-                <option value="user.password_change" {% if current_filters.action=='user.password_change' %}selected{% endif %}>Password Changed</option>
-                <option value="user.profile.update" {% if current_filters.action=='user.profile.update' %}selected{% endif %}>Profile Updated</option>
-                <option value="user.profile.password_change" {% if current_filters.action=='user.profile.password_change' %}selected{% endif %}>Profile Password Changed</option>
                 
-                <!-- Role Actions -->
-                <option value="role.create" {% if current_filters.action=='role.create' %}selected{% endif %}>Role Created</option>
-                <option value="role.update" {% if current_filters.action=='role.update' %}selected{% endif %}>Role Updated</option>
-                <option value="role.delete" {% if current_filters.action=='role.delete' %}selected{% endif %}>Role Deleted</option>
+                <optgroup label="User Management">
+                  <option value="user.create" {% if current_filters.action=='user.create' %}selected{% endif %}>User Created</option>
+                  <option value="user.update" {% if current_filters.action=='user.update' %}selected{% endif %}>User Updated</option>
+                  <option value="user.delete" {% if current_filters.action=='user.delete' %}selected{% endif %}>User Deleted</option>
+                  <option value="user.enable" {% if current_filters.action=='user.enable' %}selected{% endif %}>User Enabled</option>
+                  <option value="user.disable" {% if current_filters.action=='user.disable' %}selected{% endif %}>User Disabled</option>
+                </optgroup>
                 
-                <!-- Estate Actions -->
-                <option value="estate.create" {% if current_filters.action=='estate.create' %}selected{% endif %}>Estate Created</option>
-                <option value="estate.update" {% if current_filters.action=='estate.update' %}selected{% endif %}>Estate Updated</option>
-                <option value="estate.delete" {% if current_filters.action=='estate.delete' %}selected{% endif %}>Estate Deleted</option>
-                <option value="estate.rate_assignment.update" {% if current_filters.action=='estate.rate_assignment.update' %}selected{% endif %}>Estate Rate Assignment Updated</option>
+                <optgroup label="Authentication">
+                  <option value="user.login" {% if current_filters.action=='user.login' %}selected{% endif %}>User Login</option>
+                  <option value="user.logout" {% if current_filters.action=='user.logout' %}selected{% endif %}>User Logout</option>
+                  <option value="user.password_change" {% if current_filters.action=='user.password_change' %}selected{% endif %}>Password Changed</option>
+                  <option value="user.profile.update" {% if current_filters.action=='user.profile.update' %}selected{% endif %}>Profile Updated</option>
+                  <option value="user.profile.password_change" {% if current_filters.action=='user.profile.password_change' %}selected{% endif %}>Profile Password Changed</option>
+                </optgroup>
                 
-                <!-- Unit Actions -->
-                <option value="unit.create" {% if current_filters.action=='unit.create' %}selected{% endif %}>Unit Created</option>
-                <option value="unit.update" {% if current_filters.action=='unit.update' %}selected{% endif %}>Unit Updated</option>
-                <option value="unit.delete" {% if current_filters.action=='unit.delete' %}selected{% endif %}>Unit Deleted</option>
+                <optgroup label="Role Management">
+                  <option value="role.create" {% if current_filters.action=='role.create' %}selected{% endif %}>Role Created</option>
+                  <option value="role.update" {% if current_filters.action=='role.update' %}selected{% endif %}>Role Updated</option>
+                  <option value="role.delete" {% if current_filters.action=='role.delete' %}selected{% endif %}>Role Deleted</option>
+                </optgroup>
                 
-                <!-- Resident Actions -->
-                <option value="resident.create" {% if current_filters.action=='resident.create' %}selected{% endif %}>Resident Created</option>
-                <option value="resident.update" {% if current_filters.action=='resident.update' %}selected{% endif %}>Resident Updated</option>
-                <option value="resident.delete" {% if current_filters.action=='resident.delete' %}selected{% endif %}>Resident Deleted</option>
+                <optgroup label="Estate Management">
+                  <option value="estate.create" {% if current_filters.action=='estate.create' %}selected{% endif %}>Estate Created</option>
+                  <option value="estate.update" {% if current_filters.action=='estate.update' %}selected{% endif %}>Estate Updated</option>
+                  <option value="estate.delete" {% if current_filters.action=='estate.delete' %}selected{% endif %}>Estate Deleted</option>
+                  <option value="estate.rate_assignment.update" {% if current_filters.action=='estate.rate_assignment.update' %}selected{% endif %}>Estate Rate Assignment Updated</option>
+                </optgroup>
                 
-                <!-- Meter Actions -->
-                <option value="meter.create" {% if current_filters.action=='meter.create' %}selected{% endif %}>Meter Created</option>
-                <option value="meter.update" {% if current_filters.action=='meter.update' %}selected{% endif %}>Meter Updated</option>
-                <option value="meter.delete" {% if current_filters.action=='meter.delete' %}selected{% endif %}>Meter Deleted</option>
+                <optgroup label="Unit Management">
+                  <option value="unit.create" {% if current_filters.action=='unit.create' %}selected{% endif %}>Unit Created</option>
+                  <option value="unit.update" {% if current_filters.action=='unit.update' %}selected{% endif %}>Unit Updated</option>
+                  <option value="unit.delete" {% if current_filters.action=='unit.delete' %}selected{% endif %}>Unit Deleted</option>
+                </optgroup>
                 
-                <!-- Rate Table Actions -->
-                <option value="rate_table.create" {% if current_filters.action=='rate_table.create' %}selected{% endif %}>Rate Table Created</option>
-                <option value="rate_table.update" {% if current_filters.action=='rate_table.update' %}selected{% endif %}>Rate Table Updated</option>
-                <option value="rate_table.delete" {% if current_filters.action=='rate_table.delete' %}selected{% endif %}>Rate Table Deleted</option>
+                <optgroup label="Resident Management">
+                  <option value="resident.create" {% if current_filters.action=='resident.create' %}selected{% endif %}>Resident Created</option>
+                  <option value="resident.update" {% if current_filters.action=='resident.update' %}selected{% endif %}>Resident Updated</option>
+                  <option value="resident.delete" {% if current_filters.action=='resident.delete' %}selected{% endif %}>Resident Deleted</option>
+                </optgroup>
                 
-                <!-- Wallet Actions -->
-                <option value="wallet.topup" {% if current_filters.action=='wallet.topup' %}selected{% endif %}>Wallet Topup</option>
+                <optgroup label="Meter Management">
+                  <option value="meter.create" {% if current_filters.action=='meter.create' %}selected{% endif %}>Meter Created</option>
+                  <option value="meter.update" {% if current_filters.action=='meter.update' %}selected{% endif %}>Meter Updated</option>
+                  <option value="meter.delete" {% if current_filters.action=='meter.delete' %}selected{% endif %}>Meter Deleted</option>
+                </optgroup>
                 
-                <!-- Transaction Actions -->
-                <option value="transaction.reverse" {% if current_filters.action=='transaction.reverse' %}selected{% endif %}>Transaction Reversed</option>
+                <optgroup label="Rate Tables">
+                  <option value="rate_table.create" {% if current_filters.action=='rate_table.create' %}selected{% endif %}>Rate Table Created</option>
+                  <option value="rate_table.update" {% if current_filters.action=='rate_table.update' %}selected{% endif %}>Rate Table Updated</option>
+                  <option value="rate_table.delete" {% if current_filters.action=='rate_table.delete' %}selected{% endif %}>Rate Table Deleted</option>
+                </optgroup>
                 
-                <!-- Settings Actions -->
-                <option value="settings.general.update" {% if current_filters.action=='settings.general.update' %}selected{% endif %}>General Settings Updated</option>
-                <option value="settings.security.update" {% if current_filters.action=='settings.security.update' %}selected{% endif %}>Security Settings Updated</option>
-                <option value="settings.notifications.update" {% if current_filters.action=='settings.notifications.update' %}selected{% endif %}>Notification Settings Updated</option>
+                <optgroup label="Financial Operations">
+                  <option value="wallet.topup" {% if current_filters.action=='wallet.topup' %}selected{% endif %}>Wallet Topup</option>
+                  <option value="transaction.reverse" {% if current_filters.action=='transaction.reverse' %}selected{% endif %}>Transaction Reversed</option>
+                </optgroup>
+                
+                <optgroup label="System Settings">
+                  <option value="settings.general.update" {% if current_filters.action=='settings.general.update' %}selected{% endif %}>General Settings Updated</option>
+                  <option value="settings.security.update" {% if current_filters.action=='settings.security.update' %}selected{% endif %}>Security Settings Updated</option>
+                  <option value="settings.notifications.update" {% if current_filters.action=='settings.notifications.update' %}selected{% endif %}>Notification Settings Updated</option>
+                </optgroup>
               </select>
             </div>
 
