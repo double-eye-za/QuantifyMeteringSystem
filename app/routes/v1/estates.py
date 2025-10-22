@@ -39,6 +39,43 @@ def estates_page():
     active_dc450s = Meter.count_active_dc450s()
 
     estates = [e.to_dict() for e in items]
+
+    from ...db import db
+
+    elec_counts = dict(
+        db.session.query(
+            Unit.estate_id, func.count(Unit.electricity_meter_id.distinct())
+        )
+        .filter(Unit.electricity_meter_id.isnot(None))
+        .group_by(Unit.estate_id)
+        .all()
+    )
+
+    water_counts = dict(
+        db.session.query(Unit.estate_id, func.count(Unit.water_meter_id.distinct()))
+        .filter(Unit.water_meter_id.isnot(None))
+        .group_by(Unit.estate_id)
+        .all()
+    )
+
+    solar_counts = dict(
+        db.session.query(Unit.estate_id, func.count(Unit.solar_meter_id.distinct()))
+        .filter(Unit.solar_meter_id.isnot(None))
+        .group_by(Unit.estate_id)
+        .all()
+    )
+
+    meter_configs = {}
+    for e in estates:
+        eid = e["id"]
+        has_bulk_e = e["bulk_electricity_meter_id"] is not None
+        has_bulk_w = e["bulk_water_meter_id"] is not None
+        meter_configs[eid] = {
+            "elec": f"{elec_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_e else ''}",
+            "water": f"{water_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_w else ''}",
+            "solar": f"{solar_counts.get(eid, 0)} unit",
+        }
+
     # Rate tables for dropdowns
     electricity_rate_tables = [
         rt.to_dict() for rt in RateTable.list_filtered(utility_type="electricity").all()
@@ -46,6 +83,7 @@ def estates_page():
     water_rate_tables = [
         rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
     ]
+
     return render_template(
         "estates/estates.html",
         estates=estates,
@@ -58,6 +96,7 @@ def estates_page():
         },
         electricity_rate_tables=electricity_rate_tables,
         water_rate_tables=water_rate_tables,
+        meter_configs=meter_configs,
     )
 
 
@@ -202,6 +241,36 @@ def estate_details_page(estate_id: int):
         db.session.query(func.count()).select_from(all_meter_ids).scalar() or 0
     )
 
+    elec_unit_count = (
+        db.session.query(func.count(Unit.electricity_meter_id.distinct()))
+        .filter(Unit.estate_id == estate_id, Unit.electricity_meter_id.isnot(None))
+        .scalar()
+        or 0
+    )
+
+    water_unit_count = (
+        db.session.query(func.count(Unit.water_meter_id.distinct()))
+        .filter(Unit.estate_id == estate_id, Unit.water_meter_id.isnot(None))
+        .scalar()
+        or 0
+    )
+
+    solar_unit_count = (
+        db.session.query(func.count(Unit.solar_meter_id.distinct()))
+        .filter(Unit.estate_id == estate_id, Unit.solar_meter_id.isnot(None))
+        .scalar()
+        or 0
+    )
+
+    has_bulk_elec = estate.bulk_electricity_meter_id is not None
+    has_bulk_water = estate.bulk_water_meter_id is not None
+
+    meter_config = {
+        "elec": f"{elec_unit_count} unit{' + 1 bulk' if has_bulk_elec else ''}",
+        "water": f"{water_unit_count} unit{' + 1 bulk' if has_bulk_water else ''}",
+        "solar": f"{solar_unit_count} unit",
+    }
+
     bulk_elec_meter = (
         Meter.get_by_id(estate.bulk_electricity_meter_id)
         if estate.bulk_electricity_meter_id
@@ -233,4 +302,5 @@ def estate_details_page(estate_id: int):
         bulk_water_meter=bulk_water_meter.to_dict() if bulk_water_meter else None,
         elec_rate_table=elec_rate_table.to_dict() if elec_rate_table else None,
         water_rate_table=water_rate_table.to_dict() if water_rate_table else None,
+        meter_config=meter_config,
     )
