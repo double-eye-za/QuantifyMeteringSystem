@@ -127,7 +127,7 @@ block breadcrumb %}
     {% for estate in estates %}
     <div
       class="border border-gray-200 dark:border-gray-700 rounded-lg p-6"
-      data-estate="{{ estate | tojson }}"
+      data-estate='{{ estate | tojson }}'
     >
       <div class="flex items-start justify-between mb-4">
         <div>
@@ -176,7 +176,7 @@ block breadcrumb %}
 
       <div class="flex items-center gap-2 mt-4">
         <button
-          onclick="viewEstateDetails()"
+          onclick="viewEstateDetails(this)"
           class="flex-1 px-3 py-2 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
         >
           <i class="fas fa-eye mr-1"></i> View Details
@@ -1518,8 +1518,11 @@ block breadcrumb %}
     }
   }
 
-  function viewEstateDetails() {
-    window.location.href = "{{ url_for('api_v1.units_page') }}";
+  function viewEstateDetails(buttonEl) {
+    const card = buttonEl.closest("[data-estate]");
+    if (!card) return;
+    const estate = JSON.parse(card.getAttribute("data-estate"));
+    window.location.href = `/api/v1/estates/${estate.id}/details`;
   }
 
   function editEstate(buttonEl) {

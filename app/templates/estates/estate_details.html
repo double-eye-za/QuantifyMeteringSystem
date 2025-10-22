@@ -1,0 +1,288 @@
+{% extends "base.html" %} {% block title %}{{ estate.name }} Details - Quantify
+Metering System{% endblock %} {% block page_title %}{{ estate.name }}{% endblock
+%} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.estates_page') }}" class="hover:text-primary"
+  >Estates</a
+>
+<span class="mx-1">/</span>
+<span>{{ estate.name }}</span>
+{% endblock %} {% block content %}
+<div class="container mx-auto px-4 py-6">
+  <!-- Estate Header -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6 flex items-center justify-between"
+  >
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        {{ estate.name }}
+      </h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Code: {{ estate.code }}
+      </p>
+    </div>
+    <span
+      class="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-sm rounded-full"
+    >
+      {{ 'Active' if estate.is_active else 'Inactive' }}
+    </span>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            Total Units
+          </p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ stats.total_units }}
+          </p>
+          <p class="text-xs text-success mt-2">All connected</p>
+        </div>
+        <div
+          class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+        >
+          <i class="fas fa-home text-success text-xl"></i>
+        </div>
+      </div>
+    </div>
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            Total Meters
+          </p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ stats.total_meters }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Unit + Bulk
+          </p>
+        </div>
+        <div
+          class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center"
+        >
+          <i class="fas fa-tachometer-alt text-purple-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    <!-- Add more if needed -->
+  </div>
+
+  <!-- Estate Information -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-info-circle text-blue-500 mr-2"></i>Estate Information
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Address</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.address or '-' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">City</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.city or '-' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Postal Code</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.postal_code or '-' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Contact Name</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.contact_name or '-' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Contact Phone</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.contact_phone or '-' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Contact Email</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.contact_email or '-' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billing Configuration -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-wallet text-green-500 mr-2"></i>Billing Configuration
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Electricity Markup (%)
+        </p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.electricity_markup_percentage }}%
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Water Markup (%)</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.water_markup_percentage }}%
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Solar Free Allocation (kWh)
+        </p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ estate.solar_free_allocation_kwh }} kWh
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Electricity Rate Table
+        </p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ elec_rate_table.name if elec_rate_table else 'Not assigned' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Water Rate Table</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ water_rate_table.name if water_rate_table else 'Not assigned' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Meters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-tachometer-alt text-purple-500 mr-2"></i>Bulk Meters
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Electricity Bulk Meter
+        </p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ bulk_elec_meter.serial_number if bulk_elec_meter else 'Not
+          assigned' }}
+        </p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Water Bulk Meter</p>
+        <p class="font-medium text-gray-900 dark:text-white">
+          {{ bulk_water_meter.serial_number if bulk_water_meter else 'Not
+          assigned' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Units List -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+  >
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Units in {{ estate.name }}
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table
+        class="w-full text-sm text-left text-gray-500 dark:text-gray-400 divide-y divide-gray-200 dark:divide-gray-700"
+      >
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th scope="col" class="px-6 py-3">Unit Number</th>
+            <th scope="col" class="px-6 py-3">Resident</th>
+            <th scope="col" class="px-6 py-3">Wallet Balance</th>
+            <th scope="col" class="px-6 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in units %} {% set u = item.unit %} {% set r =
+          item.resident %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ u.unit_number }}
+            </td>
+            <td class="px-6 py-4">
+              {{ r.first_name ~ ' ' ~ r.last_name if r else 'Vacant' }}
+            </td>
+            <td class="px-6 py-4">R {{ '%.2f' % item.wallet_balance }}</td>
+            <td class="px-6 py-4">
+              <a
+                href="{{ url_for('api_v1.unit_details_page', unit_id=u.id) }}"
+                class="text-primary hover:underline"
+                >View</a
+              >
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center py-4 text-gray-500">
+              No units found
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          Showing
+          <span class="font-medium"
+            >{{ ((pagination.page-1)*pagination.per_page)+1 if
+            pagination.total>0 else 0 }}</span
+          >
+          to
+          <span class="font-medium"
+            >{{ (pagination.page*pagination.per_page) if
+            (pagination.page*pagination.per_page) < pagination.total else
+            pagination.total }}</span
+          >
+          of <span class="font-medium">{{ pagination.total }}</span> units
+        </div>
+        <div class="flex items-center gap-2">
+          <a
+            href="{{ url_for('api_v1.estate_details_page', estate_id=estate.id, page=(pagination.prev_page or 1)) }}"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </a>
+          <span class="px-3 py-1 bg-primary text-white rounded-lg"
+            >{{ pagination.page }}</span
+          >
+          <a
+            href="{{ url_for('api_v1.estate_details_page', estate_id=estate.id, page=(pagination.next_page or pagination.page)) }}"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+
+{% endblock %}
