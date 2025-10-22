@@ -49,6 +49,7 @@ class Unit(db.Model):
         backref="unit",
         primaryjoin="Unit.id==Wallet.unit_id",
     )
+    resident = db.relationship("Resident", backref="unit")
     electricity_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     solar_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))

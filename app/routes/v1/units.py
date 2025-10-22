@@ -119,7 +119,46 @@ def list_units():
 @requires_permission("units.view")
 def wallet_statement_page(unit_id: str):
     """Render the wallet statement page"""
-    return render_template("wallets/wallet-statement.html", unit_id=unit_id)
+    from ...models import Unit, Wallet, Estate, Transaction
+    from ...db import db
+    from sqlalchemy import func
+
+    # Get unit and wallet data
+    unit = Unit.query.filter_by(unit_number=unit_id).first()
+    if not unit:
+        return "Unit not found", 404
+
+    wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+    if not wallet:
+        return "Wallet not found", 404
+
+    estate = Estate.query.get(unit.estate_id)
+
+    # Get recent transactions for this wallet
+    transactions = (
+        Transaction.query.filter_by(wallet_id=wallet.id)
+        .order_by(Transaction.completed_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    # Get last topup date
+    last_topup = (
+        Transaction.query.filter_by(
+            wallet_id=wallet.id, transaction_type="topup", status="completed"
+        )
+        .order_by(Transaction.completed_at.desc())
+        .first()
+    )
+
+    return render_template(
+        "wallets/wallet-statement.html",
+        unit=unit,
+        wallet=wallet,
+        estate=estate,
+        transactions=transactions,
+        last_topup_date=last_topup.completed_at if last_topup else None,
+    )
 
 
 @api_v1.route("/units/<unit_id>/visual", methods=["GET"])

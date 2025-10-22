@@ -30,6 +30,7 @@ class Wallet(db.Model):
     auto_topup_threshold: Optional[float]
     daily_avg_consumption: Optional[float]
     last_consumption_calc_date: Optional[datetime]
+    last_topup_date: Optional[datetime]
     is_suspended: Optional[bool]
     suspension_reason: Optional[str]
 
@@ -53,6 +54,7 @@ class Wallet(db.Model):
     auto_topup_threshold = db.Column(db.Numeric(10, 2))
     daily_avg_consumption = db.Column(db.Numeric(10, 2))
     last_consumption_calc_date = db.Column(db.DateTime)
+    last_topup_date = db.Column(db.DateTime)
     is_suspended = db.Column(db.Boolean, default=False)
     suspension_reason = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)

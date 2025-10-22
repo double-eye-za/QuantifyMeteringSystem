@@ -1,6 +1,6 @@
-{% extends "base.html" %} {% block title %}Wallet Statement - Unit A-101 -
-Quantify Metering System{% endblock %} {% block page_title %}Prepaid Wallet
-Statement{% endblock %} {% block breadcrumb %}
+{% extends "base.html" %} {% block title %}Wallet Statement - {{
+unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
+%}Prepaid Wallet Statement{% endblock %} {% block breadcrumb %}
 <a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
 <span class="mx-1">/</span>
 <a href="{{ url_for('api_v1.units_page') }}" class="hover:text-primary"
@@ -8,9 +8,9 @@ Statement{% endblock %} {% block breadcrumb %}
 >
 <span class="mx-1">/</span>
 <a
-  href="{{ url_for('api_v1.unit_details_page', unit_id='A-101') }}"
+  href="{{ url_for('api_v1.unit_details_page', unit_id=unit.id) }}"
   class="hover:text-primary"
-  >Unit A-101</a
+  >{{ unit.unit_number }}</a
 >
 <span class="mx-1">/</span>
 <span>Wallet Statement</span>
@@ -25,9 +25,11 @@ Statement{% endblock %} {% block breadcrumb %}
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-2xl font-bold mb-2">Current Wallet Balance</h2>
-          <p class="text-4xl font-bold">R 450.00</p>
+          <p class="text-4xl font-bold">R {{ wallet.balance | round(2) }}</p>
           <p class="text-sm opacity-90 mt-2">
-            Last top-up: R 500.00 on Oct 5, 2025
+            {% if last_topup_date %} Last top-up: {{
+            last_topup_date.strftime('%b %d, %Y') }} {% else %} No top-ups yet
+            {% endif %}
           </p>
         </div>
         <div class="text-right">
