@@ -1,812 +1,560 @@
 {% extends "base.html" %} {% block title %}Dashboard - Quantify Metering
-System{% endblock %} {% block head_resources %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %} {% block page_title %}System Overview{% endblock %} {% block
-breadcrumb %}
-<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+System{% endblock %} {% block head_resources %} {% endblock %} {% block
+page_title %}System Overview{% endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.index') }}" class="hover:text-primary">Home</a>
 {% endblock %} {% block content %}
-<!-- System-wide KPIs -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-    <div class="flex items-center justify-between mb-2">
-      <div
-        class="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center"
-      >
-        <i class="fas fa-building text-primary"></i>
-      </div>
-      <span class="text-xs text-gray-500">Live</span>
-    </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-      {{ stats.total_estates }}
-    </p>
-    <p class="text-xs text-gray-600 dark:text-gray-400">Active Estates</p>
+
+<!-- Top bar: Estate selector and Date range selector -->
+<div class="flex items-center gap-4 mb-6">
+  <div class="flex items-center gap-4">
+    <label
+      for="estateFilter"
+      class="text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Estate Filter
+    </label>
+    <select
+      id="estateFilter"
+      class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+    >
+      <option value="all">All Estates</option>
+      {% for estate in estates %}
+      <option value="{{ estate.id }}">{{ estate.name }}</option>
+      {% endfor %}
+    </select>
   </div>
 
+  <div class="flex items-center gap-4">
+    <label
+      for="dateRange"
+      class="text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Time Period
+    </label>
+    <select
+      id="dateRange"
+      class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+    >
+      <option value="current-month">Current Month ({{ current_month }})</option>
+      <option value="previous-month">Previous Month</option>
+      <option value="past-3-months">Past 3 Months</option>
+    </select>
+  </div>
+</div>
+
+<!-- 1. Summary Metrics (KPI Cards) -->
+<div
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 mb-6"
+>
+  <!-- Total Electricity Consumption -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
     <div class="flex items-center justify-between mb-2">
       <div
-        class="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+        class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center"
       >
-        <i class="fas fa-house text-green-500"></i>
+        <i class="fas fa-bolt text-blue-500 text-sm"></i>
       </div>
-      <span class="text-xs text-green-600">&nbsp;</span>
+      <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-      {{ stats.total_units }}
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.total_electricity_kwh | round(1) }} kWh
     </p>
-    <p class="text-xs text-gray-600 dark:text-gray-400">Total Units</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Total Electricity</p>
   </div>
 
+  <!-- Total Water Consumption -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
     <div class="flex items-center justify-between mb-2">
       <div
-        class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center"
+        class="w-8 h-8 bg-teal-100 dark:bg-teal-900/20 rounded-lg flex items-center justify-center"
       >
-        <i class="fas fa-bolt text-yellow-500"></i>
+        <i class="fas fa-tint text-teal-500 text-sm"></i>
       </div>
-      <span class="text-xs text-gray-500">Today</span>
+      <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-      {{ stats.mwh_today }}
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.total_water_liters | round(0) }} L
     </p>
-    <p class="text-xs text-gray-600 dark:text-gray-400">MWh Consumed</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Total Water</p>
   </div>
 
+  <!-- Solar Contribution -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
     <div class="flex items-center justify-between mb-2">
       <div
-        class="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+        class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center"
       >
-        <i class="fas fa-money-bill-wave text-green-600"></i>
+        <i class="fas fa-sun text-yellow-500 text-sm"></i>
       </div>
-      <span class="text-xs text-green-600">&nbsp;</span>
+      <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-      R {{ stats.revenue_today }}
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.solar_contribution_kwh | round(1) }} kWh
     </p>
-    <p class="text-xs text-gray-600 dark:text-gray-400">Today's Revenue</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Solar Contribution</p>
   </div>
 
+  <!-- Revenue Collected -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
     <div class="flex items-center justify-between mb-2">
       <div
-        class="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center"
+        class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
       >
-        <i class="fas fa-exclamation-triangle text-red-500"></i>
+        <i class="fas fa-money-bill-wave text-green-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">{{ current_month }}</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      R {{ kpis.revenue_collected | round(0) }}
+    </p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Revenue Collected</p>
+  </div>
+
+  <!-- Active Units -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-house text-green-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-green-600">Live</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.active_units }}
+    </p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Active Units</p>
+  </div>
+
+  <!-- Offline / Faulty Meters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-exclamation-triangle text-red-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Alert</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.offline_meters }}
+    </p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Offline Meters</p>
+  </div>
+
+  <!-- Total Disconnections -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-power-off text-red-500 text-sm"></i>
       </div>
       <span class="text-xs text-red-600">Critical</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">
-      {{ stats.units_disconnected }}
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.disconnected_units }}
     </p>
-    <p class="text-xs text-gray-600 dark:text-gray-400">Units Disconnected</p>
-  </div>
-</div>
-
-<!-- Estates Grid View -->
-<div class="mb-6">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-      Estates Performance
-    </h2>
-    <div class="flex gap-2 items-center">
-      <button
-        onclick="setView('grid')"
-        id="gridViewBtn"
-        class="px-3 py-1.5 text-sm bg-primary text-white rounded-lg"
-      >
-        <i class="fas fa-th mr-1"></i>Grid
-      </button>
-      <button
-        onclick="setView('list')"
-        id="listViewBtn"
-        class="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
-      >
-        <i class="fas fa-list mr-1"></i>List
-      </button>
-      <form method="get" action="{{ url_for('api_v1.dashboard') }}">
-        <input
-          type="text"
-          id="dashboardSearch"
-          name="q"
-          value="{{ q or '' }}"
-          placeholder="Search estates..."
-          oninput="filterEstates()"
-          class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 w-64"
-        />
-      </form>
-    </div>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Disconnected</p>
   </div>
 
-  <!-- Grid View -->
-  <div
-    id="gridView"
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4"
-  >
-    {% for e in estates_perf %}
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-      onclick="viewEstateDetails('{{ e.name|e }}')"
-      data-estate-name="{{ e.name|lower }}"
-    >
-      <div class="p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-gray-900 dark:text-white">
-            {{ e.name }}
-          </h3>
-          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        </div>
-
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Units</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >{{ e.total_units }}</span
-            >
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Occupied</span>
-            <span class="font-medium text-green-600 dark:text-green-400"
-              >{{ e.occupied_units }} ({{ '%.1f'|format(e.occupied_pct)
-              }}%)</span
-            >
-          </div>
-        </div>
-
-        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-red-600 dark:text-red-400">
-              <i class="fas fa-power-off mr-1"></i>{{ e.alerts.disconnected }}
-              disconnected
-            </span>
-            <span class="text-yellow-600 dark:text-yellow-400">
-              <i class="fas fa-exclamation mr-1"></i>{{ e.alerts.low }} low
-            </span>
-            <span class="text-blue-600 dark:text-blue-400">
-              <i class="fas fa-tachometer-alt mr-1"></i>{{ e.alerts.offline }}
-              offline
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- List View (Hidden by default) -->
-  <div id="listView" class="hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 dark:bg-gray-700">
-          <tr>
-            <th
-              class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Estate
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Units
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Occupied
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Disconnected
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Low Balance
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Offline
-            </th>
-            <th
-              class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-            >
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          {% for e in estates_perf %}
-          <tr
-            class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            data-estate-name="{{ e.name|lower }}"
-          >
-            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
-              {{ e.name }}
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              {{ e.total_units }}
-            </td>
-            <td class="px-4 py-3 text-center text-gray-900 dark:text-white">
-              {{ e.occupied_units }} ({{ '%.1f'|format(e.occupied_pct) }}%)
-            </td>
-            <td class="px-4 py-3 text-center text-red-600 dark:text-red-400">
-              {{ e.alerts.disconnected }}
-            </td>
-            <td
-              class="px-4 py-3 text-center text-yellow-600 dark:text-yellow-400"
-            >
-              {{ e.alerts.low }}
-            </td>
-            <td class="px-4 py-3 text-center text-blue-600 dark:text-blue-400">
-              {{ e.alerts.offline }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <button
-                onclick="viewEstateDetails('{{ e.name|e }}')"
-                class="text-primary hover:underline text-xs"
-              >
-                View
-              </button>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div
-    id="noResults"
-    class="hidden mt-4 text-sm text-gray-600 dark:text-gray-300"
-  >
-    No estates found.
-  </div>
-</div>
-
-<!-- System Analytics (graphs remain mocked) -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      System-wide Consumption Trend - {{ current_month }}
-    </h3>
-    <div class="relative h-64">
-      <canvas id="consumptionChart"></canvas>
-    </div>
-  </div>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Revenue by Estate - {{ current_month }}
-    </h3>
-    <div class="relative h-64">
-      <canvas id="revenueChart"></canvas>
-    </div>
-  </div>
-</div>
-
-<!-- Estate Details Modal -->
-<div id="estateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div
-      class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
-    >
+  <!-- Communal Area Usage -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
       <div
-        class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+        class="w-8 h-8 bg-gray-100 dark:bg-gray-900/20 rounded-lg flex items-center justify-center"
       >
-        <div class="flex items-center justify-between">
-          <h2
-            id="estateName"
-            class="text-xl font-bold text-gray-900 dark:text-white"
-          >
-            Estate Details
-          </h2>
-          <button
-            onclick="closeEstateModal()"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            <i class="fas fa-times text-xl"></i>
-          </button>
+        <i class="fas fa-building text-gray-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">{{ current_month }}</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">
+      {{ kpis.communal_electricity | round(1) }} kWh
+    </p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Communal Usage</p>
+  </div>
+</div>
+
+<!-- 3. Alerts & Notifications Panel -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <i class="fas fa-bell text-yellow-500 mr-2"></i>Real-time Alerts &
+    Notifications
+  </h3>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Offline Meters -->
+    <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-wifi text-red-500 mr-2"></i>
+        <span class="font-semibold text-red-800 dark:text-red-200"
+          >Offline Meters</span
+        >
+      </div>
+      {% if offline_meters_alert %} {% for meter in offline_meters_alert %}
+      <p class="text-sm text-red-700 dark:text-red-300">
+        {{ meter.serial_number }} - {{ meter.meter_type }}
+      </p>
+      {% endfor %} {% else %}
+      <p class="text-sm text-green-700 dark:text-green-300">
+        All meters online
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Low Credit Alerts -->
+    <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-exclamation text-yellow-500 mr-2"></i>
+        <span class="font-semibold text-yellow-800 dark:text-yellow-200"
+          >Low Credit Alerts</span
+        >
+      </div>
+      {% if low_credit_alerts %} {% for wallet, unit, estate in
+      low_credit_alerts %}
+      <p class="text-sm text-yellow-700 dark:text-yellow-300">
+        {{ unit.unit_number }} ({{ estate.name }}) - R{{ wallet.balance |
+        round(2) }}
+      </p>
+      {% endfor %} {% else %}
+      <p class="text-sm text-green-700 dark:text-green-300">
+        No low balance alerts
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Tamper/Fault Warnings -->
+    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-shield-alt text-orange-500 mr-2"></i>
+        <span class="font-semibold text-orange-800 dark:text-orange-200"
+          >Tamper/Fault Warnings</span
+        >
+      </div>
+      {% if tamper_alerts %} {% for alert in tamper_alerts %}
+      <p class="text-sm text-orange-700 dark:text-orange-300">
+        {{ alert.alert_type }} - {{ alert.message }}
+      </p>
+      {% endfor %} {% else %}
+      <p class="text-sm text-green-700 dark:text-green-300">No tamper alerts</p>
+      {% endif %}
+    </div>
+
+    <!-- Failed Top-ups -->
+    <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-credit-card text-red-500 mr-2"></i>
+        <span class="font-semibold text-red-800 dark:text-red-200"
+          >Failed Top-ups</span
+        >
+      </div>
+      {% if failed_topups %} {% for txn in failed_topups %}
+      <p class="text-sm text-red-700 dark:text-red-300">
+        {{ txn.transaction_number }} - R{{ txn.amount | round(2) }}
+      </p>
+      {% endfor %} {% else %}
+      <p class="text-sm text-green-700 dark:text-green-300">
+        No failed transactions
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- 4. Estate Overview Widgets -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+  <!-- Live Status Summary -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-signal text-green-500 mr-2"></i>Live Status Summary
+    </h3>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Online</span>
+        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+          >{{ live_status.online }}</span
+        >
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Low Signal</span>
+        <span
+          class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+          >{{ live_status.low_signal }}</span
+        >
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Offline</span>
+        <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+          >{{ live_status.offline }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Meter Feed Status -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-broadcast-tower text-blue-500 mr-2"></i>Bulk Meter Feed
+      Status
+    </h3>
+    <div class="space-y-3">
+      {% for status in bulk_meter_status %}
+      <div
+        class="border-b border-gray-200 dark:border-gray-700 pb-2 last:border-b-0"
+      >
+        <div class="font-medium text-sm text-gray-900 dark:text-white">
+          {{ status.name }}
+        </div>
+        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <div class="flex items-center justify-between">
+            <span>Elec Meter</span>
+            <span
+              class="{% if status.last_elec_reading %}text-green-600{% else %}text-red-600{% endif %}"
+            >
+              {% if status.last_elec_reading %} {{
+              status.last_elec_reading.strftime('%b %d, %H:%M') }} {% else %} No
+              readings {% endif %}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>Water Meter</span>
+            <span
+              class="{% if status.last_water_reading %}text-green-600{% else %}text-red-600{% endif %}"
+            >
+              {% if status.last_water_reading %} {{
+              status.last_water_reading.strftime('%b %d, %H:%M') }} {% else %}
+              No readings {% endif %}
+            </span>
+          </div>
         </div>
       </div>
+      {% endfor %}
+    </div>
+  </div>
 
-      <div class="p-6">
-        <!-- Estate KPIs -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Total Units
-            </p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">50</p>
-            <p class="text-xs text-green-600">96% occupied</p>
+  <!-- Solar Offset Gauge -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-sun text-yellow-500 mr-2"></i>Solar Offset Gauge
+    </h3>
+    <div class="text-center">
+      <div class="text-3xl font-bold text-yellow-600">
+        {{ solar_offset_percentage | round(1) }}%
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        of total electricity supplied via solar
+      </p>
+    </div>
+  </div>
+
+  <!-- Communal Usage Gauge -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-building text-gray-500 mr-2"></i>Communal Usage Gauge
+    </h3>
+    <div class="text-center">
+      <div class="text-3xl font-bold text-gray-600">
+        {{ communal_usage_percentage | round(1) }}%
+      </div>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        of bulk usage for common areas
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Financial Snapshot -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <i class="fas fa-chart-line text-green-500 mr-2"></i>Financial Snapshot
+  </h3>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Column: Stats -->
+    <div class="space-y-6">
+      <!-- Total Top-Ups -->
+      <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+        <div class="text-2xl font-bold text-green-600">
+          R {{ todays_topups | round(0) }}
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Today's Top-ups</p>
+      </div>
+
+      <!-- Communal Area Cost Estimate -->
+      <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+        <div class="text-2xl font-bold text-gray-600">
+          R {{ communal_cost_estimate | round(0) }}
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          Communal Area Cost Estimate
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Based on tariff rates: Elec R2.50/kWh, Water R15.00/kL
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Column: Visual Components -->
+    <div class="space-y-6">
+      <!-- Revenue per Utility (Bar Graph) -->
+      <div>
+        <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
+          Revenue per Utility - {{ current_month }}
+        </h4>
+        {% if revenue_per_utility %}
+        <div class="space-y-2">
+          {% for utility in revenue_per_utility %}
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div
+                class="w-3 h-3 rounded-full {% if utility.utility == 'Electricity' %}bg-blue-500{% elif utility.utility == 'Water' %}bg-teal-500{% elif utility.utility == 'Solar' %}bg-yellow-500{% else %}bg-gray-500{% endif %}"
+              ></div>
+              <span class="text-sm font-medium">{{ utility.utility }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                {% set max_revenue = revenue_per_utility |
+                map(attribute='revenue') | max %}
+                <div
+                  class="h-2 rounded-full {% if utility.utility == 'Electricity' %}bg-blue-500{% elif utility.utility == 'Water' %}bg-teal-500{% elif utility.utility == 'Solar' %}bg-yellow-500{% else %}bg-gray-500{% endif %}"
+                  style="width: {{ (utility.revenue / max_revenue * 100) if max_revenue > 0 else 0 }}%"
+                ></div>
+              </div>
+              <span class="text-sm font-semibold text-gray-900 dark:text-white"
+                >R {{ utility.revenue | round(0) }}</span
+              >
+            </div>
           </div>
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Today's Consumption
-            </p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              625 kWh
-            </p>
-            <p class="text-xs text-blue-600">22,500 L water</p>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Today's Revenue
-            </p>
-            <p class="text-2xl font-bold text-green-600">R 12,450</p>
-            <p class="text-xs text-gray-600">+8% vs yesterday</p>
-          </div>
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              System Health
-            </p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">98%</p>
-            <p class="text-xs text-yellow-600">1 meter offline</p>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div
+          class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+        >
+          <div class="flex items-center">
+            <i
+              class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-2"
+            ></i>
+            <span class="text-sm text-yellow-800 dark:text-yellow-200"
+              >No revenue data available for the selected period</span
+            >
           </div>
         </div>
+        {% endif %}
+      </div>
 
-        <!-- Tabs -->
-        <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
-          <nav class="flex space-x-8">
-            <button
-              class="py-2 px-1 border-b-2 border-primary text-primary font-medium text-sm"
-            >
-              Analytics
-            </button>
-            <button
-              class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
-            >
-              Units
-            </button>
-            <button
-              class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
-            >
-              Reconciliation
-            </button>
-            <button
-              class="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm"
-            >
-              Billing
-            </button>
-          </nav>
+      <!-- Top Paying Units -->
+      <div>
+        <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
+          Top Paying Units - {{ current_month }}
+        </h4>
+        {% if top_paying_units %}
+        <div class="space-y-2">
+          {% for unit in top_paying_units %}
+          <div
+            class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center"
+              >
+                <span class="text-xs font-bold text-primary"
+                  >{{ loop.index }}</span
+                >
+              </div>
+              <div>
+                <div class="font-medium text-sm text-gray-900 dark:text-white">
+                  {{ unit.unit_number }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ unit.estate_name }}
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-semibold text-sm text-gray-900 dark:text-white">
+                R {{ unit.total_spent | round(0) }}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                Total spent
+              </div>
+            </div>
+          </div>
+          {% endfor %}
         </div>
-
-        <!-- Analytics Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Consumption Pattern -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
-              24-Hour Consumption Pattern
-            </h4>
-            <div class="relative h-64">
-              <canvas id="hourlyChart"></canvas>
-            </div>
-          </div>
-
-          <!-- Unit Status Distribution -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
-              Unit Status Distribution
-            </h4>
-            <div class="relative h-64">
-              <canvas id="statusChart"></canvas>
-            </div>
-          </div>
-
-          <!-- Top Consumers -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
-              Top 5 Consumers Today
-            </h4>
-            <div class="space-y-2">
-              <div class="flex justify-between items-center">
-                <span class="text-sm">Unit B-205</span>
-                <span class="text-sm font-semibold">45 kWh</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm">Unit A-301</span>
-                <span class="text-sm font-semibold">38 kWh</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm">Unit C-102</span>
-                <span class="text-sm font-semibold">35 kWh</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm">Unit D-401</span>
-                <span class="text-sm font-semibold">32 kWh</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-sm">Unit A-204</span>
-                <span class="text-sm font-semibold">28 kWh</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Critical Units -->
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-3">
-              Critical Units
-            </h4>
-            <div class="space-y-2">
-              <div
-                class="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/20 rounded"
-              >
-                <span class="text-sm">Unit C-310</span>
-                <span class="text-xs text-red-600">Disconnected - R0.00</span>
-              </div>
-              <div
-                class="flex justify-between items-center p-2 bg-red-100 dark:bg-red-900/20 rounded"
-              >
-                <span class="text-sm">Unit D-402</span>
-                <span class="text-xs text-red-600">Disconnected - R0.00</span>
-              </div>
-              <div
-                class="flex justify-between items-center p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded"
-              >
-                <span class="text-sm">Unit A-105</span>
-                <span class="text-xs text-yellow-600">Low - R32.50</span>
-              </div>
-            </div>
+        {% else %}
+        <div
+          class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+        >
+          <div class="flex items-center">
+            <i
+              class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-2"
+            ></i>
+            <span class="text-sm text-yellow-800 dark:text-yellow-200"
+              >No payment data available for the selected period</span
+            >
           </div>
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %} {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-  console.log("Hello from index dashboard script tag");
-  // View Toggle
-  function setView(view) {
-    const gridView = document.getElementById("gridView");
-    const listView = document.getElementById("listView");
-    const gridBtn = document.getElementById("gridViewBtn");
-    const listBtn = document.getElementById("listViewBtn");
+  // Auto-refresh every 5 minutes
+  setInterval(() => {
+    location.reload();
+  }, 300000); // 5 minutes
 
-    if (view === "grid") {
-      gridView.classList.remove("hidden");
-      listView.classList.add("hidden");
-      gridBtn.classList.add("bg-primary", "text-white");
-      gridBtn.classList.remove(
-        "bg-gray-200",
-        "dark:bg-gray-700",
-        "text-gray-700",
-        "dark:text-gray-300"
-      );
-      listBtn.classList.remove("bg-primary", "text-white");
-      listBtn.classList.add(
-        "bg-gray-200",
-        "dark:bg-gray-700",
-        "text-gray-700",
-        "dark:text-gray-300"
-      );
-    } else {
-      gridView.classList.add("hidden");
-      listView.classList.remove("hidden");
-      listBtn.classList.add("bg-primary", "text-white");
-      listBtn.classList.remove(
-        "bg-gray-200",
-        "dark:bg-gray-700",
-        "text-gray-700",
-        "dark:text-gray-300"
-      );
-      gridBtn.classList.remove("bg-primary", "text-white");
-      gridBtn.classList.add(
-        "bg-gray-200",
-        "dark:bg-gray-700",
-        "text-gray-700",
-        "dark:text-gray-300"
-      );
-    }
-    filterEstates();
-  }
-
-  // Live filter estates across grid/list and alerts sections
-  function filterEstates() {
-    const q = (document.getElementById("dashboardSearch")?.value || "")
-      .toLowerCase()
-      .trim();
-    let visibleGrid = 0,
-      visibleList = 0,
-      visibleAlerts = 0;
-
-    // Grid cards
-    document.querySelectorAll("#gridView [data-estate-name]")?.forEach((el) => {
-      const name = el.getAttribute("data-estate-name") || "";
-      const show = !q || name.includes(q);
-      el.style.display = show ? "" : "none";
-      if (show) visibleGrid++;
-    });
-
-    // List rows
-    document.querySelectorAll("#listView [data-estate-name]")?.forEach((el) => {
-      const name = el.getAttribute("data-estate-name") || "";
-      const show = !q || name.includes(q);
-      el.style.display = show ? "" : "none";
-      if (show) visibleList++;
-    });
-
-    // Alerts blocks
-    document
-      .querySelectorAll("[data-estate-name][class*='mb-6']")
-      ?.forEach((el) => {
-        const name = el.getAttribute("data-estate-name") || "";
-        const show = !q || name.includes(q);
-        el.style.display = show ? "" : "none";
-        if (show) visibleAlerts++;
+  // Add hover tooltips functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add tooltip functionality to KPI cards
+    const kpiCards = document.querySelectorAll(
+      ".bg-white.dark\\:bg-gray-800.rounded-lg.shadow-sm.p-4"
+    );
+    kpiCards.forEach((card) => {
+      card.addEventListener("mouseenter", function () {
+        this.style.transform = "translateY(-2px)";
+        this.style.transition = "transform 0.2s ease";
       });
-
-    const currentViewIsGrid = !document
-      .getElementById("gridView")
-      .classList.contains("hidden");
-    const anyVisible = (currentViewIsGrid ? visibleGrid : visibleList) > 0;
-    const noResults = document.getElementById("noResults");
-    if (noResults) {
-      noResults.classList.toggle("hidden", anyVisible);
-    }
-  }
-
-  // Estate Details Modal (unchanged except dynamic name)
-  function viewEstateDetails(estateName) {
-    document.getElementById("estateName").textContent =
-      estateName + " - Detailed Analytics";
-    document.getElementById("estateModal").classList.remove("hidden");
-
-    // Draw charts when modal opens
-    setTimeout(() => {
-      drawHourlyChart();
-      drawStatusChart();
-    }, 100);
-  }
-
-  function closeEstateModal() {
-    document.getElementById("estateModal").classList.add("hidden");
-  }
-
-  // Chart instances storage
-  let chartInstances = {};
-
-  const consumptionData = {{ consumption_data | tojson | safe }};
-  const revenueData = {{ revenue_data | tojson | safe }};
-
-  function drawHourlyChart() {
-    const ctx = document.getElementById("hourlyChart").getContext("2d");
-
-    // Destroy existing chart instance if it exists
-    if (chartInstances.hourly) {
-      chartInstances.hourly.destroy();
-    }
-
-    chartInstances.hourly = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: [
-          "00",
-          "02",
-          "04",
-          "06",
-          "08",
-          "10",
-          "12",
-          "14",
-          "16",
-          "18",
-          "20",
-          "22",
-        ],
-        datasets: [
-          {
-            label: "kWh",
-            data: [15, 12, 10, 25, 45, 40, 35, 38, 42, 55, 48, 20],
-            backgroundColor: "rgba(59, 130, 246, 0.8)",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
-      },
+      card.addEventListener("mouseleave", function () {
+        this.style.transform = "translateY(0)";
+      });
     });
-  }
 
-  function drawStatusChart() {
-    const ctx = document.getElementById("statusChart").getContext("2d");
+    // Handle filter changes
+    const estateFilter = document.getElementById("estateFilter");
+    const dateRange = document.getElementById("dateRange");
 
-    // Destroy existing chart instance if it exists
-    if (chartInstances.status) {
-      chartInstances.status.destroy();
+    function updateDashboard() {
+      const estateId = estateFilter.value;
+      const timePeriod = dateRange.value;
+
+      // Build URL with parameters
+      const url = new URL(window.location);
+      url.searchParams.set("estate", estateId);
+      url.searchParams.set("period", timePeriod);
+
+      // Reload page with new parameters
+      window.location.href = url.toString();
     }
 
-    chartInstances.status = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: ["Active", "Low Balance", "Disconnected", "Vacant"],
-        datasets: [
-          {
-            data: [40, 5, 2, 3],
-            backgroundColor: [
-              "rgba(16, 185, 129, 0.8)",
-              "rgba(251, 188, 4, 0.8)",
-              "rgba(239, 68, 68, 0.8)",
-              "rgba(156, 163, 175, 0.8)",
-            ],
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-      },
-    });
-  }
+    // Add event listeners
+    estateFilter.addEventListener("change", updateDashboard);
+    dateRange.addEventListener("change", updateDashboard);
 
-  // Update consumption chart to accept data parameter
-  function drawConsumptionChart() {
-    const ctx = document.getElementById("consumptionChart").getContext("2d");
-    const isDark = document.documentElement.classList.contains("dark");
-    const themeTextColor = isDark ? "#e5e7eb" : "#374151";
+    // Set initial values from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const estateParam = urlParams.get("estate");
+    const periodParam = urlParams.get("period");
 
-    // Destroy existing chart instance if it exists
-    if (chartInstances.consumption) {
-      chartInstances.consumption.destroy();
+    if (estateParam) {
+      estateFilter.value = estateParam;
     }
-
-    chartInstances.consumption = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: consumptionData.labels,
-        datasets: [
-          {
-            label: "Electricity - Units (MWh)",
-            data: consumptionData.electricity,
-            borderColor: "rgb(59, 130, 246)",
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
-            tension: 0.4,
-            borderWidth: 2,
-          },
-          {
-            label: "Water - Units (kL)",
-            data: consumptionData.water,
-            borderColor: "rgb(16, 185, 129)",
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            tension: 0.4,
-            borderWidth: 2,
-          },
-          {
-            label: "Electricity - Communal (MWh)",
-            data: consumptionData.electricityCommunal,
-            borderColor: "rgb(147, 197, 253)",
-            backgroundColor: "rgba(147, 197, 253, 0.1)",
-            tension: 0.4,
-            borderWidth: 2,
-            borderDash: [5, 5],
-          },
-          {
-            label: "Water - Communal (kL)",
-            data: consumptionData.waterCommunal,
-            borderColor: "rgb(134, 239, 172)",
-            backgroundColor: "rgba(134, 239, 172, 0.1)",
-            tension: 0.4,
-            borderWidth: 2,
-            borderDash: [5, 5],
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false,
-        },
-        scales: {
-          x: {
-            ticks: { color: themeTextColor },
-            grid: {
-              color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-            },
-          },
-          y: {
-            ticks: { color: themeTextColor },
-            grid: {
-              color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-            },
-          },
-        },
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              font: {
-                size: 11,
-              },
-              padding: 8,
-              usePointStyle: true,
-              color: themeTextColor,
-            },
-          },
-        },
-      },
-    });
-  }
-
-  // Update revenue chart to accept data parameter
-  function drawRevenueChart() {
-    const ctx = document.getElementById("revenueChart").getContext("2d");
-    const isDark = document.documentElement.classList.contains("dark");
-    const themeTextColor = isDark ? "#e5e7eb" : "#374151";
-
-    // Destroy existing chart instance if it exists
-    if (chartInstances.revenue) {
-      chartInstances.revenue.destroy();
-    }
-
-    chartInstances.revenue = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: revenueData.labels,
-        datasets: [
-          {
-            label: "Revenue",
-            data: revenueData.data,
-            backgroundColor: [
-              "rgba(59, 130, 246, 0.8)", // Willow Units
-              "rgba(59, 130, 246, 0.3)", // Willow Communal
-              "rgba(16, 185, 129, 0.8)", // Parkview Units
-              "rgba(16, 185, 129, 0.3)", // Parkview Communal
-              "rgba(251, 188, 4, 0.8)", // Sunset Ridge Units - solid yellow
-              "rgba(251, 188, 4, 0.3)", // Sunset Ridge Communal - greyed yellow
-            ],
-            borderColor: "#1f2937",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            ticks: { color: themeTextColor },
-            grid: {
-              color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-            },
-          },
-          y: {
-            ticks: { color: themeTextColor },
-            grid: {
-              color: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-            },
-          },
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: "bottom",
-            labels: {
-              font: { size: 11 },
-              color: themeTextColor,
-            },
-          },
-        },
-      },
-    });
-  }
-
-  // Initialize charts on load
-  window.addEventListener("load", () => {
-    drawConsumptionChart();
-    drawRevenueChart();
-  });
-
-  // Close modal on escape key
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeEstateModal();
+    if (periodParam) {
+      dateRange.value = periodParam;
     }
   });
 </script>

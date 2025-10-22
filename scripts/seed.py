@@ -913,27 +913,41 @@ def create_monthly_readings_and_transactions():
                     db.session.add(mr)
                     readings += 1
 
-            # Random topup transaction ~every 3 days
-            if unit.wallet:
-                amount = Decimal(random.uniform(200, 1000)).quantize(Decimal("0.01"))
-                balance_before = unit.wallet.balance or 0
-                balance_after = balance_before + amount
-                trans = Transaction(
-                    transaction_number=f"TXN-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
-                    wallet_id=unit.wallet.id,
-                    transaction_type="topup",
-                    amount=amount,
-                    balance_before=balance_before,
-                    balance_after=balance_after,
-                    status="completed",
-                    initiated_at=ts,
-                    completed_at=ts,
-                    reference=f"TOPUP-{unit.id}-{day}",
-                )
-                db.session.add(trans)
-                unit.wallet.balance = balance_after
-                db.session.commit()
-                transactions += 1
+            # Create utility-specific topup transactions every 3 days
+            if unit.wallet and day % 3 == 0:
+                # Create separate topup transactions for each utility type
+                utilities = ["electricity", "water", "solar"]
+                for utility in utilities:
+                    amount = Decimal(random.uniform(100, 500)).quantize(Decimal("0.01"))
+                    balance_before = unit.wallet.balance or 0
+                    balance_after = balance_before + amount
+
+                    # Create utility-specific descriptions for proper categorization
+                    descriptions = {
+                        "electricity": f"Electricity credit purchase for Unit {unit.unit_number}",
+                        "water": f"Water credit purchase for Unit {unit.unit_number}",
+                        "solar": f"Solar credit purchase for Unit {unit.unit_number}",
+                    }
+
+                    trans = Transaction(
+                        transaction_number=f"TXN-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                        wallet_id=unit.wallet.id,
+                        transaction_type="topup",
+                        amount=amount,
+                        balance_before=balance_before,
+                        balance_after=balance_after,
+                        status="completed",
+                        initiated_at=ts,
+                        completed_at=ts,
+                        reference=f"TOPUP-{unit.id}-{utility}-{day}",
+                        description=descriptions[utility],
+                        payment_method="eft"
+                        if random.choice([True, False])
+                        else "card",
+                    )
+                    db.session.add(trans)
+                    unit.wallet.balance = balance_after
+                    transactions += 1
 
     for estate in Estate.query.all():
         base_values = {"bulk_electricity": 0, "bulk_water": 0}
@@ -975,6 +989,112 @@ def create_monthly_readings_and_transactions():
 
     logging.info("Created %d readings and %d transactions", readings, transactions)
     return {"readings": readings, "transactions": transactions}
+
+
+def create_notifications():
+    """Create sample notifications according to functional specification."""
+    from app.models import Notification
+
+    notifications_created = 0
+
+    # Sample notifications based on functional spec
+    sample_notifications = [
+        {
+            "subject": "Low Balance Alert",
+            "message": "Unit A-101 has a low balance of R45.50. Estimated 2 days remaining.",
+            "notification_type": "low_balance",
+            "priority": "high",
+            "status": "sent",
+            "channel": "in_app",
+        },
+        {
+            "subject": "Meter Offline",
+            "message": "Electricity meter E460-112 in Willow Estate has been offline for 2 hours.",
+            "notification_type": "meter_offline",
+            "priority": "high",
+            "status": "sent",
+            "channel": "in_app",
+        },
+        {
+            "subject": "Failed Top-up",
+            "message": "Top-up transaction TXN-20241215-1234 failed for Unit B-205. Amount: R300.00",
+            "notification_type": "payment_failed",
+            "priority": "high",
+            "status": "sent",
+            "channel": "in_app",
+        },
+        {
+            "subject": "Tamper Detection",
+            "message": "Water meter W789-456 in Parkview Estate detected tampering attempt.",
+            "notification_type": "tamper",
+            "priority": "critical",
+            "status": "sent",
+            "channel": "in_app",
+        },
+        {
+            "subject": "System Maintenance",
+            "message": "Scheduled maintenance window: Dec 20, 2024 02:00-04:00 AM",
+            "notification_type": "maintenance",
+            "priority": "normal",
+            "status": "read",
+            "channel": "in_app",
+        },
+        {
+            "subject": "New Unit Registered",
+            "message": "Unit C-301 has been registered in Sunset Ridge Estate.",
+            "notification_type": "unit_registered",
+            "priority": "normal",
+            "status": "read",
+            "channel": "in_app",
+        },
+        {
+            "subject": "High Consumption Alert",
+            "message": "Unit A-203 has consumed 150% above average daily usage.",
+            "notification_type": "high_consumption",
+            "priority": "high",
+            "status": "sent",
+            "channel": "in_app",
+        },
+        {
+            "subject": "Solar Allocation Used",
+            "message": "Unit B-107 has used 45/50 kWh of free solar allocation this month.",
+            "notification_type": "solar_allocation",
+            "priority": "normal",
+            "status": "read",
+            "channel": "in_app",
+        },
+    ]
+
+    for notif_data in sample_notifications:
+        # Check if notification already exists
+        existing = Notification.query.filter_by(
+            subject=notif_data["subject"], message=notif_data["message"]
+        ).first()
+
+        if not existing:
+            notification = Notification(
+                recipient_type="system",
+                recipient_id=None,
+                subject=notif_data["subject"],
+                message=notif_data["message"],
+                notification_type=notif_data["notification_type"],
+                priority=notif_data["priority"],
+                channel=notif_data["channel"],
+                status=notif_data["status"],
+                created_at=datetime.now() - timedelta(hours=random.randint(1, 72)),
+                sent_at=datetime.now() - timedelta(hours=random.randint(1, 72))
+                if notif_data["status"] in ["sent", "read"]
+                else None,
+                read_at=datetime.now() - timedelta(hours=random.randint(1, 24))
+                if notif_data["status"] == "read"
+                else None,
+            )
+            db.session.add(notification)
+            notifications_created += 1
+
+    db.session.commit()
+    logging.info("Created %d notifications", notifications_created)
+    return {"notifications_created": notifications_created}
 
 
 def create_residents_and_assign(admin_user: User) -> dict[str, int]:
@@ -1108,6 +1228,7 @@ def main():
         res_counts = create_residents_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
         monthly_counts = create_monthly_readings_and_transactions()
+        notif_counts = create_notifications()
         summary = {
             "users_total": User.query.count(),
             "estates_total": Estate.query.count(),
@@ -1131,7 +1252,7 @@ def main():
         )
         print(
             "Seed complete: "
-            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}) | "
+            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}, notifications={notif_counts['notifications_created']}) | "
             f"totals(users={summary['users_total']}, estates={summary['estates_total']}, units={summary['units_total']}, meters={summary['meters_total']}, wallets={summary['wallets_total']}, rate_tables={summary['rate_tables_total']}) | "
             f"residents(created={res_counts['residents_created']}, assigned={res_counts['assigned']})"
         )
