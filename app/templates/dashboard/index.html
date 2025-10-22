@@ -266,7 +266,7 @@ breadcrumb %}
 </div>
 
 <!-- System Analytics (graphs remain mocked) -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       System-wide Consumption Trend
@@ -283,15 +283,13 @@ breadcrumb %}
       <canvas id="revenueChart"></canvas>
     </div>
   </div>
-</div>
+</div> -->
 
 <!-- Critical Alerts Summary (uses estates_perf) -->
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+  System Alerts by Estate
+</h2>
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      System Alerts by Estate
-    </h3>
-  </div>
   <div class="p-6">
     {% for e in estates_perf %}
     <div class="mb-6" data-estate-name="{{ e.name|lower }}">
