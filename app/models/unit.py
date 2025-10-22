@@ -54,6 +54,7 @@ class Unit(db.Model):
     solar_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     electricity_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     water_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
+    estate = db.relationship("Estate", backref="units")
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     updated_by = db.Column(db.Integer, db.ForeignKey("users.id"))

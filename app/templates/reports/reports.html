@@ -19,8 +19,8 @@
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Consumption</span>
                     <i class="fas fa-chart-line text-primary"></i>
                 </div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">18,750 kWh</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ '%.0f' % (kpis.electricity_total_kwh or 0) }} kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ kpis.period_label }}</p>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -28,8 +28,8 @@
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</span>
                     <i class="fas fa-rand-sign text-green-500"></i>
                 </div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">R 31,250</div>
-                <p class="text-xs text-green-600 dark:text-green-400 mt-1">+12% from last month</p>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">R {{ '%.2f' % (kpis.revenue_total_amount or 0) }}</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ kpis.period_label }}</p>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -37,8 +37,8 @@
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Water Usage</span>
                     <i class="fas fa-tint text-blue-500"></i>
                 </div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">45,000 L</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ '%.0f' % (kpis.water_total_liters or 0) }} L</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ kpis.period_label }}</p>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -46,8 +46,8 @@
                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Solar Generation</span>
                     <i class="fas fa-solar-panel text-yellow-500"></i>
                 </div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-white">8,200 kWh</div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This month</p>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ '%.0f' % (kpis.solar_total_kwh or 0) }} kWh</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ kpis.period_label }}</p>
             </div>
         </div>
 
@@ -88,10 +88,10 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estate</label>
                     <div class="relative">
                         <select class="w-full appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 pr-10 cursor-pointer">
-                            <option>All Estates</option>
-                            <option>Willow Creek Residential</option>
-                            <option>Parkview Gardens</option>
-                            <option>Sunset Ridge Estate</option>
+                            <option value="">All Estates</option>
+                            {% for e in estates %}
+                            <option value="{{ e.id }}">{{ e.name }}</option>
+                            {% endfor %}
                         </select>
                         <i class="fas fa-chevron-down absolute right-3 top-3 text-gray-400 pointer-events-none"></i>
                     </div>
@@ -173,88 +173,57 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if detailed_report.no_data %}
+                        <tr><td colspan="8" class="text-center py-4 text-gray-500">Not enough data for detailed report</td></tr>
+                        {% else %}
+                        {% set totals = namespace(elec=0.0, water=0.0, solar=0.0, cost=0.0, payments=0.0, balance=0.0) %}
+                        {% for row in detailed_report.data %}
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A101</td>
-                            <td class="px-6 py-4">Willow Creek</td>
-                            <td class="px-6 py-4">450</td>
-                            <td class="px-6 py-4">12,500</td>
-                            <td class="px-6 py-4">180</td>
-                            <td class="px-6 py-4 font-semibold">R 1,250.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,500.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 250.00</td>
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ row.unit_number }}</td>
+                            <td class="px-6 py-4">{{ row.estate_name }}</td>
+                            <td class="px-6 py-4">{{ '%.0f' % row.elec_kwh }}</td>
+                            <td class="px-6 py-4">{{ '%.0f' % row.water_l }}</td>
+                            <td class="px-6 py-4">{{ '%.0f' % row.solar_kwh }}</td>
+                            <td class="px-6 py-4 font-semibold">R {{ '%.2f' % row.total_cost }}</td>
+                            <td class="px-6 py-4 text-green-600">R {{ '%.2f' % row.payments }}</td>
+                            <td class="px-6 py-4 font-semibold {% if row.balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">R {{ '%.2f' % row.balance }}</td>
                         </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">A102</td>
-                            <td class="px-6 py-4">Willow Creek</td>
-                            <td class="px-6 py-4">380</td>
-                            <td class="px-6 py-4">10,200</td>
-                            <td class="px-6 py-4">150</td>
-                            <td class="px-6 py-4 font-semibold">R 1,050.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,200.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
-                        </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B201</td>
-                            <td class="px-6 py-4">Parkview Gardens</td>
-                            <td class="px-6 py-4">520</td>
-                            <td class="px-6 py-4">15,800</td>
-                            <td class="px-6 py-4">200</td>
-                            <td class="px-6 py-4 font-semibold">R 1,450.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,400.00</td>
-                            <td class="px-6 py-4 font-semibold text-red-600">-R 50.00</td>
-                        </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">B202</td>
-                            <td class="px-6 py-4">Parkview Gardens</td>
-                            <td class="px-6 py-4">290</td>
-                            <td class="px-6 py-4">8,500</td>
-                            <td class="px-6 py-4">120</td>
-                            <td class="px-6 py-4 font-semibold">R 850.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,000.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
-                        </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">C301</td>
-                            <td class="px-6 py-4">Willow Creek</td>
-                            <td class="px-6 py-4">410</td>
-                            <td class="px-6 py-4">11,200</td>
-                            <td class="px-6 py-4">165</td>
-                            <td class="px-6 py-4 font-semibold">R 1,150.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,300.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 150.00</td>
-                        </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">S101</td>
-                            <td class="px-6 py-4">Sunset Ridge</td>
-                            <td class="px-6 py-4">560</td>
-                            <td class="px-6 py-4">18,900</td>
-                            <td class="px-6 py-4">240</td>
-                            <td class="px-6 py-4 font-semibold">R 1,980.00</td>
-                            <td class="px-6 py-4 text-green-600">R 2,100.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 120.00</td>
-                        </tr>
-                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">S102</td>
-                            <td class="px-6 py-4">Sunset Ridge</td>
-                            <td class="px-6 py-4">430</td>
-                            <td class="px-6 py-4">15,100</td>
-                            <td class="px-6 py-4">210</td>
-                            <td class="px-6 py-4 font-semibold">R 1,520.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,600.00</td>
-                            <td class="px-6 py-4 font-semibold text-green-600">R 80.00</td>
-                        </tr>
+                        {% endfor %}
+                        {% endif %}
                     </tbody>
                     <tfoot class="bg-gray-50 dark:bg-gray-700">
+                        {% if detailed_report.no_data %}
                         <tr class="font-semibold text-gray-900 dark:text-white">
                             <td class="px-6 py-4">Total</td>
                             <td class="px-6 py-4">-</td>
-                            <td class="px-6 py-4">3,570</td>
-                            <td class="px-6 py-4">92,100</td>
-                            <td class="px-6 py-4">1,630</td>
-                            <td class="px-6 py-4">R 9,400.00</td>
-                            <td class="px-6 py-4 text-green-600">R 10,400.00</td>
-                            <td class="px-6 py-4 text-green-600">R 1,000.00</td>
+                            <td class="px-6 py-4">0</td>
+                            <td class="px-6 py-4">0</td>
+                            <td class="px-6 py-4">0</td>
+                            <td class="px-6 py-4">R 0.00</td>
+                            <td class="px-6 py-4 text-green-600">R 0.00</td>
+                            <td class="px-6 py-4 text-green-600">R 0.00</td>
                         </tr>
+                        {% else %}
+                        {% set totals = namespace(elec=0.0, water=0.0, solar=0.0, cost=0.0, payments=0.0, balance=0.0) %}
+                        {% for row in detailed_report.data %}
+                            {% set totals.elec = totals.elec + row.elec_kwh %}
+                            {% set totals.water = totals.water + row.water_l %}
+                            {% set totals.solar = totals.solar + row.solar_kwh %}
+                            {% set totals.cost = totals.cost + row.total_cost %}
+                            {% set totals.payments = totals.payments + row.payments %}
+                            {% set totals.balance = totals.balance + row.balance %}
+                        {% endfor %}
+                        <tr class="font-semibold text-gray-900 dark:text-white">
+                            <td class="px-6 py-4">Total</td>
+                            <td class="px-6 py-4">-</td>
+                            <td class="px-6 py-4">{{ '%.0f' % totals.elec }}</td>
+                            <td class="px-6 py-4">{{ '%.0f' % totals.water }}</td>
+                            <td class="px-6 py-4">{{ '%.0f' % totals.solar }}</td>
+                            <td class="px-6 py-4">R {{ '%.2f' % totals.cost }}</td>
+                            <td class="px-6 py-4 text-green-600">R {{ '%.2f' % totals.payments }}</td>
+                            <td class="px-6 py-4 {% if totals.balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">R {{ '%.2f' % totals.balance }}</td>
+                        </tr>
+                        {% endif %}
                     </tfoot>
                 </table>
             </div>
@@ -263,16 +232,16 @@
             <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-700 dark:text-gray-400">
-                        Showing <span class="font-medium">1</span> to <span class="font-medium">5</span> of <span class="font-medium">100</span> results
+                        Showing <span class="font-medium">{{ detailed_report.start_display }}</span> to <span class="font-medium">{{ detailed_report.end_display }}</span> of <span class="font-medium">{{ detailed_report.total }}</span> results
                     </span>
                     <div class="flex space-x-1">
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button {% if not detailed_report.prev_page %}disabled class="opacity-50 cursor-not-allowed"{% endif %} class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                             Previous
                         </button>
-                        <button class="px-3 py-2 text-sm bg-primary text-white rounded-lg">1</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">2</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">3</button>
-                        <button class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        {% for p in range(1, detailed_report.pages + 1) %}
+                        <button {% if p == detailed_report.page %}class="px-3 py-2 text-sm bg-primary text-white rounded-lg"{% else %}class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"{% endif %}>{{ p }}</button>
+                        {% endfor %}
+                        <button {% if not detailed_report.next_page %}disabled class="opacity-50 cursor-not-allowed"{% endif %} class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                             Next
                         </button>
                     </div>
@@ -283,36 +252,40 @@
         <!-- Quick Insights -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Insights</h3>
+            {% if quick_insights.no_data %}
+            <div class="text-center text-gray-500 py-4">No data available for insights</div>
+            {% else %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <i class="fas fa-chart-line text-blue-500 text-xl mr-3"></i>
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">Peak consumption time</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">18:00 - 21:00 daily</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ quick_insights.peak_time }} daily</p>
                     </div>
                 </div>
                 <div class="flex items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <i class="fas fa-award text-green-500 text-xl mr-3"></i>
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">Most efficient unit</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B202 - 290 kWh/month</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ quick_insights.most_efficient }}</p>
                     </div>
                 </div>
                 <div class="flex items-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                     <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">High consumption alert</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">Unit B201 - 20% above average</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ quick_insights.high_alert }}</p>
                     </div>
                 </div>
                 <div class="flex items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                     <i class="fas fa-solar-panel text-purple-500 text-xl mr-3"></i>
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">Solar contribution</p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">28% of total electricity usage</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ quick_insights.solar_contrib }}</p>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 
@@ -322,76 +295,79 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
         // Monthly Consumption Chart
-        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-        new Chart(monthlyCtx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                datasets: [{
-                    label: 'Electricity (kWh)',
-                    data: [15200, 14800, 16500, 17200, 18100, 19500, 20200, 19800, 18500, 18750],
-                    borderColor: '#FBBC04',
-                    backgroundColor: 'rgba(251, 188, 4, 0.1)',
-                    tension: 0.4
-                }, {
-                    label: 'Water (L x100)',
-                    data: [380, 360, 420, 440, 460, 480, 490, 470, 450, 450],
-                    borderColor: '#1A73E8',
-                    backgroundColor: 'rgba(26, 115, 232, 0.1)',
-                    tension: 0.4
-                }, {
-                    label: 'Solar (kWh)',
-                    data: [7200, 7500, 8100, 8300, 8500, 8800, 9000, 8700, 8400, 8200],
-                    borderColor: '#34A853',
-                    backgroundColor: 'rgba(52, 168, 83, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+        const monthlyCtx = document.getElementById('monthlyChart');
+        const monthlyData = {{ monthly_chart | tojson }};
+        if (monthlyData.no_data) {
+            monthlyCtx.parentElement.innerHTML = '<div class="text-center text-gray-500 py-8">Not enough data for monthly trend</div>';
+        } else {
+            new Chart(monthlyCtx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: 'Electricity (kWh)',
+                        data: monthlyData.electricity_kwh,
+                        borderColor: '#FBBC04',
+                        backgroundColor: 'rgba(251, 188, 4, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Water (L x100)',
+                        data: monthlyData.water_hl,
+                        borderColor: '#1A73E8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Solar (kWh)',
+                        data: monthlyData.solar_kwh,
+                        borderColor: '#34A853',
+                        backgroundColor: 'rgba(52, 168, 83, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
                     }
                 }
-            }
-        });
+            });
+        }
 
         // Estate Comparison Chart
-        const estateCtx = document.getElementById('estateChart').getContext('2d');
-        new Chart(estateCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Electricity', 'Water', 'Solar'],
-                datasets: [{
-                    label: 'Willow Creek',
-                    data: [9500, 22500, 4100],
-                    backgroundColor: '#1A73E8'
-                }, {
-                    label: 'Parkview Gardens',
-                    data: [9250, 22500, 4100],
-                    backgroundColor: '#34A853'
-                }, {
-                    label: 'Sunset Ridge',
-                    data: [11800, 27800, 5200],
-                    backgroundColor: '#FBBC04'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+        const estateCtx = document.getElementById('estateChart');
+        const estateData = {{ estate_comparison | tojson }};
+        if (estateData.no_data) {
+            estateCtx.parentElement.innerHTML = '<div class="text-center text-gray-500 py-8">Not enough data for estate comparison</div>';
+        } else {
+            new Chart(estateCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: estateData.labels,
+                    datasets: estateData.datasets
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: { y: { beginAtZero: true } }
                 }
-            }
-        });
+            });
+        }
+
+        // Alerts for no data
+        const alertsContainer = document.createElement('div');
+        alertsContainer.className = 'mb-6';
+        if (monthlyData.no_data || estateData.no_data || {{ detailed_report.no_data | tojson }} || {{ quick_insights.no_data | tojson }}) {
+            alertsContainer.innerHTML = `
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">
+                    <p class="font-bold">Alert: Insufficient data for charts</p>
+                    <p>Please check meter readings and ensure data is available.</p>
+                </div>
+            `;
+            document.querySelector('#content').insertBefore(alertsContainer, document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-2'));
+        }
 </script>
 {% endblock %}
