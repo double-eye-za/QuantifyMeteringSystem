@@ -266,10 +266,10 @@ breadcrumb %}
 </div>
 
 <!-- System Analytics (graphs remain mocked) -->
-<!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      System-wide Consumption Trend
+      System-wide Consumption Trend - {{ current_month }}
     </h3>
     <div class="relative h-64">
       <canvas id="consumptionChart"></canvas>
@@ -277,84 +277,11 @@ breadcrumb %}
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-      Revenue by Estate
+      Revenue by Estate - {{ current_month }}
     </h3>
     <div class="relative h-64">
       <canvas id="revenueChart"></canvas>
     </div>
-  </div>
-</div> -->
-
-<!-- Critical Alerts Summary (uses estates_perf) -->
-<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-  System Alerts by Estate
-</h2>
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-  <div class="p-6">
-    {% for e in estates_perf %}
-    <div class="mb-6" data-estate-name="{{ e.name|lower }}">
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-building text-primary text-sm"></i>
-        <h4 class="font-semibold text-gray-900 dark:text-white">
-          {{ e.name }}
-        </h4>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <div
-          class="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-200 dark:border-red-800 flex items-center justify-between gap-2"
-        >
-          <i class="fas fa-power-off text-red-500 text-sm flex-shrink-0"></i>
-          <span class="text-lg font-bold text-red-600 flex-shrink-0"
-            >{{ e.alerts.disconnected }}</span
-          >
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Disconnected</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-        <div
-          class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 py-2 border border-yellow-200 dark:border-yellow-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-yellow-600 flex-shrink-0"
-            >{{ e.alerts.low }}</span
-          >
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Low Balance</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-        <div
-          class="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-2"
-        >
-          <i
-            class="fas fa-tachometer-alt text-blue-500 text-sm flex-shrink-0"
-          ></i>
-          <span class="text-lg font-bold text-blue-600 flex-shrink-0"
-            >{{ e.alerts.offline }}</span
-          >
-          <span class="text-xs font-medium text-gray-900 dark:text-white flex-1"
-            >Meters Offline</span
-          >
-          <button
-            class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-          >
-            View
-          </button>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
   </div>
 </div>
 
@@ -640,7 +567,8 @@ breadcrumb %}
   // Chart instances storage
   let chartInstances = {};
 
-  // Charts - See updated versions below with period support
+  const consumptionData = {{ consumption_data | tojson | safe }};
+  const revenueData = {{ revenue_data | tojson | safe }};
 
   function drawHourlyChart() {
     const ctx = document.getElementById("hourlyChart").getContext("2d");
@@ -717,154 +645,8 @@ breadcrumb %}
     });
   }
 
-  // Mock data for different periods
-  const mockData = {
-    today: {
-      revenue: 152000,
-      consumption: 15.2,
-      disconnected: 37,
-      consumptionLabels: [
-        "00:00",
-        "04:00",
-        "08:00",
-        "12:00",
-        "16:00",
-        "20:00",
-        "24:00",
-      ],
-      consumptionElectricity: [8, 6, 9, 14, 16, 18, 12],
-      consumptionWater: [5, 4, 8, 10, 9, 11, 7],
-      consumptionElectricityCommunal: [3, 2, 3, 5, 6, 7, 4],
-      consumptionWaterCommunal: [2, 1.5, 3, 4, 3.5, 4.5, 3],
-      revenueByEstate: {
-        labels: [
-          "Willow Creek Units",
-          "Willow Creek Communal",
-          "Parkview Units",
-          "Parkview Communal",
-          "Sunset Ridge Units",
-          "Sunset Ridge Communal",
-        ],
-        data: [8500, 4000, 7200, 4000, 12300, 6000],
-      },
-    },
-    week: {
-      revenue: 1125000,
-      consumption: 108.5,
-      disconnected: 41,
-      consumptionLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      consumptionElectricity: [95, 98, 102, 105, 110, 88, 85],
-      consumptionWater: [62, 65, 70, 68, 72, 58, 55],
-      consumptionElectricityCommunal: [35, 37, 38, 40, 42, 32, 30],
-      consumptionWaterCommunal: [22, 24, 26, 25, 27, 20, 18],
-      revenueByEstate: {
-        labels: [
-          "Willow Creek Units",
-          "Willow Creek Communal",
-          "Parkview Units",
-          "Parkview Communal",
-          "Sunset Ridge Units",
-          "Sunset Ridge Communal",
-        ],
-        data: [59500, 29000, 55200, 27000, 91300, 44000],
-      },
-    },
-    month: {
-      revenue: 4850000,
-      consumption: 465.8,
-      disconnected: 52,
-      consumptionLabels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-      consumptionElectricity: [420, 445, 468, 490],
-      consumptionWater: [280, 295, 310, 325],
-      consumptionElectricityCommunal: [155, 165, 175, 185],
-      consumptionWaterCommunal: [105, 110, 115, 122],
-      revenueByEstate: {
-        labels: [
-          "Willow Creek Units",
-          "Willow Creek Communal",
-          "Parkview Units",
-          "Parkview Communal",
-          "Sunset Ridge Units",
-          "Sunset Ridge Communal",
-        ],
-        data: [256000, 124000, 239000, 116000, 314000, 151000],
-      },
-    },
-    year: {
-      revenue: 58200000,
-      consumption: 5589.6,
-      disconnected: 68,
-      consumptionLabels: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
-      consumptionElectricity: [
-        450, 430, 420, 410, 425, 440, 480, 490, 475, 465, 455, 485,
-      ],
-      consumptionWater: [
-        300, 285, 275, 265, 280, 295, 320, 330, 315, 310, 305, 325,
-      ],
-      consumptionElectricityCommunal: [
-        170, 162, 158, 155, 160, 165, 180, 185, 178, 175, 172, 182,
-      ],
-      consumptionWaterCommunal: [
-        112, 107, 103, 100, 105, 110, 120, 124, 118, 116, 114, 122,
-      ],
-      revenueByEstate: {
-        labels: [
-          "Willow Creek Units",
-          "Willow Creek Communal",
-          "Parkview Units",
-          "Parkview Communal",
-          "Sunset Ridge Units",
-          "Sunset Ridge Communal",
-        ],
-        data: [3072000, 1488000, 2868000, 1392000, 3798000, 1842000],
-      },
-    },
-  };
-
-  // Update dashboard data based on selected period
-  function updateDashboardData() {
-    const period = document.getElementById("periodSelector").value;
-    const data = mockData[period];
-
-    // Update KPI cards
-    document.querySelector(
-      ".text-2xl.font-bold.text-gray-900.dark\\:text-white"
-    ).textContent = "R " + (data.revenue / 1000).toFixed(0) + "K";
-
-    // Update consumption
-    const consumptionCards = document.querySelectorAll(
-      ".text-2xl.font-bold.text-gray-900.dark\\:text-white"
-    );
-    if (consumptionCards[2]) {
-      consumptionCards[2].textContent = data.consumption.toFixed(1);
-    }
-
-    // Update disconnected count
-    if (consumptionCards[4]) {
-      consumptionCards[4].textContent = data.disconnected;
-    }
-
-    // Update charts
-    drawConsumptionChart(data);
-    drawRevenueChart(data);
-  }
-
   // Update consumption chart to accept data parameter
-  function drawConsumptionChart(periodData = null) {
-    const data = periodData || mockData.today;
+  function drawConsumptionChart() {
     const ctx = document.getElementById("consumptionChart").getContext("2d");
     const isDark = document.documentElement.classList.contains("dark");
     const themeTextColor = isDark ? "#e5e7eb" : "#374151";
@@ -877,11 +659,11 @@ breadcrumb %}
     chartInstances.consumption = new Chart(ctx, {
       type: "line",
       data: {
-        labels: data.consumptionLabels,
+        labels: consumptionData.labels,
         datasets: [
           {
             label: "Electricity - Units (MWh)",
-            data: data.consumptionElectricity,
+            data: consumptionData.electricity,
             borderColor: "rgb(59, 130, 246)",
             backgroundColor: "rgba(59, 130, 246, 0.1)",
             tension: 0.4,
@@ -889,7 +671,7 @@ breadcrumb %}
           },
           {
             label: "Water - Units (kL)",
-            data: data.consumptionWater,
+            data: consumptionData.water,
             borderColor: "rgb(16, 185, 129)",
             backgroundColor: "rgba(16, 185, 129, 0.1)",
             tension: 0.4,
@@ -897,7 +679,7 @@ breadcrumb %}
           },
           {
             label: "Electricity - Communal (MWh)",
-            data: data.consumptionElectricityCommunal,
+            data: consumptionData.electricityCommunal,
             borderColor: "rgb(147, 197, 253)",
             backgroundColor: "rgba(147, 197, 253, 0.1)",
             tension: 0.4,
@@ -906,7 +688,7 @@ breadcrumb %}
           },
           {
             label: "Water - Communal (kL)",
-            data: data.consumptionWaterCommunal,
+            data: consumptionData.waterCommunal,
             borderColor: "rgb(134, 239, 172)",
             backgroundColor: "rgba(134, 239, 172, 0.1)",
             tension: 0.4,
@@ -954,8 +736,7 @@ breadcrumb %}
   }
 
   // Update revenue chart to accept data parameter
-  function drawRevenueChart(periodData = null) {
-    const data = periodData || mockData.today;
+  function drawRevenueChart() {
     const ctx = document.getElementById("revenueChart").getContext("2d");
     const isDark = document.documentElement.classList.contains("dark");
     const themeTextColor = isDark ? "#e5e7eb" : "#374151";
@@ -968,11 +749,11 @@ breadcrumb %}
     chartInstances.revenue = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: data.revenueByEstate.labels,
+        labels: revenueData.labels,
         datasets: [
           {
             label: "Revenue",
-            data: data.revenueByEstate.data,
+            data: revenueData.data,
             backgroundColor: [
               "rgba(59, 130, 246, 0.8)", // Willow Units
               "rgba(59, 130, 246, 0.3)", // Willow Communal

@@ -15,6 +15,10 @@ from ...models import User
 from ...db import db
 from ...utils.audit import log_action
 from . import api_v1
+from datetime import datetime, timedelta
+from sqlalchemy import func, case
+from sqlalchemy.sql import extract
+from ...models import Transaction, MeterReading, Meter, Unit, Estate
 
 
 @api_v1.route("/login", methods=["GET"])
@@ -115,6 +119,119 @@ def dashboard():
     mwh_today = 0.0
     revenue_today = 0.0
 
+    current_month = datetime.now().strftime("%B %Y")
+    month_start = datetime.now().replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+    next_month = (month_start + timedelta(days=32)).replace(day=1)
+
+    # Consumption trend
+    days = db.session.query(
+        func.generate_series(
+            month_start, next_month - timedelta(days=1), timedelta(days=1)
+        ).label("day")
+    ).subquery()
+
+    consumption_query = (
+        db.session.query(
+            days.c.day,
+            func.sum(
+                case(
+                    (
+                        Meter.meter_type == "electricity",
+                        MeterReading.consumption_since_last,
+                    ),
+                    else_=0,
+                )
+            ).label("elec_units"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "water", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("water_units"),
+            func.sum(
+                case(
+                    (
+                        Meter.meter_type == "bulk_electricity",
+                        MeterReading.consumption_since_last,
+                    ),
+                    else_=0,
+                )
+            ).label("elec_communal"),
+            func.sum(
+                case(
+                    (
+                        Meter.meter_type == "bulk_water",
+                        MeterReading.consumption_since_last,
+                    ),
+                    else_=0,
+                )
+            ).label("water_communal"),
+        )
+        .outerjoin(MeterReading, func.date(MeterReading.reading_date) == days.c.day)
+        .outerjoin(Meter, Meter.id == MeterReading.meter_id)
+        .group_by(days.c.day)
+        .order_by(days.c.day)
+    ).all()
+
+    has_consumption = len(consumption_query) > 0 and any(
+        r.elec_units > 0
+        or r.water_units > 0
+        or r.elec_communal > 0
+        or r.water_communal > 0
+        for r in consumption_query
+    )
+    consumption_data = {
+        "no_data": not has_consumption,
+        "labels": [r.day.strftime("%d %b") for r in consumption_query]
+        if has_consumption
+        else [],
+        "datasets": [
+            {
+                "label": "Electricity - Units (MWh)",
+                "data": [float(r.elec_units or 0) for r in consumption_query],
+            },
+            {
+                "label": "Water - Units (kL)",
+                "data": [float(r.water_units or 0) for r in consumption_query],
+            },
+            {
+                "label": "Electricity - Communal (MWh)",
+                "data": [float(r.elec_communal or 0) for r in consumption_query],
+            },
+            {
+                "label": "Water - Communal (kL)",
+                "data": [float(r.water_communal or 0) for r in consumption_query],
+            },
+        ]
+        if has_consumption
+        else [],
+    }
+
+    # Revenue by estate
+    revenue_query = (
+        db.session.query(Estate.name, func.sum(Transaction.amount).label("revenue"))
+        .join(Unit, Unit.estate_id == Estate.id)
+        .join(Wallet, Wallet.unit_id == Unit.id)
+        .join(Transaction, Transaction.wallet_id == Wallet.id)
+        .filter(
+            Transaction.transaction_type == "topup",
+            Transaction.status == "completed",
+            Transaction.completed_at >= month_start,
+            Transaction.completed_at < next_month,
+        )
+        .group_by(Estate.name)
+        .order_by(Estate.name)
+    ).all()
+
+    has_revenue = len(revenue_query) > 0 and any(r.revenue > 0 for r in revenue_query)
+    revenue_data = {
+        "no_data": not has_revenue,
+        "labels": [r.name for r in revenue_query] if has_revenue else [],
+        "data": [float(r.revenue or 0) for r in revenue_query] if has_revenue else [],
+    }
+
     # Apply search filter if provided
     estates_list = list(estates_perf.values())
     if q:
@@ -136,6 +253,9 @@ def dashboard():
         },
         estates_perf=estates_list,
         q=q,
+        consumption_data=consumption_data,
+        revenue_data=revenue_data,
+        current_month=current_month,
     )
 
 

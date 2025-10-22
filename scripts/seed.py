@@ -28,8 +28,13 @@ from app.models import (
     MeterReading,
     MeterAlert,
     Resident,
+    Transaction,
 )
 from sqlalchemy import text
+
+import random
+from datetime import datetime, timedelta
+from decimal import Decimal
 
 
 def ensure_admin_user() -> User:
@@ -360,10 +365,10 @@ def ensure_roles_and_super_admin() -> None:
         "settings": {
             "view": False,
             "edit": False,
-        },  
+        },
         "audit_logs": {
             "view": False,
-        }, 
+        },
         "wallets": {"view": True},
         "transactions": {"view": True},
         "notifications": {
@@ -377,13 +382,13 @@ def ensure_roles_and_super_admin() -> None:
             "create": False,
             "edit": False,
             "delete": False,
-        },  
+        },
         "roles": {
             "view": False,
             "create": False,
             "edit": False,
             "delete": False,
-        }, 
+        },
     }
 
     def get_or_create_role(name: str, description: str, permissions_data: dict):
@@ -860,6 +865,118 @@ def create_readings_and_alerts() -> dict[str, int]:
     return {"readings_created": readings_created, "alerts_created": alerts_created}
 
 
+def create_monthly_readings_and_transactions():
+    readings = 0
+    transactions = 0
+    today = datetime.now()
+    for unit in Unit.query.all():
+        if unit.occupancy_status != "occupied":
+            continue
+        base_values = {"electricity": 0, "water": 0, "solar": 0}
+        for day in range(1, today.day + 1):
+            ts = today.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
+            for meter_id, mtype in [
+                (unit.electricity_meter_id, "electricity"),
+                (unit.water_meter_id, "water"),
+                (unit.solar_meter_id, "solar"),
+            ]:
+                if not meter_id:
+                    continue
+                prev_reading = (
+                    MeterReading.query.filter_by(meter_id=meter_id)
+                    .order_by(MeterReading.reading_date.desc())
+                    .first()
+                )
+                delta_min, delta_max = (
+                    (20, 100)
+                    if mtype == "electricity"
+                    else (10, 50)
+                    if mtype == "water"
+                    else (5, 30)
+                )
+                delta = Decimal(str(random.uniform(delta_min, delta_max))).quantize(
+                    Decimal("0.01")
+                )
+                value = (prev_reading.reading_value + delta) if prev_reading else delta
+                if not MeterReading.query.filter_by(
+                    meter_id=meter_id, reading_date=ts
+                ).first():
+                    mr = MeterReading(
+                        meter_id=meter_id,
+                        reading_value=value,
+                        consumption_since_last=delta,
+                        reading_date=ts,
+                        reading_type="automatic",
+                        is_validated=True,
+                        validation_date=ts,
+                    )
+                    db.session.add(mr)
+                    readings += 1
+
+            # Random topup transaction ~every 3 days
+            if unit.wallet:
+                amount = Decimal(random.uniform(200, 1000)).quantize(Decimal("0.01"))
+                balance_before = unit.wallet.balance or 0
+                balance_after = balance_before + amount
+                trans = Transaction(
+                    transaction_number=f"TXN-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                    wallet_id=unit.wallet.id,
+                    transaction_type="topup",
+                    amount=amount,
+                    balance_before=balance_before,
+                    balance_after=balance_after,
+                    status="completed",
+                    initiated_at=ts,
+                    completed_at=ts,
+                    reference=f"TOPUP-{unit.id}-{day}",
+                )
+                db.session.add(trans)
+                unit.wallet.balance = balance_after
+                db.session.commit()
+                transactions += 1
+
+    for estate in Estate.query.all():
+        base_values = {"bulk_electricity": 0, "bulk_water": 0}
+        for day in range(1, today.day + 1):
+            ts = today.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
+            for meter_id, mtype in [
+                (estate.bulk_electricity_meter_id, "bulk_electricity"),
+                (estate.bulk_water_meter_id, "bulk_water"),
+            ]:
+                if not meter_id:
+                    continue
+                prev_reading = (
+                    MeterReading.query.filter_by(meter_id=meter_id)
+                    .order_by(MeterReading.reading_date.desc())
+                    .first()
+                )
+                delta_min, delta_max = (
+                    (500, 2000) if mtype == "bulk_electricity" else (200, 1000)
+                )
+                delta = Decimal(str(random.uniform(delta_min, delta_max))).quantize(
+                    Decimal("0.01")
+                )
+                value = (prev_reading.reading_value + delta) if prev_reading else delta
+                if not MeterReading.query.filter_by(
+                    meter_id=meter_id, reading_date=ts
+                ).first():
+                    mr = MeterReading(
+                        meter_id=meter_id,
+                        reading_value=value,
+                        consumption_since_last=delta,
+                        reading_date=ts,
+                        reading_type="automatic",
+                        is_validated=True,
+                        validation_date=ts,
+                    )
+                    db.session.add(mr)
+                    readings += 1
+    db.session.commit()
+
+    logging.info("Created %d readings and %d transactions", readings, transactions)
+    return {"readings": readings, "transactions": transactions}
+
+
 def create_residents_and_assign(admin_user: User) -> dict[str, int]:
     from random import randint
     from datetime import date, timedelta
@@ -990,6 +1107,7 @@ def main():
         counts = create_estates_and_units(admin_user, rate_tables)
         res_counts = create_residents_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
+        monthly_counts = create_monthly_readings_and_transactions()
         summary = {
             "users_total": User.query.count(),
             "estates_total": Estate.query.count(),
