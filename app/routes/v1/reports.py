@@ -328,7 +328,17 @@ def reports_page():
     )
 
     total_units = db.session.query(func.count(Unit.id.distinct())).scalar() or 1
-    avg_elec = electricity_total_kwh_value / total_units
+    subq = (
+        db.session.query(func.sum(MeterReading.consumption_since_last).label("total"))
+        .join(Meter, Meter.id == MeterReading.meter_id)
+        .filter(
+            Meter.meter_type == "electricity", MeterReading.reading_date >= month_start
+        )
+        .group_by(Meter.id)
+    ).subquery()
+
+    avg_elec = db.session.query(func.avg(subq.c.total)).scalar() or 0
+    avg_elec = float(avg_elec)
     high_query = (
         db.session.query(
             Unit.unit_number, func.sum(MeterReading.consumption_since_last).label("kwh")
