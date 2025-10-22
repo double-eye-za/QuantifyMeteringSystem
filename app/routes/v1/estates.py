@@ -3,11 +3,13 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Estate
+from ...models import Estate, Resident, Unit, Meter, RateTable
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
 from ...utils.decorators import requires_permission
 from . import api_v1
+
+from sqlalchemy import union, func
 
 
 @api_v1.route("/estates", methods=["GET"])
@@ -150,3 +152,85 @@ def delete_estate(estate_id: int):
     estate.delete()
     log_action("estate.delete", entity_type="estate", entity_id=estate_id)
     return jsonify({"message": "Deleted"}), 200
+
+
+@api_v1.route("/estates/<int:estate_id>/details", methods=["GET"])
+@login_required
+@requires_permission("estates.view")
+def estate_details_page(estate_id: int):
+    estate = Estate.get_by_id(estate_id)
+    if not estate:
+        return render_template("errors/404.html"), 404
+
+    units_query = Unit.get_all(estate_id=estate_id)
+    units, pagination = paginate_query(units_query)
+
+    # Enrich units with resident, wallet balance
+    enriched_units = []
+    for u in units:
+        resident = Resident.get_by_id(u.resident_id) if u.resident_id else None
+        wallet = u.wallet
+        balance = float(wallet.balance or 0) if wallet else 0
+        enriched_units.append(
+            {
+                "unit": u.to_dict(),
+                "resident": resident.to_dict() if resident else None,
+                "wallet_balance": balance,
+            }
+        )
+
+    # Stats
+    total_units = estate.total_units or 0
+
+    from ...db import db
+
+    elec = db.session.query(Unit.electricity_meter_id).filter(
+        Unit.estate_id == estate_id, Unit.electricity_meter_id.isnot(None)
+    )
+
+    water = db.session.query(Unit.water_meter_id).filter(
+        Unit.estate_id == estate_id, Unit.water_meter_id.isnot(None)
+    )
+
+    solar = db.session.query(Unit.solar_meter_id).filter(
+        Unit.estate_id == estate_id, Unit.solar_meter_id.isnot(None)
+    )
+
+    all_meter_ids = union(elec, water, solar).subquery()
+
+    total_meters = (
+        db.session.query(func.count()).select_from(all_meter_ids).scalar() or 0
+    )
+
+    bulk_elec_meter = (
+        Meter.get_by_id(estate.bulk_electricity_meter_id)
+        if estate.bulk_electricity_meter_id
+        else None
+    )
+    bulk_water_meter = (
+        Meter.get_by_id(estate.bulk_water_meter_id)
+        if estate.bulk_water_meter_id
+        else None
+    )
+    elec_rate_table = (
+        RateTable.get_by_id(estate.electricity_rate_table_id)
+        if estate.electricity_rate_table_id
+        else None
+    )
+    water_rate_table = (
+        RateTable.get_by_id(estate.water_rate_table_id)
+        if estate.water_rate_table_id
+        else None
+    )
+
+    return render_template(
+        "estates/estate_details.html",
+        estate=estate.to_dict(),
+        units=enriched_units,
+        pagination=pagination,
+        stats={"total_units": total_units, "total_meters": total_meters},
+        bulk_elec_meter=bulk_elec_meter.to_dict() if bulk_elec_meter else None,
+        bulk_water_meter=bulk_water_meter.to_dict() if bulk_water_meter else None,
+        elec_rate_table=elec_rate_table.to_dict() if elec_rate_table else None,
+        water_rate_table=water_rate_table.to_dict() if water_rate_table else None,
+    )
