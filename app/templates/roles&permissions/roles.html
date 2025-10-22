@@ -133,7 +133,7 @@ Roles & Permissions
                     Edit
               </button>
               {% endif %}
-              {% if has_permission('roles.delete') and not role.is_system_role %}
+              {% if has_permission('roles.delete') and not role.is_system_role and role.user_count == 0 %}
               <button
                 data-role-id="{{role.id}}"
                 data-role-data='{{role | tojson}}'
