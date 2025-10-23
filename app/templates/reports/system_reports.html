@@ -1,0 +1,452 @@
+<!-- System & User Status Reports -->
+<div class="space-y-6">
+  <!-- Communication Status -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Communication Status
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('communication_status', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('communication_status', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Serial Number</th>
+            <th class="px-6 py-3">Meter Type</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Unit</th>
+            <th class="px-6 py-3">Last Reading</th>
+            <th class="px-6 py-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if communication_status %} {% for row in communication_status %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.serial_number }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.meter_type == 'electricity' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif row.meter_type == 'water' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif row.meter_type == 'solar' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.meter_type.title() }}
+              </span>
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">
+              {{ row.last_reading.strftime('%Y-%m-%d %H:%M') if row.last_reading
+              else 'Never' }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.status == 'online' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif row.status == 'warning' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif row.status == 'offline' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.status.title() }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="6"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No communication status data available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Offline/Unresponsive Meters -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Offline/Unresponsive Meters
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('offline_meters', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('offline_meters', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Serial Number</th>
+            <th class="px-6 py-3">Meter Type</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Unit</th>
+            <th class="px-6 py-3">Last Reading</th>
+            <th class="px-6 py-3">Days Offline</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if offline_meters %} {% for row in offline_meters %} {% set
+          days_offline = ((datetime.now() - row.last_reading).days if
+          row.last_reading else 999) %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.serial_number }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.meter_type == 'electricity' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif row.meter_type == 'water' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif row.meter_type == 'solar' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.meter_type.title() }}
+              </span>
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">
+              {{ row.last_reading.strftime('%Y-%m-%d %H:%M') if row.last_reading
+              else 'Never' }}
+            </td>
+            <td
+              class="px-6 py-4 font-semibold {% if days_offline > 7 %}text-red-600{% elif days_offline > 3 %}text-yellow-600{% else %}text-gray-600{% endif %}"
+            >
+              {{ days_offline if days_offline < 999 else 'Unknown' }}
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="6"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No offline meters detected
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Meter Health Report -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Meter Health Report
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('meter_health', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('meter_health', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Serial Number</th>
+            <th class="px-6 py-3">Meter Type</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Unit</th>
+            <th class="px-6 py-3">Alert Count</th>
+            <th class="px-6 py-3">Last Alert</th>
+            <th class="px-6 py-3">Health Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if meter_health %} {% for row in meter_health %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.serial_number }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.meter_type == 'electricity' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif row.meter_type == 'water' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif row.meter_type == 'solar' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.meter_type.title() }}
+              </span>
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">{{ row.alert_count or 0 }}</td>
+            <td class="px-6 py-4">
+              {{ row.last_alert.strftime('%Y-%m-%d %H:%M') if row.last_alert
+              else 'None' }}
+            </td>
+            <td class="px-6 py-4">
+              {% if row.alert_count and row.alert_count > 5 %}
+              <span
+                class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                >Critical</span
+              >
+              {% elif row.alert_count and row.alert_count > 2 %}
+              <span
+                class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                >Warning</span
+              >
+              {% elif row.alert_count and row.alert_count > 0 %}
+              <span
+                class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                >Minor</span
+              >
+              {% else %}
+              <span
+                class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                >Healthy</span
+              >
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No meter health data available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Low Balance & Cut-off Alerts -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Low Balance & Cut-off Alerts
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('low_balance_alerts', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('low_balance_alerts', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Unit Number</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Resident</th>
+            <th class="px-6 py-3">Email</th>
+            <th class="px-6 py-3">Phone</th>
+            <th class="px-6 py-3">Balance</th>
+            <th class="px-6 py-3">Threshold</th>
+            <th class="px-6 py-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if low_balance_alerts %} {% for row in low_balance_alerts %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4">
+              {{ (row.first_name + ' ' + row.last_name) if row.first_name else
+              'Vacant' }}
+            </td>
+            <td class="px-6 py-4">{{ row.email or 'N/A' }}</td>
+            <td class="px-6 py-4">{{ row.phone or 'N/A' }}</td>
+            <td
+              class="px-6 py-4 font-semibold {% if row.balance <= 0 %}text-red-600{% elif row.balance < row.low_balance_threshold %}text-yellow-600{% else %}text-gray-600{% endif %}"
+            >
+              R {{ "%.2f"|format(row.balance or 0) }}
+            </td>
+            <td class="px-6 py-4">
+              R {{ "%.2f"|format(row.low_balance_threshold or 0) }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.status == 'cut_off' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% elif row.status == 'low_balance' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+              >
+                {{ row.status.replace('_', ' ').title() }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="8"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No low balance alerts
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reconnection/Disconnection History -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Reconnection/Disconnection History
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('reconnection_history', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('reconnection_history', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Transaction Number</th>
+            <th class="px-6 py-3">Date</th>
+            <th class="px-6 py-3">Unit</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Type</th>
+            <th class="px-6 py-3">Amount</th>
+            <th class="px-6 py-3">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if reconnection_history %} {% for row in reconnection_history %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.transaction_number }}
+            </td>
+            <td class="px-6 py-4">
+              {{ row.completed_at.strftime('%Y-%m-%d %H:%M') if row.completed_at
+              else 'N/A' }}
+            </td>
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.transaction_type == 'reconnection' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif row.transaction_type == 'disconnection' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.transaction_type.title() }}
+              </span>
+            </td>
+            <td
+              class="px-6 py-4 font-semibold {% if row.transaction_type == 'reconnection' %}text-green-600{% else %}text-red-600{% endif %}"
+            >
+              R {{ "%.2f"|format(row.amount or 0) }}
+            </td>
+            <td class="px-6 py-4">{{ row.description or 'N/A' }}</td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No reconnection/disconnection history available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

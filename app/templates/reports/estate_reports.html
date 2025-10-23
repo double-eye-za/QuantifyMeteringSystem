@@ -1,0 +1,434 @@
+<!-- Estate-Level Reports -->
+<div class="space-y-6">
+  <!-- Estate Utility Summary -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Estate Utility Summary
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('estate_summary', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('estate_summary', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Total Units</th>
+            <th class="px-6 py-3">Occupied Units</th>
+            <th class="px-6 py-3">Occupancy Rate</th>
+            <th class="px-6 py-3">Total Electricity (kWh)</th>
+            <th class="px-6 py-3">Total Water (kL)</th>
+            <th class="px-6 py-3">Total Solar (kWh)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if estate_utility_summary %} {% for row in estate_utility_summary
+          %} {% set occupancy_rate = ((row.occupied_units or 0) /
+          (row.total_units or 1)) * 100 if row.total_units and row.total_units >
+          0 else 0 %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.estate_name }}
+            </td>
+            <td class="px-6 py-4">{{ row.total_units or 0 }}</td>
+            <td class="px-6 py-4">{{ row.occupied_units or 0 }}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center">
+                <div
+                  class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2"
+                >
+                  <div
+                    class="bg-primary h-2 rounded-full"
+                    style="width: {{ occupancy_rate }}%"
+                  ></div>
+                </div>
+                <span class="text-sm"
+                  >{{ "%.1f"|format(occupancy_rate) }}%</span
+                >
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              {{ "%.2f"|format(row.total_electricity or 0) }}
+            </td>
+            <td class="px-6 py-4">{{ "%.2f"|format(row.total_water or 0) }}</td>
+            <td class="px-6 py-4">{{ "%.2f"|format(row.total_solar or 0) }}</td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No estate utility data available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Communal Usage Report -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Communal Usage Report
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('communal_usage', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('communal_usage', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Communal Electricity (kWh)</th>
+            <th class="px-6 py-3">Communal Water (kL)</th>
+            <th class="px-6 py-3">Electricity Cost</th>
+            <th class="px-6 py-3">Water Cost</th>
+            <th class="px-6 py-3">Total Cost</th>
+            <th class="px-6 py-3">Cost per Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if communal_usage %} {% for row in communal_usage %} {% set
+          estate_info = estate_utility_summary | selectattr('estate_name',
+          'equalto', row.estate_name) | first %} {% set cost_per_unit =
+          row.total_cost / estate_info.total_units if estate_info and
+          estate_info.total_units and estate_info.total_units > 0 else 0 %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.estate_name }}
+            </td>
+            <td
+              class="px-6 py-4 font-semibold {% if (row.communal_electricity or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
+            >
+              {{ "%.2f"|format(row.communal_electricity or 0) }}
+            </td>
+            <td
+              class="px-6 py-4 font-semibold {% if (row.communal_water or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
+            >
+              {{ "%.2f"|format(row.communal_water or 0) }}
+            </td>
+            <td class="px-6 py-4">
+              R {{ "%.2f"|format(row.electricity_cost or 0) }}
+            </td>
+            <td class="px-6 py-4">
+              R {{ "%.2f"|format(row.water_cost or 0) }}
+            </td>
+            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+              R {{ "%.2f"|format(row.total_cost or 0) }}
+            </td>
+            <td class="px-6 py-4">R {{ "%.2f"|format(cost_per_unit) }}</td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No communal usage data available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Management Snapshot -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Management Snapshot (Real-time)
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('management_snapshot', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('management_snapshot', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+          <button
+            onclick="window.location.href='{{ url_for('api_v1.reports_page', category='estate', auto_refresh='true') }}'"
+            class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+          >
+            <i class="fas fa-sync-alt mr-2"></i>Auto Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Total Units</th>
+            <th class="px-6 py-3">Occupied Units</th>
+            <th class="px-6 py-3">Total Wallet Balance</th>
+            <th class="px-6 py-3">Low Balance Units</th>
+            <th class="px-6 py-3">Zero Balance Units</th>
+            <th class="px-6 py-3">Health Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if management_snapshot %} {% for row in management_snapshot %} {%
+          set health_score = 100 - ((row.low_balance_count or 0) +
+          (row.zero_balance_count or 0)) * 10 %} {% set health_score =
+          health_score if health_score > 0 else 0 %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.estate_name }}
+            </td>
+            <td class="px-6 py-4">{{ row.total_units or 0 }}</td>
+            <td class="px-6 py-4">{{ row.occupied_units or 0 }}</td>
+            <td class="px-6 py-4 font-semibold text-green-600">
+              R {{ "%.2f"|format(row.total_wallet_balance or 0) }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.low_balance_count and row.low_balance_count > 0 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+              >
+                {{ row.low_balance_count or 0 }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.zero_balance_count and row.zero_balance_count > 0 %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}"
+              >
+                {{ row.zero_balance_count or 0 }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center">
+                <div
+                  class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2"
+                >
+                  <div
+                    class="h-2 rounded-full {% if health_score >= 80 %}bg-green-500{% elif health_score >= 60 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+                    style="width: {{ health_score }}%"
+                  ></div>
+                </div>
+                <span
+                  class="text-sm font-semibold {% if health_score >= 80 %}text-green-600{% elif health_score >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}"
+                >
+                  {{ "%.0f"|format(health_score) }}%
+                </span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No management snapshot data available
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Estate Performance Dashboard -->
+  {% if estate_utility_summary %}
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Estate Performance Dashboard
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Occupancy Chart -->
+        <div>
+          <h4 class="text-md font-medium text-gray-900 dark:text-white mb-4">
+            Occupancy Rates
+          </h4>
+          <div class="relative h-64">
+            <canvas id="occupancyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Utility Consumption Chart -->
+        <div>
+          <h4 class="text-md font-medium text-gray-900 dark:text-white mb-4">
+            Utility Consumption
+          </h4>
+          <div class="relative h-64">
+            <canvas id="utilityChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+{% if estate_utility_summary %}
+
+<script>
+  // Occupancy Chart
+  const occupancyCtx = document.getElementById('occupancyChart');
+  const occupancyData = {
+    labels: [
+      {% for row in estate_utility_summary %}
+        '{{ row.estate_name }}'{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    datasets: [{
+      label: 'Occupied Units',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ row.occupied_units or 0 }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(16, 185, 129, 0.8)',
+      borderColor: '#10B981',
+      borderWidth: 1
+    }, {
+      label: 'Vacant Units',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ (row.total_units or 0) - (row.occupied_units or 0) }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(156, 163, 175, 0.8)',
+      borderColor: '#9CA3AF',
+      borderWidth: 1
+    }]
+  };
+
+  new Chart(occupancyCtx.getContext('2d'), {
+    type: 'bar',
+    data: occupancyData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Utility Consumption Chart
+  const utilityCtx = document.getElementById('utilityChart');
+  const utilityData = {
+    labels: [
+      {% for row in estate_utility_summary %}
+        '{{ row.estate_name }}'{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    datasets: [{
+      label: 'Electricity (kWh)',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ row.total_electricity or 0 }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(251, 188, 4, 0.8)',
+      borderColor: '#FBBC04',
+      borderWidth: 1
+    }, {
+      label: 'Water (kL)',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ row.total_water or 0 }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(26, 115, 232, 0.8)',
+      borderColor: '#1A73E8',
+      borderWidth: 1
+    }, {
+      label: 'Solar (kWh)',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ row.total_solar or 0 }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(52, 168, 83, 0.8)',
+      borderColor: '#34A853',
+      borderWidth: 1
+    }]
+  };
+
+  new Chart(utilityCtx.getContext('2d'), {
+    type: 'bar',
+    data: utilityData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+{% endif %}
