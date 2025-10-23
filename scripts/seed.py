@@ -134,6 +134,31 @@ def create_rate_tables(admin_user: User) -> dict[str, RateTable]:
     else:
         tables["Commercial Standard"] = existing["Commercial Standard"]
 
+    # SOLAR rate tables (separate utility_type='solar')
+    if "Standard Residential Solar" not in existing:
+        rt = RateTable(
+            name="Standard Residential Solar",
+            utility_type="solar",
+            rate_structure=json.dumps(
+                {
+                    "solar": [
+                        {"up_to": 50, "rate": 0.00},  # Free allocation
+                        {"up_to": 100, "rate": 0.50},  # Reduced rate
+                        {"up_to": None, "rate": 1.20},  # Standard rate
+                    ]
+                }
+            ),
+            is_default=True,
+            effective_from=date.today(),
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(rt)
+        tables[rt.name] = rt
+        created_count += 1
+    else:
+        tables["Standard Residential Solar"] = existing["Standard Residential Solar"]
+
     # WATER rate tables (separate utility_type='water')
     if "Standard Residential Water" not in existing:
         rt = RateTable(
@@ -292,6 +317,10 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
             add_tier(rt, 2, 6, 10.5, 29.06, ">6–10.5 kL")
             add_tier(rt, 3, 10.5, 35, 43.44, ">10.5–35 kL")
             add_tier(rt, 4, 35, None, 83.80, ">35 kL")
+        elif rt.utility_type == "solar":
+            add_tier(rt, 1, 0, 50, 0.00, "0–50 kWh (Free)")
+            add_tier(rt, 2, 50, 100, 0.50, ">50–100 kWh")
+            add_tier(rt, 3, 100, None, 1.20, ">100 kWh")
 
     db.session.commit()
 
@@ -466,6 +495,7 @@ def create_estates_and_units(
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+            "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
         },
         {
             "code": "GRNV",
@@ -482,6 +512,7 @@ def create_estates_and_units(
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+            "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
         },
         {
             "code": "DRBN",
@@ -498,6 +529,7 @@ def create_estates_and_units(
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+            "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
         },
         {
             "code": "PEBA",
@@ -514,6 +546,7 @@ def create_estates_and_units(
             "solar_free_allocation_kwh": 50.0,
             "electricity_rate_table_id": rate_tables["Standard Residential"].id,
             "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+            "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
         },
     ]
 
@@ -571,6 +604,7 @@ def create_estates_and_units(
                 "solar_meter_id": e_sol_001.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -593,6 +627,7 @@ def create_estates_and_units(
                 "solar_meter_id": e_sol_002.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -625,6 +660,7 @@ def create_estates_and_units(
                 "solar_meter_id": gv_sol_051.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -647,6 +683,7 @@ def create_estates_and_units(
                 "solar_meter_id": gv_sol_052.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -682,6 +719,7 @@ def create_estates_and_units(
                 "solar_meter_id": dh_sol_050.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -703,6 +741,7 @@ def create_estates_and_units(
                 "solar_meter_id": dh_sol_075.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -735,6 +774,7 @@ def create_estates_and_units(
                 "solar_meter_id": pe_sol_001.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -756,6 +796,7 @@ def create_estates_and_units(
                 "solar_meter_id": pe_sol_002.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
+                "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
             }
         )
         units_created += 1
@@ -865,6 +906,150 @@ def create_readings_and_alerts() -> dict[str, int]:
     return {"readings_created": readings_created, "alerts_created": alerts_created}
 
 
+def create_historical_transactions():
+    """Create historical transaction data for the past 3 months for revenue analysis"""
+    transactions_created = 0
+    today = datetime.now()
+
+    for unit in Unit.query.all():
+        if unit.occupancy_status != "occupied" or not unit.wallet:
+            continue
+
+        wallet = unit.wallet
+
+        # Create transactions for the past 90 days
+        for days_ago in range(90, 0, -1):
+            ts = today - timedelta(days=days_ago)
+
+            # Skip weekends for some transactions to make it more realistic
+            if ts.weekday() >= 5 and random.random() < 0.7:
+                continue
+
+            # Daily consumption transactions (70% chance)
+            if random.random() < 0.7:
+                balance_before = wallet.balance or 0
+
+                # Electricity consumption
+                if random.random() < 0.8:  # 80% chance of electricity usage
+                    elec_consumption = Decimal(str(random.uniform(10, 50))).quantize(
+                        Decimal("0.01")
+                    )
+                    elec_cost = elec_consumption * Decimal("1.85")
+                    balance_after = balance_before - elec_cost
+
+                    if balance_after >= 0:
+                        elec_trans = Transaction(
+                            transaction_number=f"HIST-E-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                            wallet_id=wallet.id,
+                            transaction_type="consumption_electricity",
+                            amount=elec_cost,
+                            balance_before=balance_before,
+                            balance_after=balance_after,
+                            status="completed",
+                            initiated_at=ts,
+                            completed_at=ts,
+                            meter_id=unit.electricity_meter_id,
+                            consumption_kwh=float(elec_consumption),
+                            rate_applied=1.85,
+                            description=f"Daily electricity consumption: {elec_consumption} kWh",
+                        )
+                        db.session.add(elec_trans)
+                        wallet.balance = balance_after
+                        transactions_created += 1
+                        balance_before = balance_after
+
+                # Water consumption
+                if random.random() < 0.6:  # 60% chance of water usage
+                    water_consumption = Decimal(str(random.uniform(0.1, 2.0))).quantize(
+                        Decimal("0.01")
+                    )
+                    water_cost = water_consumption * Decimal("12.50")
+                    balance_after = balance_before - water_cost
+
+                    if balance_after >= 0:
+                        water_trans = Transaction(
+                            transaction_number=f"HIST-W-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                            wallet_id=wallet.id,
+                            transaction_type="consumption_water",
+                            amount=water_cost,
+                            balance_before=balance_before,
+                            balance_after=balance_after,
+                            status="completed",
+                            initiated_at=ts,
+                            completed_at=ts,
+                            meter_id=unit.water_meter_id,
+                            consumption_kwh=float(water_consumption),
+                            rate_applied=12.50,
+                            description=f"Daily water consumption: {water_consumption} kL",
+                        )
+                        db.session.add(water_trans)
+                        wallet.balance = balance_after
+                        transactions_created += 1
+                        balance_before = balance_after
+
+                # Solar consumption (free allocation)
+                if random.random() < 0.4:  # 40% chance of solar usage
+                    solar_consumption = Decimal(str(random.uniform(1, 10))).quantize(
+                        Decimal("0.01")
+                    )
+                    solar_cost = (
+                        Decimal("0.00")
+                        if solar_consumption <= 5
+                        else (solar_consumption - 5) * Decimal("0.50")
+                    )
+                    balance_after = balance_before - solar_cost
+
+                    if balance_after >= 0:
+                        solar_trans = Transaction(
+                            transaction_number=f"HIST-S-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                            wallet_id=wallet.id,
+                            transaction_type="consumption_solar",
+                            amount=solar_cost,
+                            balance_before=balance_before,
+                            balance_after=balance_after,
+                            status="completed",
+                            initiated_at=ts,
+                            completed_at=ts,
+                            meter_id=unit.solar_meter_id,
+                            consumption_kwh=float(solar_consumption),
+                            rate_applied=0.00 if solar_consumption <= 5 else 0.50,
+                            description=f"Daily solar consumption: {solar_consumption} kWh (Free allocation: 5 kWh)",
+                        )
+                        db.session.add(solar_trans)
+                        wallet.balance = balance_after
+                        transactions_created += 1
+
+            # Weekly topup transactions (every 7 days)
+            if days_ago % 7 == 0 and random.random() < 0.8:
+                amount = Decimal(random.uniform(300, 800)).quantize(Decimal("0.01"))
+                balance_before = wallet.balance or 0
+                balance_after = balance_before + amount
+
+                topup_trans = Transaction(
+                    transaction_number=f"HIST-TOPUP-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                    wallet_id=wallet.id,
+                    transaction_type="topup",
+                    amount=amount,
+                    balance_before=balance_before,
+                    balance_after=balance_after,
+                    status="completed",
+                    initiated_at=ts,
+                    completed_at=ts,
+                    reference=f"HISTORICAL-TOPUP-{unit.id}-{days_ago}",
+                    description=f"Weekly wallet top-up",
+                    payment_method="eft",
+                )
+                db.session.add(topup_trans)
+                wallet.balance = balance_after
+                wallet.last_topup_date = ts
+                transactions_created += 1
+
+        db.session.commit()
+
+    logging.info(f"Created {transactions_created} historical transactions")
+    return transactions_created
+
+
 def create_monthly_readings_and_transactions():
     readings = 0
     transactions = 0
@@ -913,13 +1098,114 @@ def create_monthly_readings_and_transactions():
                     db.session.add(mr)
                     readings += 1
 
-            # Random topup transaction ~every 3 days
-            if unit.wallet:
+            # Create consumption transactions for revenue analysis
+            if unit.wallet and day % 2 == 0:  # Every other day
+                wallet = unit.wallet
+                balance_before = wallet.balance or 0
+
+                # Electricity consumption transaction
+                elec_consumption = Decimal(str(random.uniform(15, 45))).quantize(
+                    Decimal("0.01")
+                )
+                elec_cost = elec_consumption * Decimal("1.85")  # R1.85/kWh
+                balance_after_elec = balance_before - elec_cost
+
+                if balance_after_elec >= 0:
+                    elec_trans = Transaction(
+                        transaction_number=f"CONS-E-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                        wallet_id=wallet.id,
+                        transaction_type="consumption_electricity",
+                        amount=elec_cost,
+                        balance_before=balance_before,
+                        balance_after=balance_after_elec,
+                        status="completed",
+                        initiated_at=ts,
+                        completed_at=ts,
+                        meter_id=unit.electricity_meter_id,
+                        consumption_kwh=float(elec_consumption),
+                        rate_applied=1.85,
+                        description=f"Electricity consumption: {elec_consumption} kWh",
+                    )
+                    db.session.add(elec_trans)
+                    wallet.balance = balance_after_elec
+                    wallet.electricity_balance = max(
+                        0, (wallet.electricity_balance or 0) - elec_cost
+                    )
+                    transactions += 1
+                    balance_before = balance_after_elec
+
+                # Water consumption transaction
+                water_consumption = Decimal(str(random.uniform(0.2, 1.5))).quantize(
+                    Decimal("0.01")
+                )
+                water_cost = water_consumption * Decimal("12.50")  # R12.50/kL
+                balance_after_water = balance_before - water_cost
+
+                if balance_after_water >= 0:
+                    water_trans = Transaction(
+                        transaction_number=f"CONS-W-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                        wallet_id=wallet.id,
+                        transaction_type="consumption_water",
+                        amount=water_cost,
+                        balance_before=balance_before,
+                        balance_after=balance_after_water,
+                        status="completed",
+                        initiated_at=ts,
+                        completed_at=ts,
+                        meter_id=unit.water_meter_id,
+                        consumption_kwh=float(water_consumption),
+                        rate_applied=12.50,
+                        description=f"Water consumption: {water_consumption} kL",
+                    )
+                    db.session.add(water_trans)
+                    wallet.balance = balance_after_water
+                    wallet.water_balance = max(
+                        0, (wallet.water_balance or 0) - water_cost
+                    )
+                    transactions += 1
+                    balance_before = balance_after_water
+
+                # Solar consumption transaction (free allocation)
+                solar_consumption = Decimal(str(random.uniform(2, 8))).quantize(
+                    Decimal("0.01")
+                )
+                solar_cost = (
+                    Decimal("0.00")
+                    if solar_consumption <= 5
+                    else (solar_consumption - 5) * Decimal("0.50")
+                )
+                balance_after_solar = balance_before - solar_cost
+
+                if balance_after_solar >= 0:
+                    solar_trans = Transaction(
+                        transaction_number=f"CONS-S-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                        wallet_id=wallet.id,
+                        transaction_type="consumption_solar",
+                        amount=solar_cost,
+                        balance_before=balance_before,
+                        balance_after=balance_after_solar,
+                        status="completed",
+                        initiated_at=ts,
+                        completed_at=ts,
+                        meter_id=unit.solar_meter_id,
+                        consumption_kwh=float(solar_consumption),
+                        rate_applied=0.00 if solar_consumption <= 5 else 0.50,
+                        description=f"Solar consumption: {solar_consumption} kWh (Free allocation: 5 kWh)",
+                    )
+                    db.session.add(solar_trans)
+                    wallet.balance = balance_after_solar
+                    wallet.solar_balance = max(
+                        0, (wallet.solar_balance or 0) - solar_cost
+                    )
+                    transactions += 1
+
+            # Random topup transaction ~every 5 days
+            if unit.wallet and day % 5 == 0:
                 amount = Decimal(random.uniform(200, 1000)).quantize(Decimal("0.01"))
                 balance_before = unit.wallet.balance or 0
                 balance_after = balance_before + amount
                 trans = Transaction(
-                    transaction_number=f"TXN-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
+                    transaction_number=f"TOPUP-{ts.strftime('%Y%m%d')}-{random.randint(1000, 9999)}",
                     wallet_id=unit.wallet.id,
                     transaction_type="topup",
                     amount=amount,
@@ -929,9 +1215,12 @@ def create_monthly_readings_and_transactions():
                     initiated_at=ts,
                     completed_at=ts,
                     reference=f"TOPUP-{unit.id}-{day}",
+                    description=f"Wallet top-up via mobile app",
                 )
                 db.session.add(trans)
                 unit.wallet.balance = balance_after
+                # Update last_topup_date
+                unit.wallet.last_topup_date = ts
                 db.session.commit()
                 transactions += 1
 
@@ -1107,6 +1396,7 @@ def main():
         counts = create_estates_and_units(admin_user, rate_tables)
         res_counts = create_residents_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
+        historical_transactions = create_historical_transactions()
         monthly_counts = create_monthly_readings_and_transactions()
         summary = {
             "users_total": User.query.count(),
@@ -1117,11 +1407,12 @@ def main():
             "rate_tables_total": RateTable.query.count(),
         }
         logging.info(
-            "Seeding completed. Created: estates=%d, units=%d, meters=%d, wallets=%d. Totals: users=%d, estates=%d, units=%d, meters=%d, wallets=%d, rate_tables=%d",
+            "Seeding completed. Created: estates=%d, units=%d, meters=%d, wallets=%d, historical_transactions=%d. Totals: users=%d, estates=%d, units=%d, meters=%d, wallets=%d, rate_tables=%d",
             counts["estates_created"],
             counts["units_created"],
             counts["meters_created"],
             counts["wallets_created"],
+            historical_transactions,
             summary["users_total"],
             summary["estates_total"],
             summary["units_total"],
@@ -1131,7 +1422,7 @@ def main():
         )
         print(
             "Seed complete: "
-            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}) | "
+            + f"created(estates={counts['estates_created']}, units={counts['units_created']}, meters={counts['meters_created']}, wallets={counts['wallets_created']}, readings={ra_counts['readings_created']}, alerts={ra_counts['alerts_created']}, historical_transactions={historical_transactions}) | "
             f"totals(users={summary['users_total']}, estates={summary['estates_total']}, units={summary['units_total']}, meters={summary['meters_total']}, wallets={summary['wallets_total']}, rate_tables={summary['rate_tables_total']}) | "
             f"residents(created={res_counts['residents_created']}, assigned={res_counts['assigned']})"
         )
