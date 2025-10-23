@@ -6,8 +6,8 @@
 
 **Document Information**
 
-- **Version**: 3.0
-- **Date**: December 2024
+- **Version**: 2.0
+- **Date**: October 2025
 - **Base URL**: `https://api.quantifymetering.com`
 - **Architecture**: RESTful API with Flask 3.0+ and Jinja2 Templates
 - **Based on**: Current implementation and route files analysis
@@ -164,11 +164,9 @@ HTML template routes return rendered HTML pages with template data passed to Jin
 ### Authentication APIs
 
 #### POST /auth/login
-
 Authenticate user and create session.
 
 **Request:**
-
 ```json
 {
   "username": "admin@quantify.com",
@@ -177,7 +175,6 @@ Authenticate user and create session.
 ```
 
 **Response:**
-
 ```json
 {
   "message": "Logged in",
@@ -188,11 +185,9 @@ Authenticate user and create session.
 ```
 
 #### POST /auth/logout
-
 Logout user and destroy session.
 
 **Response:**
-
 ```json
 {
   "message": "Logged out"
@@ -200,11 +195,9 @@ Logout user and destroy session.
 ```
 
 #### POST /auth/change-password
-
 Change user password.
 
 **Request:**
-
 ```json
 {
   "current_password": "old_password",
@@ -213,7 +206,6 @@ Change user password.
 ```
 
 **Response:**
-
 ```json
 {
   "message": "Password changed"
@@ -225,21 +217,18 @@ Change user password.
 ### Estates APIs
 
 #### GET /estates
-
 **HTML Template Route** - Renders the estates page with paginated estates and summary counts.
 
 **Query Parameters:**
-
 - `q` - Search query (searches name, code)
 - `is_active` - Filter by active status (true/false)
 - `page` - Page number (default: 1)
 - `per_page` - Items per page (default: 20)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
-estates = [e.to_dict() for e in items]  # List of estate dictionaries
+estates = [e.to_dict() for e in items]  
 pagination = {
     "page": page,
     "per_page": per_page,
@@ -259,7 +248,7 @@ water_rate_tables = [rt.to_dict() for rt in water_rate_tables]
 meter_configs = {
     estate_id: {
         "elec": "X unit + 1 bulk",
-        "water": "X unit + 1 bulk",
+        "water": "X unit + 1 bulk", 
         "solar": "X unit"
     }
 }
@@ -268,11 +257,9 @@ meter_configs = {
 **Response:** HTML page (`estates/estates.html`)
 
 #### GET /estates/{id}
-
 **JSON API Route** - Get estate details by ID.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -299,11 +286,9 @@ meter_configs = {
 ```
 
 #### GET /estates/{id}/details
-
 **HTML Template Route** - Get detailed estate information with units and statistics.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 estate = estate.to_dict()
@@ -334,11 +319,9 @@ meter_config = {
 **Response:** HTML page (`estates/estate_details.html`)
 
 #### POST /estates
-
 **JSON API Route** - Create a new estate.
 
 **Request:**
-
 ```json
 {
   "code": "OG001",
@@ -357,7 +340,6 @@ meter_config = {
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -381,15 +363,12 @@ meter_config = {
 ```
 
 #### PUT /estates/{id}
-
 **JSON API Route** - Update estate details.
 
 #### PATCH /api/estates/{id}/rate-assignment
-
 **JSON API Route** - Update estate rate table assignments.
 
 **Request:**
-
 ```json
 {
   "electricity_rate_table_id": 1,
@@ -401,7 +380,6 @@ meter_config = {
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -416,11 +394,9 @@ meter_config = {
 ```
 
 #### DELETE /estates/{id}
-
 **JSON API Route** - Soft delete an estate.
 
 **Response:**
-
 ```json
 {
   "message": "Deleted"
@@ -432,11 +408,9 @@ meter_config = {
 ### Meters APIs
 
 #### GET /meters
-
 **HTML Template Route** - Renders the meters page with meters, unit assignments, balances, filters and stats.
 
 **Query Parameters:**
-
 - `meter_type` - Filter by type (electricity, water, solar, bulk_electricity, bulk_water)
 - `communication_status` - Filter by status (online, offline, error)
 - `estate_id` - Filter by estate
@@ -445,7 +419,6 @@ meter_config = {
 - `per_page` - Items per page (default: 20)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 meters = [
@@ -506,11 +479,9 @@ current_filters = {
 **Response:** HTML page (`meters/meters.html`)
 
 #### GET /meters/{id}/details
-
 **HTML Template Route** - Renders the meter details page with enriched data.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 meter = meter.to_dict()
@@ -528,11 +499,9 @@ recent_readings = [r.to_dict() for r in readings_items]
 **Response:** HTML page (`meters/meter-details.html`)
 
 #### GET /meters/{id}
-
 **JSON API Route** - Get meter details by ID.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -556,11 +525,9 @@ recent_readings = [r.to_dict() for r in readings_items]
 ```
 
 #### POST /meters
-
 **JSON API Route** - Register a new meter.
 
 **Request:**
-
 ```json
 {
   "serial_number": "E460-123",
@@ -575,7 +542,6 @@ recent_readings = [r.to_dict() for r in readings_items]
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -594,23 +560,18 @@ recent_readings = [r.to_dict() for r in readings_items]
 ```
 
 #### PUT /meters/{id}
-
 **JSON API Route** - Update meter information.
 
 #### DELETE /meters/{id}
-
 **JSON API Route** - Delete a meter.
 
 #### GET /meters/available
-
 **JSON API Route** - Get available meters by type.
 
 **Query Parameters:**
-
 - `meter_type` - Required meter type
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -624,18 +585,15 @@ recent_readings = [r.to_dict() for r in readings_items]
 ```
 
 #### GET /meters/{id}/readings
-
 **JSON API Route** - Get meter readings history.
 
 **Query Parameters:**
-
 - `start_date` - Start date (ISO 8601)
 - `end_date` - End date
 - `page` - Page number
 - `per_page` - Items per page
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -658,11 +616,9 @@ recent_readings = [r.to_dict() for r in readings_items]
 ```
 
 #### GET /meters/export
-
 **PDF Export Route** - Export meters data to PDF.
 
 **Query Parameters:**
-
 - `meter_type` - Filter by meter type
 - `communication_status` - Filter by communication status
 - `estate_id` - Filter by estate
@@ -675,11 +631,9 @@ recent_readings = [r.to_dict() for r in readings_items]
 ### Units APIs
 
 #### GET /units
-
 **HTML Template Route** - Renders the units page with units, estates, filters and pagination.
 
 **Query Parameters:**
-
 - `estate_id` - Filter by estate
 - `occupancy_status` - Filter by status (occupied, vacant, maintenance)
 - `q` - Search query
@@ -687,7 +641,6 @@ recent_readings = [r.to_dict() for r in readings_items]
 - `per_page` - Items per page (default: 20)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 units = [
@@ -718,11 +671,9 @@ current_filters = {
 **Response:** HTML page (`units/units.html`)
 
 #### GET /api/units
-
 **JSON API Route** - Get units data as JSON.
 
 **Query Parameters:**
-
 - `estate_id` - Filter by estate
 - `occupancy_status` - Filter by status
 - `q` - Search query
@@ -730,7 +681,6 @@ current_filters = {
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -761,11 +711,9 @@ current_filters = {
 ```
 
 #### GET /units/{id}
-
 **HTML Template Route** - Renders the unit details page.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 unit = unit
@@ -776,11 +724,9 @@ resident = resident
 **Response:** HTML page (`units/unit-details.html`)
 
 #### GET /api/units/{id}
-
 **JSON API Route** - Get unit details as JSON.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -806,11 +752,9 @@ resident = resident
 ```
 
 #### GET /units/{unit_id}/wallet-statement
-
 **HTML Template Route** - Renders the wallet statement page.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 unit = unit
@@ -823,11 +767,9 @@ last_topup_date = last_topup.completed_at if last_topup else None
 **Response:** HTML page (`wallets/wallet-statement.html`)
 
 #### GET /units/{unit_id}/visual
-
 **HTML Template Route** - Renders the unit visual diagram page.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 unit_id = unit_id
@@ -836,11 +778,9 @@ unit_id = unit_id
 **Response:** HTML page (`units/unit-visual.html`)
 
 #### POST /units
-
 **JSON API Route** - Create a new unit.
 
 **Request:**
-
 ```json
 {
   "estate_id": 1,
@@ -854,7 +794,6 @@ unit_id = unit_id
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -874,19 +813,15 @@ unit_id = unit_id
 ```
 
 #### PUT /units/{id}
-
 **JSON API Route** - Update unit information.
 
 #### DELETE /units/{id}
-
 **JSON API Route** - Delete a unit.
 
 #### POST /api/units/overrides
-
 **JSON API Route** - Apply rate table overrides to units.
 
 **Request:**
-
 ```json
 {
   "rate_table_id": 1,
@@ -898,7 +833,6 @@ unit_id = unit_id
 ```
 
 **Response:**
-
 ```json
 {
   "message": "Rate table override applied to 5 units",
@@ -907,11 +841,9 @@ unit_id = unit_id
 ```
 
 #### GET /api/units/overrides
-
 **JSON API Route** - Get all units with rate table overrides.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -927,7 +859,6 @@ unit_id = unit_id
 ```
 
 #### DELETE /api/units/overrides
-
 **JSON API Route** - Remove rate table overrides from units.
 
 ---
@@ -935,17 +866,14 @@ unit_id = unit_id
 ### Wallets APIs
 
 #### GET /billing
-
 **HTML Template Route** - Renders the billing page with wallet overview.
 
 **Query Parameters:**
-
 - `estate` - Filter by estate (default: "all")
 - `status` - Filter by status (all, low, zero, active)
 - `search` - Search query
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 total_balances = float(total_balances)
@@ -965,11 +893,9 @@ current_search = search_query
 **Response:** HTML page (`billing/billing.html`)
 
 #### GET /wallets/{id}
-
 **JSON API Route** - Get wallet details.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -997,11 +923,9 @@ current_search = search_query
 ```
 
 #### POST /wallets/{id}/topup
-
 **JSON API Route** - Add credit to wallet.
 
 **Request:**
-
 ```json
 {
   "amount": 500.0,
@@ -1015,7 +939,6 @@ current_search = search_query
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1027,11 +950,9 @@ current_search = search_query
 ```
 
 #### GET /wallets/{id}/pending-transactions
-
 **JSON API Route** - Get pending transactions awaiting payment confirmation.
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -1056,11 +977,9 @@ current_search = search_query
 ### Transactions APIs
 
 #### GET /transactions
-
 **JSON API Route** - List transactions with filtering.
 
 **Query Parameters:**
-
 - `wallet_id` - Filter by wallet
 - `transaction_type` - Filter by type
 - `status` - Filter by status
@@ -1068,7 +987,6 @@ current_search = search_query
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -1089,11 +1007,9 @@ current_search = search_query
 ```
 
 #### GET /transactions/{id}
-
 **JSON API Route** - Get transaction details.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1109,11 +1025,9 @@ current_search = search_query
 ```
 
 #### POST /transactions/{id}/reverse
-
 **JSON API Route** - Reverse a transaction.
 
 **Request:**
-
 ```json
 {
   "reason": "Error in payment processing"
@@ -1121,7 +1035,6 @@ current_search = search_query
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1136,11 +1049,9 @@ current_search = search_query
 ### Rate Tables APIs
 
 #### GET /rate-tables
-
 **HTML Template Route** - Renders the rate tables page.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 rate_tables = all_rate_tables
@@ -1154,17 +1065,14 @@ water_rate_tables = water_rate_tables
 **Response:** HTML page (`rate-tables/rate-table.html`)
 
 #### GET /rate-tables/builder
-
 **HTML Template Route** - Renders the rate table builder page.
 
 **Response:** HTML page (`rate-tables/rate-table-builder.html`)
 
 #### GET /rate-tables/{id}/edit
-
 **HTML Template Route** - Renders the edit page for a specific rate table.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 rate_table = rt.to_dict()
@@ -1173,18 +1081,15 @@ rate_table = rt.to_dict()
 **Response:** HTML page (`rate-tables/edit-rate-table.html`)
 
 #### GET /api/rate-tables
-
 **JSON API Route** - List all rate tables.
 
 **Query Parameters:**
-
 - `utility_type` - Filter by type (electricity, water, solar)
 - `is_active` - Filter by active status
 - `page` - Page number (default: 1)
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -1207,11 +1112,9 @@ rate_table = rt.to_dict()
 ```
 
 #### GET /api/rate-tables/{id}
-
 **JSON API Route** - Get rate table details.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1229,11 +1132,9 @@ rate_table = rt.to_dict()
 ```
 
 #### GET /api/rate-tables/{id}/details
-
 **JSON API Route** - Get detailed rate table with tiers and time-of-use rates.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1261,11 +1162,9 @@ rate_table = rt.to_dict()
 ```
 
 #### POST /api/rate-tables
-
 **JSON API Route** - Create a new rate table.
 
 **Request:**
-
 ```json
 {
   "name": "Water Rates 2025",
@@ -1278,7 +1177,6 @@ rate_table = rt.to_dict()
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1296,11 +1194,9 @@ rate_table = rt.to_dict()
 ```
 
 #### POST /api/rate-tables/preview
-
 **JSON API Route** - Preview rate calculation.
 
 **Request:**
-
 ```json
 {
   "electricity_kwh": 175.0,
@@ -1314,7 +1210,6 @@ rate_table = rt.to_dict()
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1341,11 +1236,9 @@ rate_table = rt.to_dict()
 ```
 
 #### PUT /api/rate-tables/{id}
-
 **JSON API Route** - Update rate table.
 
 #### DELETE /api/rate-tables/{id}
-
 **JSON API Route** - Delete a rate table.
 
 ---
@@ -1353,17 +1246,14 @@ rate_table = rt.to_dict()
 ### Residents APIs
 
 #### GET /residents
-
 **HTML Template Route** - Renders the residents page.
 
 **Query Parameters:**
-
 - `q` - Search query
 - `is_active` - Filter by active status (true/false)
 - `unit_id` - Filter by unit
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 residents = [
@@ -1392,17 +1282,14 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 **Response:** HTML page (`residents/residents.html`)
 
 #### GET /api/residents
-
 **JSON API Route** - List all residents.
 
 **Query Parameters:**
-
 - `q` - Search query
 - `page` - Page number (default: 1)
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -1431,11 +1318,9 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 ```
 
 #### POST /residents
-
 **JSON API Route** - Create a new resident.
 
 **Request:**
-
 ```json
 {
   "id_number": "8001015009087",
@@ -1452,7 +1337,6 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1476,11 +1360,9 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 ```
 
 #### PUT /residents/{id}
-
 **JSON API Route** - Update resident information.
 
 #### DELETE /residents/{id}
-
 **JSON API Route** - Delete a resident.
 
 ---
@@ -1488,11 +1370,9 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 ### Users APIs
 
 #### GET /users
-
 **HTML Template Route** - Renders the users page.
 
 **Query Parameters:**
-
 - `search` - Search query
 - `status` - Filter by status (active, disabled)
 - `role_id` - Filter by role
@@ -1500,7 +1380,6 @@ current_filters = {"q": search, "is_active": is_active, "unit_id": unit_id}
 - `per_page` - Items per page (default: 25)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 users = [
@@ -1533,11 +1412,9 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 **Response:** HTML page (`users/users.html`)
 
 #### POST /api/users
-
 **JSON API Route** - Create a new user.
 
 **Request:**
-
 ```json
 {
   "username": "manager@estate.com",
@@ -1552,7 +1429,6 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1562,11 +1438,9 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ```
 
 #### PUT /api/users/{id}
-
 **JSON API Route** - Update user information.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1575,11 +1449,9 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ```
 
 #### DELETE /api/users/{id}
-
 **JSON API Route** - Delete a user.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1588,11 +1460,9 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ```
 
 #### PUT /api/users/{id}/enable
-
 **JSON API Route** - Enable a user.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1601,11 +1471,9 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ```
 
 #### PUT /api/users/{id}/disable
-
 **JSON API Route** - Disable a user.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1618,17 +1486,14 @@ current_filters = {"search": search, "status": status, "role_id": role_id}
 ### Roles APIs
 
 #### GET /roles
-
 **HTML Template Route** - Renders the roles page.
 
 **Query Parameters:**
-
 - `search` - Search query
 - `page` - Page number (default: 1)
 - `per_page` - Items per page (default: 25)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 roles = [
@@ -1648,7 +1513,7 @@ roles = [
 ]
 permissions = Permission.get_all_permissions()
 modules_actions = {
-    module: sorted(list(actions))
+    module: sorted(list(actions)) 
     for module, actions in sorted(modules_actions.items())
 }
 pagination = {
@@ -1663,25 +1528,22 @@ current_filters = {"search": search}
 **Response:** HTML page (`roles&permissions/roles.html`)
 
 #### POST /api/roles
-
 **JSON API Route** - Create a new role.
 
 **Request:**
-
 ```json
 {
   "name": "estate_manager",
   "description": "Estate management access",
   "permissions": {
-    "estates": { "view": true, "edit": true },
-    "units": { "view": true, "edit": false }
+    "estates": {"view": true, "edit": true},
+    "units": {"view": true, "edit": false}
   },
   "permission_id": 2
 }
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1691,11 +1553,9 @@ current_filters = {"search": search}
 ```
 
 #### PUT /api/roles/{id}
-
 **JSON API Route** - Update role information.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1704,11 +1564,9 @@ current_filters = {"search": search}
 ```
 
 #### DELETE /api/roles/{id}
-
 **JSON API Route** - Delete a role.
 
 **Response:**
-
 ```json
 {
   "success": true,
@@ -1721,17 +1579,14 @@ current_filters = {"search": search}
 ### Settings APIs
 
 #### GET /settings
-
 **HTML Template Route** - Renders the settings page.
 
 **Response:** HTML page (`settings/settings.html`)
 
 #### GET /api/settings
-
 **JSON API Route** - Get all system settings.
 
 **Response:**
-
 ```json
 {
   "settings": {
@@ -1758,11 +1613,9 @@ current_filters = {"search": search}
 ```
 
 #### POST /settings/general
-
 **JSON API Route** - Save general settings.
 
 **Request:**
-
 ```json
 {
   "org_name": "Quantify Metering",
@@ -1775,7 +1628,6 @@ current_filters = {"search": search}
 ```
 
 **Response:**
-
 ```json
 {
   "message": "General settings saved successfully"
@@ -1783,11 +1635,9 @@ current_filters = {"search": search}
 ```
 
 #### POST /settings/security
-
 **JSON API Route** - Save security settings.
 
 #### POST /settings/notifications
-
 **JSON API Route** - Save notification settings.
 
 ---
@@ -1795,11 +1645,9 @@ current_filters = {"search": search}
 ### Profile APIs
 
 #### GET /profile
-
 **HTML Template Route** - Renders the profile page.
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 user = {
@@ -1818,11 +1666,9 @@ user = {
 **Response:** HTML page (`profile/profile.html`)
 
 #### POST /profile
-
 **JSON API Route** - Update current user profile.
 
 **Request:**
-
 ```json
 {
   "first_name": "John",
@@ -1833,7 +1679,6 @@ user = {
 ```
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -1847,11 +1692,9 @@ user = {
 ```
 
 #### POST /profile/change-password
-
 **JSON API Route** - Change current user password.
 
 **Request:**
-
 ```json
 {
   "current_password": "old_password",
@@ -1861,7 +1704,6 @@ user = {
 ```
 
 **Response:**
-
 ```json
 {
   "message": "Password updated successfully"
@@ -1869,11 +1711,9 @@ user = {
 ```
 
 #### GET /profile/password-requirements
-
 **JSON API Route** - Get password requirements.
 
 **Response:**
-
 ```json
 {
   "requirements": {
@@ -1890,11 +1730,9 @@ user = {
 ### Audit Logs APIs
 
 #### GET /audit-logs
-
 **HTML Template Route** - Renders the audit logs page.
 
 **Query Parameters:**
-
 - `action` - Filter by action
 - `user_id` - Filter by user ID
 - `start_date` - Start date filter
@@ -1903,7 +1741,6 @@ user = {
 - `per_page` - Items per page (default: 20)
 
 **Template Data Structure:**
-
 ```python
 # Template receives these variables:
 logs = [
@@ -1936,11 +1773,9 @@ current_filters = {
 **Response:** HTML page (`audit-logs/audit-logs.html`)
 
 #### GET /api/audit-logs
-
 **JSON API Route** - List audit logs.
 
 **Query Parameters:**
-
 - `action` - Filter by action
 - `user_id` - Filter by user ID
 - `entity_type` - Filter by entity type
@@ -1948,7 +1783,6 @@ current_filters = {
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -1971,11 +1805,9 @@ current_filters = {
 ```
 
 #### GET /api/audit-logs/{id}
-
 **JSON API Route** - Get specific audit log entry.
 
 **Response:**
-
 ```json
 {
   "data": {
@@ -2003,11 +1835,9 @@ current_filters = {
 ### Notifications APIs
 
 #### GET /notifications
-
 **JSON API Route** - List notifications.
 
 **Query Parameters:**
-
 - `recipient_type` - Filter by recipient type
 - `status` - Filter by status
 - `priority` - Filter by priority
@@ -2015,7 +1845,6 @@ current_filters = {
 - `per_page` - Items per page (default: 20)
 
 **Response:**
-
 ```json
 {
   "data": [
@@ -2096,20 +1925,20 @@ class QuantifyAPI:
     def __init__(self, base_url="https://api.quantifymetering.com"):
         self.base_url = base_url
         self.session = requests.Session()
-
+    
     def login(self, username, password):
         response = self.session.post(
             f"{self.base_url}/auth/login",
             json={"username": username, "password": password}
         )
         return response.json()
-
+    
     def get_estate(self, estate_id):
         response = self.session.get(
             f"{self.base_url}/estates/{estate_id}"
         )
         return response.json()
-
+    
     def topup_wallet(self, wallet_id, amount, payment_method="eft"):
         response = self.session.post(
             f"{self.base_url}/wallets/{wallet_id}/topup",

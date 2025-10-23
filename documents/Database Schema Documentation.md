@@ -1,14 +1,16 @@
 # Database Schema Documentation
+
 ## Quantify Metering System
 
 ---
 
 **Document Information**
-- **Version**: 1.0
-- **Date**: October 2025
+
+- **Version**: 2.0
+- **Date**: December 2024
 - **Database**: PostgreSQL
 - **ORM**: SQLAlchemy 2.0+
-- **Based on**: development_guidelines.md and Functional Specification v3.0
+- **Based on**: Current model implementation and Functional Specification v3.0
 
 ---
 
@@ -17,8 +19,9 @@
 The Quantify Metering System uses PostgreSQL as its primary database, with SQLAlchemy 2.0+ as the ORM layer. The schema is designed to support multi-tenant operations, prepaid billing, and real-time meter data management.
 
 ### Design Principles
+
 - Normalized design (3NF) with strategic denormalization for performance
-- UUID primary keys for distributed systems compatibility
+- Integer primary keys with auto-increment for simplicity and performance
 - Audit columns on all tables (created_at, updated_at, created_by, updated_by)
 - Soft deletes where appropriate (deleted_at)
 - Indexed columns for query optimization
@@ -29,26 +32,28 @@ The Quantify Metering System uses PostgreSQL as its primary database, with SQLAl
 ## Core Tables
 
 ### 1. users
+
 Stores system user accounts for administrators and property managers.
 
 ```sql
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     username VARCHAR(64) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
-    role_id UUID REFERENCES roles(id),
+    role_id INTEGER REFERENCES roles(id),
     is_active BOOLEAN DEFAULT true,
+    is_super_admin BOOLEAN DEFAULT false,
     last_login TIMESTAMP,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id)
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_users_username ON users(username);
@@ -56,15 +61,30 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role_id ON users(role_id);
 ```
 
-### 2. roles
+### 2. permissions
+
+Stores permission sets that can be assigned to roles.
+
+```sql
+CREATE TABLE permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120) UNIQUE NOT NULL,
+    description VARCHAR(255),
+    permissions JSON NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 3. roles
+
 Defines user roles and permission levels.
 
 ```sql
 CREATE TABLE roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
-    permissions JSONB NOT NULL DEFAULT '{}',
+    permission_id INTEGER REFERENCES permissions(id),
     is_system_role BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -78,12 +98,13 @@ INSERT INTO roles (name, description, is_system_role) VALUES
 ('viewer', 'Read-only access', true);
 ```
 
-### 3. estates
+### 4. estates
+
 Manages residential estate information.
 
 ```sql
 CREATE TABLE estates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     code VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     address TEXT,
@@ -93,31 +114,32 @@ CREATE TABLE estates (
     contact_phone VARCHAR(20),
     contact_email VARCHAR(255),
     total_units INTEGER NOT NULL DEFAULT 0,
-    bulk_electricity_meter_id UUID REFERENCES meters(id),
-    bulk_water_meter_id UUID REFERENCES meters(id),
-    electricity_rate_table_id UUID REFERENCES rate_tables(id),
-    water_rate_table_id UUID REFERENCES rate_tables(id),
+    bulk_electricity_meter_id INTEGER REFERENCES meters(id),
+    bulk_water_meter_id INTEGER REFERENCES meters(id),
+    electricity_rate_table_id INTEGER REFERENCES rate_tables(id),
+    water_rate_table_id INTEGER REFERENCES rate_tables(id),
     electricity_markup_percentage DECIMAL(5,2) DEFAULT 0.00,
     water_markup_percentage DECIMAL(5,2) DEFAULT 0.00,
     solar_free_allocation_kwh DECIMAL(10,2) DEFAULT 50.00,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id)
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_estates_code ON estates(code);
 CREATE INDEX idx_estates_is_active ON estates(is_active);
 ```
 
-### 4. units
+### 5. units
+
 Stores individual unit/apartment information.
 
 ```sql
 CREATE TABLE units (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    estate_id UUID REFERENCES estates(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    estate_id INTEGER REFERENCES estates(id) NOT NULL,
     unit_number VARCHAR(50) NOT NULL,
     floor VARCHAR(20),
     building VARCHAR(50),
@@ -125,31 +147,32 @@ CREATE TABLE units (
     bathrooms INTEGER,
     size_sqm DECIMAL(10,2),
     occupancy_status VARCHAR(20) DEFAULT 'vacant' CHECK (occupancy_status IN ('occupied', 'vacant', 'maintenance')),
-    resident_id UUID REFERENCES residents(id),
-    wallet_id UUID REFERENCES wallets(id),
-    electricity_meter_id UUID REFERENCES meters(id),
-    water_meter_id UUID REFERENCES meters(id),
-    solar_meter_id UUID REFERENCES meters(id),
+    resident_id INTEGER REFERENCES residents(id),
+    electricity_meter_id INTEGER REFERENCES meters(id),
+    water_meter_id INTEGER REFERENCES meters(id),
+    solar_meter_id INTEGER REFERENCES meters(id),
+    electricity_rate_table_id INTEGER REFERENCES rate_tables(id),
+    water_rate_table_id INTEGER REFERENCES rate_tables(id),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id),
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id),
     UNIQUE(estate_id, unit_number)
 );
 
 CREATE INDEX idx_units_estate_id ON units(estate_id);
 CREATE INDEX idx_units_resident_id ON units(resident_id);
-CREATE INDEX idx_units_wallet_id ON units(wallet_id);
 CREATE INDEX idx_units_occupancy_status ON units(occupancy_status);
 ```
 
-### 5. residents
+### 6. residents
+
 Stores resident/tenant information.
 
 ```sql
 CREATE TABLE residents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     id_number VARCHAR(20) UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -160,12 +183,13 @@ CREATE TABLE residents (
     emergency_contact_phone VARCHAR(20),
     lease_start_date DATE,
     lease_end_date DATE,
+    status VARCHAR(20) DEFAULT 'active',
     is_active BOOLEAN DEFAULT true,
-    app_user_id UUID,  -- For mobile app login (Phase 2)
+    app_user_id VARCHAR(36),  -- For mobile app login (Phase 2)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id)
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_residents_email ON residents(email);
@@ -173,12 +197,13 @@ CREATE INDEX idx_residents_id_number ON residents(id_number);
 CREATE INDEX idx_residents_is_active ON residents(is_active);
 ```
 
-### 6. meters
+### 7. meters
+
 Central meter registry for all meter types.
 
 ```sql
 CREATE TABLE meters (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     serial_number VARCHAR(100) UNIQUE NOT NULL,
     meter_type VARCHAR(20) NOT NULL CHECK (meter_type IN ('electricity', 'water', 'solar', 'bulk_electricity', 'bulk_water')),
     manufacturer VARCHAR(100),
@@ -201,13 +226,14 @@ CREATE INDEX idx_meters_meter_type ON meters(meter_type);
 CREATE INDEX idx_meters_communication_status ON meters(communication_status);
 ```
 
-### 7. meter_readings
+### 8. meter_readings
+
 Stores all meter readings for historical tracking.
 
 ```sql
 CREATE TABLE meter_readings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    meter_id UUID REFERENCES meters(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    meter_id INTEGER REFERENCES meters(id) NOT NULL,
     reading_value DECIMAL(15,3) NOT NULL,
     reading_date TIMESTAMP NOT NULL,
     reading_type VARCHAR(20) DEFAULT 'automatic' CHECK (reading_type IN ('automatic', 'manual', 'estimated')),
@@ -222,13 +248,14 @@ CREATE INDEX idx_meter_readings_reading_date ON meter_readings(reading_date DESC
 CREATE INDEX idx_meter_readings_meter_date ON meter_readings(meter_id, reading_date DESC);
 ```
 
-### 8. wallets
+### 9. wallets
+
 Manages prepaid wallet balances for units.
 
 ```sql
 CREATE TABLE wallets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    unit_id UUID REFERENCES units(id) UNIQUE NOT NULL,
+    id SERIAL PRIMARY KEY,
+    unit_id INTEGER REFERENCES units(id) UNIQUE NOT NULL,
     balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     electricity_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     water_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -249,12 +276,12 @@ CREATE TABLE wallets (
     -- Usage Tracking for Smart Alerts
     daily_avg_consumption DECIMAL(10,2), -- Average daily consumption in Rands
     last_consumption_calc_date TIMESTAMP, -- When average was last calculated
+    last_topup_date TIMESTAMP, -- Last top-up transaction date
     -- Account Status
     is_suspended BOOLEAN DEFAULT false,
     suspension_reason TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (balance >= 0), -- Allow negative for water debt
     CHECK (electricity_minimum_activation >= 0),
     CHECK (water_minimum_activation >= 0)
 );
@@ -264,14 +291,15 @@ CREATE INDEX idx_wallets_balance ON wallets(balance);
 CREATE INDEX idx_wallets_is_suspended ON wallets(is_suspended);
 ```
 
-### 9. transactions
+### 10. transactions
+
 Records all financial transactions with payment gateway integration support.
 
 ```sql
 CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     transaction_number VARCHAR(50) UNIQUE NOT NULL,
-    wallet_id UUID REFERENCES wallets(id) NOT NULL,
+    wallet_id INTEGER REFERENCES wallets(id) NOT NULL,
     transaction_type VARCHAR(30) NOT NULL CHECK (transaction_type IN (
         'topup', 'purchase_electricity', 'purchase_water', 'purchase_solar',
         'consumption_electricity', 'consumption_water', 'consumption_solar',
@@ -287,7 +315,7 @@ CREATE TABLE transactions (
     payment_gateway VARCHAR(50), -- 'paygate', 'payfast', 'ozow', etc.
     payment_gateway_ref VARCHAR(255), -- External transaction reference
     payment_gateway_status VARCHAR(50), -- Raw status from gateway
-    payment_metadata JSONB, -- Additional payment info (card last4, bank, etc.)
+    payment_metadata TEXT, -- Additional payment info (card last4, bank, etc.)
     -- Status and Timing
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'reversed', 'expired')),
     initiated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -297,11 +325,11 @@ CREATE TABLE transactions (
     reconciled BOOLEAN DEFAULT false,
     reconciled_at TIMESTAMP,
     -- Other Fields
-    meter_id UUID REFERENCES meters(id),
+    meter_id INTEGER REFERENCES meters(id),
     consumption_kwh DECIMAL(10,3),
     rate_applied DECIMAL(10,4),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id)
+    created_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_transactions_wallet_id ON transactions(wallet_id);
@@ -313,13 +341,14 @@ CREATE INDEX idx_transactions_payment_gateway_ref ON transactions(payment_gatewa
 CREATE INDEX idx_transactions_pending ON transactions(status) WHERE status = 'pending';
 ```
 
-### 10. payment_methods
+### 11. payment_methods
+
 Stores saved payment methods for quick payments (PCI compliant - no full card numbers).
 
 ```sql
 CREATE TABLE payment_methods (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    wallet_id UUID REFERENCES wallets(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    wallet_id INTEGER REFERENCES wallets(id) NOT NULL,
     method_type VARCHAR(20) NOT NULL CHECK (method_type IN ('card', 'bank_account')),
     -- Card Details (tokenized)
     card_token VARCHAR(255), -- Token from payment gateway
@@ -348,23 +377,24 @@ CREATE INDEX idx_payment_methods_wallet_id ON payment_methods(wallet_id);
 CREATE INDEX idx_payment_methods_is_default ON payment_methods(is_default);
 ```
 
-### 11. rate_tables
+### 12. rate_tables
+
 Defines utility rate structures.
 
 ```sql
 CREATE TABLE rate_tables (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     utility_type VARCHAR(20) NOT NULL CHECK (utility_type IN ('electricity', 'water', 'solar')),
-    rate_structure JSONB NOT NULL,
+    rate_structure TEXT NOT NULL,
     is_default BOOLEAN DEFAULT false,
     effective_from DATE NOT NULL,
     effective_to DATE,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id)
+    created_by INTEGER REFERENCES users(id),
+    updated_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_rate_tables_utility_type ON rate_tables(utility_type);
@@ -372,13 +402,14 @@ CREATE INDEX idx_rate_tables_is_active ON rate_tables(is_active);
 CREATE INDEX idx_rate_tables_effective_from ON rate_tables(effective_from);
 ```
 
-### 12. rate_table_tiers
+### 13. rate_table_tiers
+
 Stores tiered pricing for consumption-based rates.
 
 ```sql
 CREATE TABLE rate_table_tiers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    rate_table_id UUID REFERENCES rate_tables(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    rate_table_id INTEGER REFERENCES rate_tables(id) NOT NULL,
     tier_number INTEGER NOT NULL,
     from_kwh DECIMAL(10,2) NOT NULL,
     to_kwh DECIMAL(10,2),
@@ -391,13 +422,14 @@ CREATE TABLE rate_table_tiers (
 CREATE INDEX idx_rate_table_tiers_rate_table_id ON rate_table_tiers(rate_table_id);
 ```
 
-### 13. time_of_use_rates
+### 14. time_of_use_rates
+
 Stores time-based pricing for TOU rate tables.
 
 ```sql
 CREATE TABLE time_of_use_rates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    rate_table_id UUID REFERENCES rate_tables(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    rate_table_id INTEGER REFERENCES rate_tables(id) NOT NULL,
     period_name VARCHAR(50) NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
@@ -410,14 +442,15 @@ CREATE TABLE time_of_use_rates (
 CREATE INDEX idx_time_of_use_rates_rate_table_id ON time_of_use_rates(rate_table_id);
 ```
 
-### 14. notifications
+### 15. notifications
+
 Manages system notifications and alerts. Supports push notifications for mobile app (Phase 2).
 
 ```sql
 CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     recipient_type VARCHAR(20) NOT NULL CHECK (recipient_type IN ('user', 'resident', 'system')),
-    recipient_id UUID,
+    recipient_id INTEGER,
     notification_type VARCHAR(50) NOT NULL,
     subject VARCHAR(255),
     message TEXT NOT NULL,
@@ -430,7 +463,7 @@ CREATE TABLE notifications (
     -- Phase 2: Push notification fields
     push_token TEXT,  -- Device push token for mobile app
     push_provider VARCHAR(20), -- 'fcm' (Firebase), 'apns' (Apple)
-    push_payload JSONB, -- Push notification payload
+    push_payload TEXT, -- Push notification payload
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -439,21 +472,22 @@ CREATE INDEX idx_notifications_status ON notifications(status);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 ```
 
-### 15. audit_logs
+### 16. audit_logs
+
 Comprehensive audit trail for all system activities.
 
 ```sql
 CREATE TABLE audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id),
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
     action VARCHAR(100) NOT NULL,
     entity_type VARCHAR(50),
-    entity_id UUID,
-    old_values JSONB,
-    new_values JSONB,
-    ip_address INET,
+    entity_id INTEGER,
+    old_values TEXT,
+    new_values TEXT,
+    ip_address VARCHAR(45),
     user_agent TEXT,
-    request_id UUID,
+    request_id VARCHAR(36),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -463,12 +497,13 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 ```
 
-### 16. system_settings
+### 17. system_settings
+
 Stores global system configuration.
 
 ```sql
 CREATE TABLE system_settings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id SERIAL PRIMARY KEY,
     setting_key VARCHAR(100) UNIQUE NOT NULL,
     setting_value TEXT,
     setting_type VARCHAR(20) CHECK (setting_type IN ('string', 'number', 'boolean', 'json')),
@@ -477,7 +512,7 @@ CREATE TABLE system_settings (
     is_encrypted BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_by UUID REFERENCES users(id)
+    updated_by INTEGER REFERENCES users(id)
 );
 
 CREATE INDEX idx_system_settings_key ON system_settings(setting_key);
@@ -494,22 +529,23 @@ INSERT INTO system_settings (setting_key, setting_value, setting_type, category,
 ('smart_alert_enabled', 'true', 'boolean', 'notification', 'Enable smart alerts based on usage patterns');
 ```
 
-### 17. meter_alerts
+### 18. meter_alerts
+
 Tracks meter-specific alerts and issues.
 
 ```sql
 CREATE TABLE meter_alerts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    meter_id UUID REFERENCES meters(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    meter_id INTEGER REFERENCES meters(id) NOT NULL,
     alert_type VARCHAR(50) NOT NULL CHECK (alert_type IN (
-        'communication_loss', 'tamper_detected', 'low_credit', 
+        'communication_loss', 'tamper_detected', 'low_credit',
         'disconnection', 'reconnection', 'abnormal_usage', 'meter_fault'
     )),
     severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'error', 'critical')),
     message TEXT,
     is_resolved BOOLEAN DEFAULT false,
     resolved_at TIMESTAMP,
-    resolved_by UUID REFERENCES users(id),
+    resolved_by INTEGER REFERENCES users(id),
     resolution_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -520,13 +556,14 @@ CREATE INDEX idx_meter_alerts_is_resolved ON meter_alerts(is_resolved);
 CREATE INDEX idx_meter_alerts_created_at ON meter_alerts(created_at DESC);
 ```
 
-### 18. reconciliation_reports
+### 19. reconciliation_reports
+
 Stores bulk meter vs unit meter reconciliation data.
 
 ```sql
 CREATE TABLE reconciliation_reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    estate_id UUID REFERENCES estates(id) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    estate_id INTEGER REFERENCES estates(id) NOT NULL,
     report_date DATE NOT NULL,
     utility_type VARCHAR(20) NOT NULL CHECK (utility_type IN ('electricity', 'water')),
     bulk_meter_reading DECIMAL(15,3) NOT NULL,
@@ -536,7 +573,7 @@ CREATE TABLE reconciliation_reports (
     loss_amount DECIMAL(15,3),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID REFERENCES users(id),
+    created_by INTEGER REFERENCES users(id),
     UNIQUE(estate_id, report_date, utility_type)
 );
 
@@ -549,11 +586,12 @@ CREATE INDEX idx_reconciliation_date ON reconciliation_reports(report_date DESC)
 ## Views
 
 ### 1. v_unit_current_status
+
 Provides a complete view of unit status including meters and wallet.
 
 ```sql
 CREATE VIEW v_unit_current_status AS
-SELECT 
+SELECT
     u.id AS unit_id,
     u.unit_number,
     e.name AS estate_name,
@@ -570,7 +608,7 @@ SELECT
     sm.last_reading AS solar_reading,
     sm.communication_status AS solar_status,
     u.occupancy_status,
-    CASE 
+    CASE
         WHEN w.balance < w.low_balance_threshold THEN 'low_balance'
         WHEN em.communication_status = 'offline' OR wm.communication_status = 'offline' THEN 'meter_issue'
         ELSE 'normal'
@@ -586,11 +624,12 @@ WHERE u.is_active = true;
 ```
 
 ### 2. v_daily_consumption_summary
+
 Aggregates daily consumption data by estate and utility type.
 
 ```sql
 CREATE VIEW v_daily_consumption_summary AS
-SELECT 
+SELECT
     DATE(mr.reading_date) AS consumption_date,
     e.id AS estate_id,
     e.name AS estate_name,
@@ -613,7 +652,8 @@ GROUP BY DATE(mr.reading_date), e.id, e.name, m.meter_type;
 ## Indexes Strategy
 
 ### Performance Indexes
-- Primary keys: UUID with default gen_random_uuid()
+
+- Primary keys: Integer with SERIAL auto-increment
 - Foreign keys: All FK columns indexed
 - Search columns: username, email, serial_number
 - Filter columns: is_active, status, meter_type
@@ -642,20 +682,18 @@ CREATE INDEX idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC);
 
 ### Business Rules Enforced
 
-1. **Wallet Balance Consistency**
-   - Total balance must equal sum of utility balances
-   - Electricity can go to zero (disconnection)
-   - Water can go negative (debt accumulation)
 
-2. **Meter Assignment**
+1. **Meter Assignment**
+
    - Each unit must have exactly 3 meters (electricity, water, solar)
    - Bulk meters can only be assigned to one estate
 
-3. **Rate Table Validity**
+2. **Rate Table Validity**
+
    - No overlapping effective date ranges for same utility type
    - Only one default rate table per utility type
 
-4. **Transaction Integrity**
+3. **Transaction Integrity**
    - Balance after = Balance before + Amount (for credits)
    - Balance after = Balance before - Amount (for debits)
 
@@ -666,9 +704,6 @@ CREATE INDEX idx_audit_logs_user_date ON audit_logs(user_id, created_at DESC);
 ### Initial Setup
 
 ```sql
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Create audit trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -687,11 +722,13 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 ### Data Migration from Legacy Systems
 
 1. **Estate and Unit Import**
+
    - CSV import for bulk creation
    - Validation of required fields
    - Duplicate detection
 
 2. **Meter Registration**
+
    - Serial number validation
    - Communication test before activation
    - Initial reading capture
@@ -720,6 +757,7 @@ restore_command = 'cp /backup/wal/%f %p'
 ```
 
 ### Critical Tables for Priority Recovery
+
 1. wallets - Current balances
 2. transactions - Financial records
 3. meter_readings - Consumption data
@@ -746,7 +784,7 @@ CREATE TABLE transactions_2025_01 PARTITION OF transactions
 ```sql
 -- Daily revenue summary
 CREATE MATERIALIZED VIEW mv_daily_revenue AS
-SELECT 
+SELECT
     DATE(created_at) AS revenue_date,
     transaction_type,
     COUNT(*) AS transaction_count,
@@ -765,16 +803,19 @@ REFRESH MATERIALIZED VIEW mv_daily_revenue;
 ## Security Considerations
 
 ### Data Encryption
+
 - Password fields: bcrypt hashing
 - Sensitive settings: AES encryption
 - PII data: Column-level encryption for ID numbers
 
 ### Access Control
+
 - Row-level security for multi-tenant isolation
 - Role-based table permissions
 - Audit logging for all data modifications
 
 ### SQL Injection Prevention
+
 - Parameterized queries only
 - Input validation at application layer
 - Stored procedures for complex operations
@@ -809,8 +850,9 @@ AND created_at > NOW() - INTERVAL '24 hours';
 
 ## Document Version History
 
+- v2.0 - Updated to reflect current model implementation with Integer primary keys and new fields
 - v1.0 - Initial database schema design based on prototype requirements
 
 ---
 
-*End of Database Schema Documentation*
+_End of Database Schema Documentation_
