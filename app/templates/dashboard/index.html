@@ -353,7 +353,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <i class="fas fa-building text-gray-500 mr-2"></i>Communal Usage Gauge
     </h3>
     <div class="text-center">
-      <div class="text-3xl font-bold text-gray-600">
+      <div class="text-3xl font-bold text-gray-900 dark:text-white">
         {{ communal_usage_percentage | round(1) }}%
       </div>
       <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -382,7 +382,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
 
       <!-- Communal Area Cost Estimate -->
       <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-        <div class="text-2xl font-bold text-gray-600">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white">
           R {{ communal_cost_estimate | round(0) }}
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -409,7 +409,9 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
               <div
                 class="w-3 h-3 rounded-full {% if utility.utility == 'Electricity' %}bg-blue-500{% elif utility.utility == 'Water' %}bg-teal-500{% elif utility.utility == 'Solar' %}bg-yellow-500{% else %}bg-gray-500{% endif %}"
               ></div>
-              <span class="text-sm font-medium">{{ utility.utility }}</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-white"
+                >{{ utility.utility }}</span
+              >
             </div>
             <div class="flex items-center gap-2">
               <div class="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
