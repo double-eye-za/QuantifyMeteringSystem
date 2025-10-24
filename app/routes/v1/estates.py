@@ -84,6 +84,54 @@ def estates_page():
         rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
     ]
 
+    # Fetch bulk meter data for overview
+    bulk_meters_data = []
+    for estate in estates:
+        estate_id = estate["id"]
+        estate_name = estate["name"]
+
+        # Get bulk electricity meter
+        if estate["bulk_electricity_meter_id"]:
+            bulk_elec_meter = Meter.get_by_id(estate["bulk_electricity_meter_id"])
+            if bulk_elec_meter:
+                bulk_meters_data.append(
+                    {
+                        "estate_id": estate_id,
+                        "estate_name": estate_name,
+                        "meter_id": bulk_elec_meter.id,
+                        "meter_type": "Electricity",
+                        "meter_type_icon": "fas fa-bolt",
+                        "meter_type_color": "text-yellow-500",
+                        "serial_number": bulk_elec_meter.serial_number,
+                        "current_reading": bulk_elec_meter.last_reading,
+                        "reading_unit": "kWh",
+                        "status": bulk_elec_meter.communication_status,
+                        "last_update": bulk_elec_meter.last_reading_date,
+                        "last_communication": bulk_elec_meter.last_communication,
+                    }
+                )
+
+        # Get bulk water meter
+        if estate["bulk_water_meter_id"]:
+            bulk_water_meter = Meter.get_by_id(estate["bulk_water_meter_id"])
+            if bulk_water_meter:
+                bulk_meters_data.append(
+                    {
+                        "estate_id": estate_id,
+                        "estate_name": estate_name,
+                        "meter_id": bulk_water_meter.id,
+                        "meter_type": "Water",
+                        "meter_type_icon": "fas fa-tint",
+                        "meter_type_color": "text-blue-500",
+                        "serial_number": bulk_water_meter.serial_number,
+                        "current_reading": bulk_water_meter.last_reading,
+                        "reading_unit": "kL",
+                        "status": bulk_water_meter.communication_status,
+                        "last_update": bulk_water_meter.last_reading_date,
+                        "last_communication": bulk_water_meter.last_communication,
+                    }
+                )
+
     return render_template(
         "estates/estates.html",
         estates=estates,
@@ -97,6 +145,7 @@ def estates_page():
         electricity_rate_tables=electricity_rate_tables,
         water_rate_tables=water_rate_tables,
         meter_configs=meter_configs,
+        bulk_meters_data=bulk_meters_data,
     )
 
 

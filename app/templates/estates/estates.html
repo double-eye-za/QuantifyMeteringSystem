@@ -326,134 +326,82 @@ block breadcrumb %}
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% if bulk_meters_data %} {% for meter in bulk_meters_data %}
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
             <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
-              Willow Creek
+              {{ meter.estate_name }}
             </td>
             <td class="px-4 py-3 text-sm">
               <span class="flex items-center gap-1">
-                <i class="fas fa-bolt text-yellow-500"></i>
+                <i
+                  class="{{ meter.meter_type_icon }} {{ meter.meter_type_color }}"
+                ></i>
                 <span class="text-gray-900 dark:text-gray-300"
-                  >Electricity</span
+                  >{{ meter.meter_type }}</span
                 >
               </span>
             </td>
             <td
               class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-300"
             >
-              BLK-E-001
+              {{ meter.serial_number }}
             </td>
             <td
               class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
             >
-              45,678 kWh
+              {% if meter.current_reading is not none %} {{
+              meter.current_reading | format_number(2) }} {{ meter.reading_unit
+              }} {% else %}
+              <span class="text-gray-400">No reading</span>
+              {% endif %}
             </td>
             <td class="px-4 py-3">
+              {% if meter.status == 'online' %}
               <span
                 class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
               >
                 Online
               </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-              2 min ago
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
-              Willow Creek
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <span class="flex items-center gap-1">
-                <i class="fas fa-tint text-blue-500"></i>
-                <span class="text-gray-900 dark:text-gray-300">Water</span>
-              </span>
-            </td>
-            <td
-              class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-300"
-            >
-              BLK-W-001
-            </td>
-            <td
-              class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              12,345 kL
-            </td>
-            <td class="px-4 py-3">
+              {% elif meter.status == 'offline' %}
               <span
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
               >
-                Online
+                Offline
               </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-              1 min ago
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
-              Parkview Gardens
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <span class="flex items-center gap-1">
-                <i class="fas fa-bolt text-yellow-500"></i>
-                <span class="text-gray-900 dark:text-gray-300"
-                  >Electricity</span
-                >
-              </span>
-            </td>
-            <td
-              class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-300"
-            >
-              BLK-E-002
-            </td>
-            <td
-              class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              52,890 kWh
-            </td>
-            <td class="px-4 py-3">
+              {% else %}
               <span
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400"
               >
-                Online
+                Error
               </span>
+              {% endif %}
             </td>
             <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-              3 min ago
+              {% if meter.last_update %} {{ meter.last_update.strftime('%b %d,
+              %Y %H:%M') }} {% elif meter.last_communication %} {{
+              meter.last_communication.strftime('%b %d, %Y %H:%M') }} {% else %}
+              <span class="text-gray-400">Never</span>
+              {% endif %}
             </td>
           </tr>
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
-              Parkview Gardens
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <span class="flex items-center gap-1">
-                <i class="fas fa-tint text-blue-500"></i>
-                <span class="text-gray-900 dark:text-gray-300">Water</span>
-              </span>
-            </td>
+          {% endfor %} {% else %}
+          <tr>
             <td
-              class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-300"
+              colspan="6"
+              class="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
             >
-              BLK-W-002
-            </td>
-            <td
-              class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              14,567 kL
-            </td>
-            <td class="px-4 py-3">
-              <span
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
-              >
-                Online
-              </span>
-            </td>
-            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-              2 min ago
+              <div class="flex flex-col items-center">
+                <i
+                  class="fas fa-tachometer-alt text-4xl text-gray-300 dark:text-gray-600 mb-2"
+                ></i>
+                <p class="text-sm">No bulk meters configured</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  Bulk meters will appear here once assigned to estates
+                </p>
+              </div>
             </td>
           </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -461,7 +409,7 @@ block breadcrumb %}
 </div>
 
 <!-- Bulk Meter vs Unit Usage Reconciliation Section -->
-<div
+<!-- <div
   class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-6"
 >
   <div class="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -474,7 +422,7 @@ block breadcrumb %}
       </h2>
       <div class="flex flex-wrap gap-2">
         <!-- Estate Selector -->
-        <select
+        <!-- <select
           id="estateSelect"
           onchange="updateReconciliation()"
           class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -482,10 +430,10 @@ block breadcrumb %}
           <option value="willow">Willow Creek Estate</option>
           <option value="parkview">Parkview Gardens</option>
           <option value="sunset">Sunset Ridge Estate</option>
-        </select>
+        </select> -->
 
         <!-- View Type -->
-        <select
+        <!-- <select
           id="viewType"
           onchange="updateReconciliation()"
           class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -493,18 +441,18 @@ block breadcrumb %}
           <option value="mtd">Month to Date</option>
           <option value="monthly">Monthly Comparison</option>
           <option value="yearly">Year Overview</option>
-        </select>
+        </select> -->
 
         <!-- Export Button -->
-        <button
+        <!-- <button
           onclick="exportData()"
           class="px-3 py-1.5 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
         >
           <i class="fas fa-download mr-1"></i>Export
-        </button>
-      </div>
+        </button> -->
+      <!-- </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Month to Date View -->
   <div id="mtdView" class="p-6">
@@ -773,7 +721,7 @@ block breadcrumb %}
       </div>
     </div>
   </div>
-</div>
+</div> -->
 
 <!-- Add Estate Modal -->
 <div
