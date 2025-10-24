@@ -541,6 +541,20 @@
   }
 </script>
 <script>
+  // Helper function to detect dark mode
+  function isDarkMode() {
+    return document.documentElement.classList.contains('dark');
+  }
+
+  // Helper function to get chart colors based on theme
+  function getChartColors() {
+    return {
+      text: isDarkMode() ? '#ffffff' : '#000000',
+      grid: isDarkMode() ? '#374151' : '#e5e7eb',
+      background: isDarkMode() ? 'rgba(31, 41, 55, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+    };
+  }
+
   // Daily Consumption Trend Chart
   {% if unit_consumption %}
   const dailyConsumptionCtx = document.getElementById('dailyConsumptionChart').getContext('2d');
@@ -561,6 +575,8 @@
     waterData.push(Math.floor(Math.random() * 20) + 5);
     solarData.push(Math.floor(Math.random() * 30) + 10);
   }
+  
+  const colors = getChartColors();
   
   const dailyConsumptionChart = new Chart(dailyConsumptionCtx, {
     type: 'line',
@@ -599,27 +615,58 @@
         y: {
           beginAtZero: true,
           ticks: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12
+            }
           },
           grid: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#374151' : '#e5e7eb'
+            color: colors.grid
+          },
+          title: {
+            display: true,
+            text: 'Consumption',
+            color: colors.text,
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
           }
         },
         x: {
           ticks: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12
+            }
           },
           grid: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#374151' : '#e5e7eb'
+            color: colors.grid
+          },
+          title: {
+            display: true,
+            text: 'Date',
+            color: colors.text,
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
           }
         }
       },
       plugins: {
         legend: {
           labels: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12,
+              weight: 'bold'
+            },
+            usePointStyle: true,
+            pointStyle: 'circle'
           }
-        }
+        },
+      
       }
     }
   });
@@ -646,7 +693,7 @@
         ],
         backgroundColor: '#3B82F6',
         borderWidth: 1,
-        borderColor: '#ffffff'
+        borderColor: isDarkMode() ? '#1f2937' : '#ffffff'
       }, {
         label: 'Sub-meter Consumption',
         data: [
@@ -656,7 +703,7 @@
         ],
         backgroundColor: '#10B981',
         borderWidth: 1,
-        borderColor: '#ffffff'
+        borderColor: isDarkMode() ? '#1f2937' : '#ffffff'
       }]
     },
     options: {
@@ -666,29 +713,104 @@
         y: {
           beginAtZero: true,
           ticks: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12
+            }
           },
           grid: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#374151' : '#e5e7eb'
+            color: colors.grid
+          },
+          title: {
+            display: true,
+            text: 'Consumption',
+            color: colors.text,
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
           }
         },
         x: {
           ticks: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12
+            }
           },
           grid: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#374151' : '#e5e7eb'
+            color: colors.grid
+          },
+          title: {
+            display: true,
+            text: 'Estate',
+            color: colors.text,
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
           }
         }
       },
       plugins: {
         legend: {
           labels: {
-            color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#ffffff' : '#000000'
+            color: colors.text,
+            font: {
+              size: 12,
+              weight: 'bold'
+            },
+            usePointStyle: true,
+            pointStyle: 'rect'
           }
-        }
+        },
+        
       }
     }
   });
   {% endif %}
+
+  // Listen for dark mode changes and update charts
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        // Update chart colors when dark mode changes
+        const colors = getChartColors();
+        
+        {% if unit_consumption %}
+        if (typeof dailyConsumptionChart !== 'undefined') {
+          dailyConsumptionChart.options.scales.y.ticks.color = colors.text;
+          dailyConsumptionChart.options.scales.x.ticks.color = colors.text;
+          dailyConsumptionChart.options.scales.y.grid.color = colors.grid;
+          dailyConsumptionChart.options.scales.x.grid.color = colors.grid;
+          dailyConsumptionChart.options.scales.y.title.color = colors.text;
+          dailyConsumptionChart.options.scales.x.title.color = colors.text;
+          dailyConsumptionChart.options.plugins.legend.labels.color = colors.text;
+          dailyConsumptionChart.options.plugins.title.color = colors.text;
+          dailyConsumptionChart.update();
+        }
+        {% endif %}
+        
+        {% if bulk_sub_comparison %}
+        if (typeof estateComparisonChart !== 'undefined') {
+          estateComparisonChart.options.scales.y.ticks.color = colors.text;
+          estateComparisonChart.options.scales.x.ticks.color = colors.text;
+          estateComparisonChart.options.scales.y.grid.color = colors.grid;
+          estateComparisonChart.options.scales.x.grid.color = colors.grid;
+          estateComparisonChart.options.scales.y.title.color = colors.text;
+          estateComparisonChart.options.scales.x.title.color = colors.text;
+          estateComparisonChart.options.plugins.legend.labels.color = colors.text;
+          estateComparisonChart.options.plugins.title.color = colors.text;
+          estateComparisonChart.update();
+        }
+        {% endif %}
+      }
+    });
+  });
+
+  // Start observing
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
 </script>
