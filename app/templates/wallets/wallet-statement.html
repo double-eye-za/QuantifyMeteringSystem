@@ -25,7 +25,9 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-2xl font-bold mb-2">Current Wallet Balance</h2>
-          <p class="text-4xl font-bold">R {{ wallet.balance | round(2) }}</p>
+          <p class="text-4xl font-bold">
+            R {{ wallet.balance | format_number(2) }}
+          </p>
           <p class="text-sm opacity-90 mt-2">
             {% if last_topup_date %} Last top-up: {{
             last_topup_date.strftime('%b %d, %Y') }} {% else %} No top-ups yet

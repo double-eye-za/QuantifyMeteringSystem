@@ -175,7 +175,7 @@ block breadcrumb %}
                                             </span>
               {% else %}
               {% set eb = (u.wallet.electricity_balance if u.wallet else 0) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if eb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if eb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(eb|float) }}</span>
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if eb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if eb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ eb|float | format_number(2) }}</span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if eb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if eb|float < 50 else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
                 <i class="fas {{ 'fa-times-circle' if eb|float <= 0 else ('fa-exclamation-triangle' if eb|float < 50 else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
                 {{ 'Disconnected' if eb|float <= 0 else ('Low' if eb|float < 50 else 'Active') }}
@@ -194,7 +194,7 @@ block breadcrumb %}
                                             </span>
               {% else %}
               {% set wb = (u.wallet.water_balance if u.wallet else 0) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if wb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if wb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(wb|float) }}</span>
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if wb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if wb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ wb|float | format_number(2) }}</span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if wb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if wb|float < 50 else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
                 <i class="fas {{ 'fa-times-circle' if wb|float <= 0 else ('fa-exclamation-triangle' if wb|float < 50 else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
                 {{ 'Disconnected' if wb|float <= 0 else ('Low' if wb|float < 50 else 'Active') }}
@@ -213,7 +213,7 @@ block breadcrumb %}
                                             </span>
               {% else %}
               {% set sb = (u.wallet.solar_balance if u.wallet else 0) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if sb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if sb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ '%.2f'|format(sb|float) }}</span>
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if sb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if sb|float < 50 else 'text-gray-900 dark:text-white') }}">R {{ sb|float | format_number(2) }}</span>
               <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if sb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if sb|float < 50 else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
                 <i class="fas {{ 'fa-times-circle' if sb|float <= 0 else ('fa-exclamation-triangle' if sb|float < 50 else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
                 {{ 'Disconnected' if sb|float <= 0 else ('Low' if sb|float < 50 else 'Active') }}

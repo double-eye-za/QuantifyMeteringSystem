@@ -57,7 +57,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
     <p class="text-xl font-bold text-gray-900 dark:text-white">
-      {{ kpis.total_electricity_kwh | round(1) }} kWh
+      {{ kpis.total_electricity_kwh | format_number(1) }} kWh
     </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Total Electricity</p>
   </div>
@@ -73,7 +73,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
     <p class="text-xl font-bold text-gray-900 dark:text-white">
-      {{ kpis.total_water_liters | round(0) }} L
+      {{ kpis.total_water_liters | format_number(0) }} L
     </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Total Water</p>
   </div>
@@ -89,7 +89,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
     <p class="text-xl font-bold text-gray-900 dark:text-white">
-      {{ kpis.solar_contribution_kwh | round(1) }} kWh
+      {{ kpis.solar_contribution_kwh | format_number(1) }} kWh
     </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Solar Contribution</p>
   </div>
@@ -105,7 +105,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
     <p class="text-xl font-bold text-gray-900 dark:text-white">
-      R {{ kpis.revenue_collected | round(0) }}
+      R {{ kpis.revenue_collected | format_number(0) }}
     </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Revenue Collected</p>
   </div>
@@ -169,7 +169,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
     <p class="text-xl font-bold text-gray-900 dark:text-white">
-      {{ kpis.communal_electricity | round(1) }} kWh
+      {{ kpis.communal_electricity | format_number(1) }} kWh
     </p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Communal Usage</p>
   </div>
@@ -214,7 +214,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       low_credit_alerts %}
       <p class="text-sm text-yellow-700 dark:text-yellow-300">
         {{ unit.unit_number }} ({{ estate.name }}) - R{{ wallet.balance |
-        round(2) }}
+        format_number(2) }}
       </p>
       {% endfor %} {% else %}
       <p class="text-sm text-green-700 dark:text-green-300">
@@ -250,7 +250,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       {% if failed_topups %} {% for txn in failed_topups %}
       <p class="text-sm text-red-700 dark:text-red-300">
-        {{ txn.transaction_number }} - R{{ txn.amount | round(2) }}
+        {{ txn.transaction_number }} - R{{ txn.amount | format_number(2) }}
       </p>
       {% endfor %} {% else %}
       <p class="text-sm text-green-700 dark:text-green-300">
@@ -375,7 +375,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <!-- Total Top-Ups -->
       <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
         <div class="text-2xl font-bold text-green-600">
-          R {{ todays_topups | round(0) }}
+          R {{ todays_topups | format_number(0) }}
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-400">Today's Top-ups</p>
       </div>
@@ -383,7 +383,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <!-- Communal Area Cost Estimate -->
       <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          R {{ communal_cost_estimate | round(0) }}
+          R {{ communal_cost_estimate | format_number(0) }}
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-400">
           Communal Area Cost Estimate
@@ -423,7 +423,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
                 ></div>
               </div>
               <span class="text-sm font-semibold text-gray-900 dark:text-white"
-                >R {{ utility.revenue | round(0) }}</span
+                >R {{ utility.revenue | format_number(0) }}</span
               >
             </div>
           </div>
@@ -475,7 +475,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
             </div>
             <div class="text-right">
               <div class="font-semibold text-sm text-gray-900 dark:text-white">
-                R {{ unit.total_spent | round(0) }}
+                R {{ unit.total_spent | format_number(0) }}
               </div>
               <div class="text-xs text-gray-500 dark:text-gray-400">
                 Total spent

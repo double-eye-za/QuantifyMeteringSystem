@@ -50,13 +50,12 @@
             </td>
             <td class="px-6 py-4">{{ row.estate_name }}</td>
             <td class="px-6 py-4">
-              {{ "%.2f"|format(row.electricity_kwh or 0) }}
+              {{ (row.electricity_kwh or 0) | format_number(2) }}
             </td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.water_kL or 0) }}</td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.solar_kwh or 0) }}</td>
+            <td class="px-6 py-4">{{ (row.water_kL or 0) | format_number(2) }}</td>
+            <td class="px-6 py-4">{{ (row.solar_kwh or 0) | format_number(2) }}</td>
             <td class="px-6 py-4 font-semibold">
-              {{ "%.2f"|format((row.electricity_kwh or 0) + (row.water_kL or 0)
-              + (row.solar_kwh or 0)) }}
+              {{ ((row.electricity_kwh or 0) + (row.water_kL or 0) + (row.solar_kwh or 0)) | format_number(2) }}
             </td>
           </tr>
           {% endfor %} {% else %}
@@ -145,22 +144,22 @@
               {{ row.estate_name }}
             </td>
             <td class="px-6 py-4">
-              {{ "%.2f"|format(row.bulk_electricity or 0) }}
+              {{ (row.bulk_electricity or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
-              {{ "%.2f"|format(row.sub_electricity or 0) }}
+              {{ (row.sub_electricity or 0) | format_number(2) }}
             </td>
             <td
               class="px-6 py-4 font-semibold {% if (row.communal_electricity or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
             >
-              {{ "%.2f"|format(row.communal_electricity or 0) }}
+              {{ (row.communal_electricity or 0) | format_number(2) }}
             </td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.bulk_water or 0) }}</td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.sub_water or 0) }}</td>
+            <td class="px-6 py-4">{{ (row.bulk_water or 0) | format_number(2) }}</td>
+            <td class="px-6 py-4">{{ (row.sub_water or 0) | format_number(2) }}</td>
             <td
               class="px-6 py-4 font-semibold {% if (row.communal_water or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
             >
-              {{ "%.2f"|format(row.communal_water or 0) }}
+              {{ (row.communal_water or 0) | format_number(2) }}
             </td>
           </tr>
           {% endfor %} {% else %}
@@ -238,7 +237,7 @@
                       {{ row.meter_type.title() }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 font-semibold">{{ "%.2f"|format(row.total_consumption or 0) }}</td>
+                  <td class="px-6 py-4 font-semibold">{{ (row.total_consumption or 0) | format_number(2) }}</td>
                 </tr>
               {% endfor %}
             {% else %}
@@ -298,7 +297,7 @@
                       {{ row.meter_type.title() }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 font-semibold">{{ "%.2f"|format(row.total_consumption or 0) }}</td>
+                  <td class="px-6 py-4 font-semibold">{{ (row.total_consumption or 0) | format_number(2) }}</td>
                 </tr>
               {% endfor %}
             {% else %}
@@ -358,7 +357,7 @@
                       {{ row.meter_type.title() }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 font-semibold">{{ "%.2f"|format(row.total_consumption or 0) }}</td>
+                  <td class="px-6 py-4 font-semibold">{{ (row.total_consumption or 0) | format_number(2) }}</td>
                 </tr>
               {% endfor %}
             {% else %}
@@ -483,10 +482,10 @@
               {{ row.estate_name }}
             </td>
             <td class="px-6 py-4 text-green-600">
-              {{ "%.2f"|format(row.solar_generation or 0) }}
+              {{ (row.solar_generation or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
-              {{ "%.2f"|format(row.electricity_usage or 0) }}
+              {{ (row.electricity_usage or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4 font-semibold text-green-600">
               {{ "%.1f"|format(solar_contribution) }}%
@@ -494,7 +493,7 @@
             <td
               class="px-6 py-4 font-semibold {% if net_usage < 0 %}text-green-600{% else %}text-gray-900 dark:text-white{% endif %}"
             >
-              {{ "%.2f"|format(net_usage) }}
+              {{ net_usage | format_number(2) }}
             </td>
           </tr>
           {% endfor %} {% else %}

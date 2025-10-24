@@ -228,7 +228,7 @@ block breadcrumb %}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-            <div class="text-sm font-semibold {{ 'text-gray-900 dark:text-white' if cs=='ok' else ('text-yellow-600 dark:text-yellow-400' if cs=='low' else 'text-red-600') }}">R {{ '%.2f'|format((balance or 0)|float) }}</div>
+            <div class="text-sm font-semibold {{ 'text-gray-900 dark:text-white' if cs=='ok' else ('text-yellow-600 dark:text-yellow-400' if cs=='low' else 'text-red-600') }}">R {{ (balance or 0) | format_number(2) }}</div>
             <div class="text-xs text-gray-500">&nbsp;</div>
                             </td>
                             <td class="px-6 py-4">

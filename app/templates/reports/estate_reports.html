@@ -70,10 +70,14 @@
               </div>
             </td>
             <td class="px-6 py-4">
-              {{ "%.2f"|format(row.total_electricity or 0) }}
+              {{ (row.total_electricity or 0) | format_number(2) }}
             </td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.total_water or 0) }}</td>
-            <td class="px-6 py-4">{{ "%.2f"|format(row.total_solar or 0) }}</td>
+            <td class="px-6 py-4">
+              {{ (row.total_water or 0) | format_number(2) }}
+            </td>
+            <td class="px-6 py-4">
+              {{ (row.total_solar or 0) | format_number(2) }}
+            </td>
           </tr>
           {% endfor %} {% else %}
           <tr>
@@ -146,23 +150,23 @@
             <td
               class="px-6 py-4 font-semibold {% if (row.communal_electricity or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
             >
-              {{ "%.2f"|format(row.communal_electricity or 0) }}
+              {{ (row.communal_electricity or 0) | format_number(2) }}
             </td>
             <td
               class="px-6 py-4 font-semibold {% if (row.communal_water or 0) < 0 %}text-red-600{% else %}text-green-600{% endif %}"
             >
-              {{ "%.2f"|format(row.communal_water or 0) }}
+              {{ (row.communal_water or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
-              R {{ "%.2f"|format(row.electricity_cost or 0) }}
+              R {{ (row.electricity_cost or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
-              R {{ "%.2f"|format(row.water_cost or 0) }}
+              R {{ (row.water_cost or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-              R {{ "%.2f"|format(row.total_cost or 0) }}
+              R {{ (row.total_cost or 0) | format_number(2) }}
             </td>
-            <td class="px-6 py-4">R {{ "%.2f"|format(cost_per_unit) }}</td>
+            <td class="px-6 py-4">R {{ cost_per_unit | format_number(2) }}</td>
           </tr>
           {% endfor %} {% else %}
           <tr>
@@ -240,7 +244,7 @@
             <td class="px-6 py-4">{{ row.total_units or 0 }}</td>
             <td class="px-6 py-4">{{ row.occupied_units or 0 }}</td>
             <td class="px-6 py-4 font-semibold text-green-600">
-              R {{ "%.2f"|format(row.total_wallet_balance or 0) }}
+              R {{ (row.total_wallet_balance or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
               <span

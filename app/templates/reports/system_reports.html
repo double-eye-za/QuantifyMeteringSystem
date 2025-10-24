@@ -336,10 +336,10 @@
             <td
               class="px-6 py-4 font-semibold {% if row.balance <= 0 %}text-red-600{% elif row.balance < row.low_balance_threshold %}text-yellow-600{% else %}text-gray-600{% endif %}"
             >
-              R {{ "%.2f"|format(row.balance or 0) }}
+              R {{ (row.balance or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
-              R {{ "%.2f"|format(row.low_balance_threshold or 0) }}
+              R {{ (row.low_balance_threshold or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
               <span
@@ -431,7 +431,7 @@
             <td
               class="px-6 py-4 font-semibold {% if row.transaction_type == 'reconnection' %}text-green-600{% else %}text-red-600{% endif %}"
             >
-              R {{ "%.2f"|format(row.amount or 0) }}
+              R {{ (row.amount or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">{{ row.description or 'N/A' }}</td>
           </tr>

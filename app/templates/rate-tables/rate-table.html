@@ -58,7 +58,7 @@ breadcrumb %}
             {% for t in tiers %}
             <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from }}{% if t.to %}–{{ t.to }}{% else %}+{% endif %}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ '%.2f'|format(t.rate) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ t.rate | format_number(2) }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
                                         </div>
             {% endfor %}
@@ -79,7 +79,7 @@ breadcrumb %}
             {% for t in rs.tiers %}
             <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from or t.from_kwh }}{% if t.to or t.to_kwh %}–{{ t.to or t.to_kwh }}{% else %}+{% endif %}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ t.currency or 'R' }} {{ '%.2f'|format(t.rate or t.rate_per_kwh) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ t.currency or 'R' }} {{ (t.rate or t.rate_per_kwh) | format_number(2) }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
                             </div>
             {% endfor %}
@@ -98,7 +98,7 @@ breadcrumb %}
             <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ r.tier or r.name }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ r.range or r.from_to or '-' }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ r.currency or 'R' }} {{ '%.2f'|format(r.incl_vat or r.rate) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ r.currency or 'R' }} {{ (r.incl_vat or r.rate) | format_number(2) }}</div>
                                 </div>
             {% endfor %}
                                         </div>
@@ -122,7 +122,7 @@ breadcrumb %}
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.start_time }}–{{ p.end_time }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ 'Weekdays' if p.weekdays else '' }}{{ ' / ' if p.weekdays and p.weekends else '' }}{{ 'Weekends' if p.weekends else '' }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ '%.2f'|format(p.rate) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ p.rate | format_number(2) }}</div>
                                         </div>
             {% endfor %}
                                     </div>
@@ -143,7 +143,7 @@ breadcrumb %}
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.hours or (p.start_time ~ '–' ~ p.end_time) }}</div>
               <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.days or '-' }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ p.currency or 'R' }} {{ '%.2f'|format(p.rate or p.rate_per_kwh) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ p.currency or 'R' }} {{ (p.rate or p.rate_per_kwh) | format_number(2) }}</div>
                             </div>
             {% endfor %}
                                 </div>
@@ -163,7 +163,7 @@ breadcrumb %}
             {% for c in rs.fixed_charges %}
             <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ '%.2f'|format(c.incl_vat or c.amount) }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ (c.incl_vat or c.amount) | format_number(2) }}</div>
                                         </div>
             {% endfor %}
                                         </div>
@@ -182,8 +182,8 @@ breadcrumb %}
             {% for c in rs.additional_charges %}
             <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
               <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.excl_vat is not none and ('%.2f'|format(c.excl_vat)) or 'TBC' }}</div>
-              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.incl_vat is not none and ('%.2f'|format(c.incl_vat)) or 'TBC' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.excl_vat is not none and c.excl_vat | format_number(2) or 'TBC' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.incl_vat is not none and c.incl_vat | format_number(2) or 'TBC' }}</div>
                                         </div>
             {% endfor %}
                                         </div>

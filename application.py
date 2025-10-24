@@ -53,6 +53,24 @@ def create_app() -> Flask:
             user, "is_super_admin", False
         )
 
+    @app.template_filter("format_number")
+    def format_number(value, decimals=0):
+        """Format number with thousand separators (commas)"""
+        if value is None:
+            return "0"
+
+        try:
+            num = float(value)
+
+            # Round to specified decimal places
+            if decimals > 0:
+                num = round(num, decimals)
+                return f"{num:,.{decimals}f}"
+            else:
+                return f"{int(round(num)):,}"
+        except (ValueError, TypeError):
+            return "0"
+
     with app.app_context():
         from app.models import (  # noqa: F401
             User,
