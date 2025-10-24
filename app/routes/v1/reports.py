@@ -8,6 +8,11 @@ from sqlalchemy.orm import joinedload
 import csv
 import io
 from decimal import Decimal
+from reportlab.lib.pagesizes import letter, A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 from . import api_v1
 from app.models import (
@@ -833,7 +838,7 @@ def export_report(report_type):
     estate_id = request.args.get("estate_id", type=int)
     date_range = request.args.get("date_range", "current_month")
 
-    # Calculate date range 
+    # Calculate date range
     today = datetime.now().date()
     if date_range == "current_month":
         start_date = today.replace(day=1)
@@ -889,6 +894,63 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                         row.electricity_kwh,
                         row.water_kL,
                         row.solar_kwh,
+                    ]
+                )
+
+        elif report_type == "bulk_sub_comparison":
+            writer.writerow(
+                [
+                    "Estate",
+                    "Bulk Electricity",
+                    "Sub Electricity",
+                    "Communal Electricity",
+                    "Bulk Water",
+                    "Sub Water",
+                    "Communal Water",
+                ]
+            )
+            data = get_consumption_reports(start_date, end_date, estate_id, "all")[
+                "bulk_sub_comparison"
+            ]
+            for row in data:
+                writer.writerow(
+                    [
+                        row["estate_name"],
+                        row["bulk_electricity"],
+                        row["sub_electricity"],
+                        row["communal_electricity"],
+                        row["bulk_water"],
+                        row["sub_water"],
+                        row["communal_water"],
+                    ]
+                )
+
+        elif report_type == "solar_generation_vs_usage":
+            writer.writerow(
+                [
+                    "Estate",
+                    "Solar Generation (kWh)",
+                    "Electricity Usage (kWh)",
+                    "Net Generation (kWh)",
+                    "Utilization (%)",
+                ]
+            )
+            data = get_consumption_reports(start_date, end_date, estate_id, "all")[
+                "solar_generation_vs_usage"
+            ]
+            for row in data:
+                solar_gen = float(row.solar_generation or 0)
+                elec_usage = float(row.electricity_usage or 0)
+                net_gen = solar_gen - elec_usage
+                utilization = (solar_gen / elec_usage * 100) if elec_usage > 0 else 0
+
+                writer.writerow(
+                    [
+                        row.estate_name,
+                        solar_gen,
+                        elec_usage,
+                        net_gen,
+                        f"{utilization:.1f}%",
                     ]
                 )
 
@@ -971,6 +1033,35 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                     ]
                 )
 
+        elif report_type == "meter_health":
+            writer.writerow(
+                [
+                    "Serial Number",
+                    "Meter Type",
+                    "Estate",
+                    "Unit",
+                    "Alert Count",
+                    "Last Alert",
+                ]
+            )
+            data = get_system_status_reports(start_date, end_date, estate_id)[
+                "meter_health"
+            ]
+            for row in data:
+                last_alert_str = (
+                    row.last_alert.strftime("%Y-%m-%d") if row.last_alert else "None"
+                )
+                writer.writerow(
+                    [
+                        row.serial_number,
+                        row.meter_type,
+                        row.estate_name,
+                        row.unit_number,
+                        row.alert_count or 0,
+                        last_alert_str,
+                    ]
+                )
+
     elif category == "estate":
         if report_type == "estate_summary":
             writer.writerow(
@@ -998,6 +1089,65 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                     ]
                 )
 
+        elif report_type == "communal_usage":
+            writer.writerow(
+                [
+                    "Estate",
+                    "Communal Electricity (kWh)",
+                    "Communal Water (kL)",
+                    "Electricity Cost",
+                    "Water Cost",
+                    "Total Cost",
+                ]
+            )
+            data = get_estate_level_reports(start_date, end_date, estate_id)[
+                "communal_usage"
+            ]
+            for row in data:
+                writer.writerow(
+                    [
+                        row["estate_name"],
+                        row["communal_electricity"],
+                        row["communal_water"],
+                        row["electricity_cost"],
+                        row["water_cost"],
+                        row["total_cost"],
+                    ]
+                )
+
+        elif report_type == "management_snapshot":
+            writer.writerow(
+                [
+                    "Estate",
+                    "Total Units",
+                    "Occupied Units",
+                    "Occupancy Rate",
+                    "Total Wallet Balance",
+                    "Low Balance Count",
+                    "Zero Balance Count",
+                ]
+            )
+            data = get_estate_level_reports(start_date, end_date, estate_id)[
+                "management_snapshot"
+            ]
+            for row in data:
+                occupancy_rate = (
+                    ((row.occupied_units or 0) / (row.total_units or 1)) * 100
+                    if row.total_units and row.total_units > 0
+                    else 0
+                )
+                writer.writerow(
+                    [
+                        row.estate_name,
+                        row.total_units,
+                        row.occupied_units,
+                        f"{occupancy_rate:.1f}%",
+                        row.total_wallet_balance,
+                        row.low_balance_count,
+                        row.zero_balance_count,
+                    ]
+                )
+
     output.seek(0)
     filename = f"{report_type}_{category}_{start_date}_{end_date}.csv"
 
@@ -1010,5 +1160,610 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
 
 
 def export_pdf(report_type, category, start_date, end_date, estate_id):
-    """Export report data as PDF (placeholder - would need reportlab or similar)"""
-    return jsonify({"message": "PDF export not yet implemented"}), 501
+    """Export report data as PDF"""
+    buffer = io.BytesIO()
+
+    # Use landscape orientation for reports with many columns
+    landscape_reports = [
+        "bulk_sub_comparison",
+        "communal_usage",
+        "management_snapshot",
+        "credit_purchases",
+        "solar_generation_vs_usage",
+    ]
+    if report_type in landscape_reports:
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+    else:
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    story = []
+
+    # Get styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "CustomTitle",
+        parent=styles["Heading1"],
+        fontSize=16,
+        spaceAfter=30,
+        alignment=1,  # Center alignment
+    )
+
+    # Add title
+    title = f"{report_type.replace('_', ' ').title()} Report"
+    story.append(Paragraph(title, title_style))
+
+    # Add date range
+    date_text = f"Date Range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+    story.append(Paragraph(date_text, styles["Normal"]))
+    story.append(Spacer(1, 20))
+
+    # Get data based on report type
+    data = []
+    headers = []
+
+    if category == "consumption":
+        if report_type == "unit_consumption":
+            headers = [
+                "Unit Number",
+                "Estate",
+                "Electricity (kWh)",
+                "Water (kL)",
+                "Solar (kWh)",
+            ]
+            report_data = get_consumption_reports(
+                start_date, end_date, estate_id, "all"
+            )["unit_consumption"]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.unit_number),
+                        str(row.estate_name),
+                        f"{row.electricity_kwh:.2f}" if row.electricity_kwh else "0.00",
+                        f"{row.water_kL:.2f}" if row.water_kL else "0.00",
+                        f"{row.solar_kwh:.2f}" if row.solar_kwh else "0.00",
+                    ]
+                )
+
+        elif report_type == "bulk_sub_comparison":
+            headers = [
+                "Estate",
+                "Bulk Electricity",
+                "Sub Electricity",
+                "Communal Electricity",
+                "Bulk Water",
+                "Sub Water",
+                "Communal Water",
+            ]
+            report_data = get_consumption_reports(
+                start_date, end_date, estate_id, "all"
+            )["bulk_sub_comparison"]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row["estate_name"]),
+                        f"{row['bulk_electricity']:.2f}"
+                        if row["bulk_electricity"]
+                        else "0.00",
+                        f"{row['sub_electricity']:.2f}"
+                        if row["sub_electricity"]
+                        else "0.00",
+                        f"{row['communal_electricity']:.2f}"
+                        if row["communal_electricity"]
+                        else "0.00",
+                        f"{row['bulk_water']:.2f}" if row["bulk_water"] else "0.00",
+                        f"{row['sub_water']:.2f}" if row["sub_water"] else "0.00",
+                        f"{row['communal_water']:.2f}"
+                        if row["communal_water"]
+                        else "0.00",
+                    ]
+                )
+
+        elif report_type == "solar_generation_vs_usage":
+            headers = [
+                "Estate",
+                "Solar Generation\n(kWh)",
+                "Electricity Usage\n(kWh)",
+                "Net Generation\n(kWh)",
+                "Utilization\n(%)",
+            ]
+            report_data = get_consumption_reports(
+                start_date, end_date, estate_id, "all"
+            )["solar_generation_vs_usage"]
+            for row in report_data:
+                solar_gen = float(row.solar_generation or 0)
+                elec_usage = float(row.electricity_usage or 0)
+                net_gen = solar_gen - elec_usage
+                utilization = (solar_gen / elec_usage * 100) if elec_usage > 0 else 0
+
+                data.append(
+                    [
+                        str(row.estate_name),
+                        f"{solar_gen:.2f}",
+                        f"{elec_usage:.2f}",
+                        f"{net_gen:.2f}",
+                        f"{utilization:.1f}%",
+                    ]
+                )
+
+    elif category == "financial":
+        if report_type == "credit_purchases":
+            headers = [
+                "Transaction #",
+                "Date",
+                "Unit",
+                "Estate",
+                "Amount",
+                "Payment Method",
+                "Status",
+            ]
+            report_data = get_financial_reports(start_date, end_date, estate_id)[
+                "credit_purchases"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.transaction_number),
+                        row.completed_at.strftime("%Y-%m-%d")
+                        if row.completed_at
+                        else "",
+                        str(row.unit_number),
+                        str(row.estate_name),
+                        f"R{row.amount:.2f}" if row.amount else "R0.00",
+                        str(row.payment_method),
+                        str(row.status),
+                    ]
+                )
+
+    elif category == "system":
+        if report_type == "communication_status":
+            headers = [
+                "Serial Number",
+                "Meter Type",
+                "Estate",
+                "Unit",
+                "Last Reading",
+                "Status",
+            ]
+            report_data = get_system_status_reports(start_date, end_date, estate_id)[
+                "communication_status"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.serial_number),
+                        str(row.meter_type),
+                        str(row.estate_name),
+                        str(row.unit_number),
+                        row.last_reading.strftime("%Y-%m-%d %H:%M")
+                        if row.last_reading
+                        else "Never",
+                        str(row.status),
+                    ]
+                )
+
+        elif report_type == "offline_meters":
+            headers = [
+                "Serial Number",
+                "Meter Type",
+                "Estate",
+                "Unit",
+                "Last Reading",
+                "Days Offline",
+            ]
+            report_data = get_system_status_reports(start_date, end_date, estate_id)[
+                "offline_meters"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.serial_number),
+                        str(row.meter_type),
+                        str(row.estate_name),
+                        str(row.unit_number),
+                        row.last_reading.strftime("%Y-%m-%d %H:%M")
+                        if row.last_reading
+                        else "Never",
+                        str(row.days_offline) if row.days_offline else "0",
+                    ]
+                )
+
+        elif report_type == "meter_health":
+            headers = [
+                "Serial Number",
+                "Meter Type",
+                "Estate",
+                "Unit",
+                "Alert Count",
+                "Last Alert",
+            ]
+            report_data = get_system_status_reports(start_date, end_date, estate_id)[
+                "meter_health"
+            ]
+            for row in report_data:
+                last_alert_str = (
+                    row.last_alert.strftime("%Y-%m-%d") if row.last_alert else "None"
+                )
+                data.append(
+                    [
+                        str(row.serial_number),
+                        str(row.meter_type),
+                        str(row.estate_name),
+                        str(row.unit_number),
+                        str(row.alert_count or 0),
+                        last_alert_str,
+                    ]
+                )
+
+        elif report_type == "low_balance_alerts":
+            headers = [
+                "Unit Number",
+                "Estate",
+                "Current Balance",
+                "Low Balance Threshold",
+                "Days Remaining",
+            ]
+            report_data = get_system_status_reports(start_date, end_date, estate_id)[
+                "low_balance_alerts"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.unit_number),
+                        str(row.estate_name),
+                        f"R{row.balance:.2f}" if row.balance else "R0.00",
+                        f"R{row.low_balance_threshold:.2f}"
+                        if row.low_balance_threshold
+                        else "R0.00",
+                        str(row.days_remaining) if row.days_remaining else "0",
+                    ]
+                )
+
+        elif report_type == "reconnection_history":
+            headers = [
+                "Unit Number",
+                "Estate",
+                "Disconnection Date",
+                "Reconnection Date",
+                "Duration (Days)",
+            ]
+            report_data = get_system_status_reports(start_date, end_date, estate_id)[
+                "reconnection_history"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.unit_number),
+                        str(row.estate_name),
+                        row.disconnection_date.strftime("%Y-%m-%d")
+                        if row.disconnection_date
+                        else "",
+                        row.reconnection_date.strftime("%Y-%m-%d")
+                        if row.reconnection_date
+                        else "",
+                        str(row.duration_days) if row.duration_days else "0",
+                    ]
+                )
+
+    elif category == "estate":
+        if report_type == "estate_summary":
+            headers = [
+                "Estate",
+                "Total Units",
+                "Occupied Units",
+                "Total Electricity",
+                "Total Water",
+                "Total Solar",
+            ]
+            report_data = get_estate_level_reports(start_date, end_date, estate_id)[
+                "estate_utility_summary"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row.estate_name),
+                        str(row.total_units),
+                        str(row.occupied_units),
+                        f"{row.total_electricity:.2f}"
+                        if row.total_electricity
+                        else "0.00",
+                        f"{row.total_water:.2f}" if row.total_water else "0.00",
+                        f"{row.total_solar:.2f}" if row.total_solar else "0.00",
+                    ]
+                )
+
+        elif report_type == "communal_usage":
+            headers = [
+                "Estate",
+                "Communal\nElectricity\n(kWh)",
+                "Communal\nWater\n(kL)",
+                "Electricity\nCost",
+                "Water\nCost",
+                "Total\nCost",
+            ]
+            report_data = get_estate_level_reports(start_date, end_date, estate_id)[
+                "communal_usage"
+            ]
+            for row in report_data:
+                data.append(
+                    [
+                        str(row["estate_name"]),
+                        f"{row['communal_electricity']:.2f}"
+                        if row["communal_electricity"]
+                        else "0.00",
+                        f"{row['communal_water']:.2f}"
+                        if row["communal_water"]
+                        else "0.00",
+                        f"R{row['electricity_cost']:.2f}"
+                        if row["electricity_cost"]
+                        else "R0.00",
+                        f"R{row['water_cost']:.2f}" if row["water_cost"] else "R0.00",
+                        f"R{row['total_cost']:.2f}" if row["total_cost"] else "R0.00",
+                    ]
+                )
+
+        elif report_type == "management_snapshot":
+            headers = [
+                "Estate",
+                "Total\nUnits",
+                "Occupied\nUnits",
+                "Occupancy\nRate",
+                "Total Wallet\nBalance",
+                "Low Balance\nCount",
+                "Zero Balance\nCount",
+            ]
+            report_data = get_estate_level_reports(start_date, end_date, estate_id)[
+                "management_snapshot"
+            ]
+            for row in report_data:
+                occupancy_rate = (
+                    ((row.occupied_units or 0) / (row.total_units or 1)) * 100
+                    if row.total_units and row.total_units > 0
+                    else 0
+                )
+                data.append(
+                    [
+                        str(row.estate_name),
+                        str(row.total_units),
+                        str(row.occupied_units),
+                        f"{occupancy_rate:.1f}%",
+                        f"R{row.total_wallet_balance:.2f}"
+                        if row.total_wallet_balance
+                        else "R0.00",
+                        str(row.low_balance_count),
+                        str(row.zero_balance_count),
+                    ]
+                )
+
+    # Create table
+    if headers and data:
+        table_data = [headers] + data
+
+        # Adjust column widths for landscape reports
+        if report_type in landscape_reports:
+            # Use full width for landscape reports
+            num_cols = len(headers)
+            # Calculate width to use most of the landscape page (11.69 inches - margins)
+            available_width = 10.5  # Leave some margin
+
+            # For specific reports, use custom column widths
+            if report_type == "solar_generation_vs_usage":
+                # Use wider columns for better readability
+                col_widths = [
+                    2.0 * inch,
+                    2.0 * inch,
+                    2.0 * inch,
+                    2.0 * inch,
+                    2.0 * inch,
+                ]
+            elif report_type == "communal_usage":
+                # Communal usage has 6 columns - optimize for landscape
+                col_widths = [
+                    2.0 * inch,  # Estate (wider for longer names)
+                    1.7 * inch,  # Communal Electricity
+                    1.7 * inch,  # Communal Water
+                    1.4 * inch,  # Electricity Cost
+                    1.4 * inch,  # Water Cost
+                    1.3 * inch,  # Total Cost
+                ]
+            elif report_type == "management_snapshot":
+                # Management snapshot has 7 columns - optimize for landscape
+                col_widths = [
+                    2.0 * inch,  # Estate
+                    1.2 * inch,  # Total Units
+                    1.2 * inch,  # Occupied Units
+                    1.2 * inch,  # Occupancy Rate
+                    1.8 * inch,  # Total Wallet Balance
+                    1.2 * inch,  # Low Balance Count
+                    1.2 * inch,  # Zero Balance Count
+                ]
+            elif report_type == "credit_purchases":
+                # Credit purchases has 7 columns - use more of the landscape width
+                col_widths = [
+                    1.5 * inch,  # Transaction #
+                    1.4 * inch,  # Date
+                    1.0 * inch,  # Unit
+                    2.0 * inch,  # Estate
+                    1.3 * inch,  # Amount
+                    1.5 * inch,  # Payment Method
+                    1.3 * inch,  # Status
+                ]
+            else:
+                col_width = available_width / num_cols
+                col_widths = [col_width * inch for _ in range(num_cols)]
+
+            table = Table(table_data, colWidths=col_widths)
+        else:
+            table = Table(table_data)
+
+        # Style the table
+        if report_type in landscape_reports:
+            # Larger fonts and better spacing for landscape
+            if report_type == "solar_generation_vs_usage":
+                # Special styling for multi-line headers
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            (
+                                "FONTSIZE",
+                                (0, 0),
+                                (-1, 0),
+                                12,
+                            ),  # Slightly smaller for multi-line
+                            (
+                                "BOTTOMPADDING",
+                                (0, 0),
+                                (-1, 0),
+                                20,
+                            ),  # More padding for multi-line
+                            ("TOPPADDING", (0, 0), (-1, 0), 15),
+                            ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                            ("FONTSIZE", (0, 1), (-1, -1), 12),  # Larger data font
+                            ("TOPPADDING", (0, 1), (-1, -1), 8),
+                            ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                            (
+                                "ROWBACKGROUNDS",
+                                (0, 1),
+                                (-1, -1),
+                                [colors.white, colors.lightgrey],
+                            ),
+                        ]
+                    )
+                )
+        elif report_type == "communal_usage":
+            # Special styling for multi-line headers
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 11),  # Smaller for multi-line
+                        (
+                            "BOTTOMPADDING",
+                            (0, 0),
+                            (-1, 0),
+                            25,
+                        ),  # More padding for multi-line
+                        ("TOPPADDING", (0, 0), (-1, 0), 15),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ("FONTSIZE", (0, 1), (-1, -1), 12),  # Larger data font
+                        ("TOPPADDING", (0, 1), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+        elif report_type == "management_snapshot":
+            # Special styling for multi-line headers
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 11),  # Smaller for multi-line
+                        (
+                            "BOTTOMPADDING",
+                            (0, 0),
+                            (-1, 0),
+                            25,
+                        ),  # More padding for multi-line
+                        ("TOPPADDING", (0, 0), (-1, 0), 15),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ("FONTSIZE", (0, 1), (-1, -1), 12),  # Larger data font
+                        ("TOPPADDING", (0, 1), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+        else:
+            # Standard landscape styling
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 14),  # Larger header font
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 15),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                        ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                        ("FONTSIZE", (0, 1), (-1, -1), 12),  # Larger data font
+                        ("TOPPADDING", (0, 1), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.lightgrey],
+                        ),
+                    ]
+                )
+            )
+        # Standard styling for portrait
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 12),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTSIZE", (0, 1), (-1, -1), 10),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.lightgrey],
+                    ),
+                ]
+            )
+        )
+
+        story.append(table)
+
+        # Add spacing after table for landscape reports
+        if report_type in landscape_reports:
+            story.append(Spacer(1, 20))
+    else:
+        story.append(Paragraph("No data available for this report.", styles["Normal"]))
+
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+
+    filename = f"{report_type}_{category}_{start_date}_{end_date}.pdf"
+
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=filename,
+    )
