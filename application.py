@@ -72,7 +72,7 @@ def create_app() -> Flask:
             return "0"
 
     with app.app_context():
-        from app.models import (  # noqa: F401
+        from app.models import (
             User,
             Role,
             Estate,

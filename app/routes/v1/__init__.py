@@ -6,23 +6,23 @@ from ...auth import login_manager
 
 api_v1 = Blueprint("api_v1", __name__, url_prefix="/api/v1")
 
-# Import submodules to register routes
-from . import estates  # noqa: F401
-from . import units  # noqa: F401
-from . import meters  # noqa: F401
-from . import wallets  # noqa: F401
-from . import transactions  # noqa: F401
-from . import rate_tables  # noqa: F401
-from . import notifications  # noqa: F401
-from . import reports  # noqa: F401
-from . import system  # noqa: F401
-from . import users  # noqa: F401
-from . import roles  # noqa: F401
-from . import audit_logs  # noqa: F401
-from . import profile  # noqa: F401
-from . import settings  # noqa: F401
-from . import auth  # noqa: F401
-from . import residents  # noqa: F401
+
+from . import estates
+from . import units
+from . import meters
+from . import wallets
+from . import transactions
+from . import rate_tables
+from . import notifications
+from . import reports
+from . import system
+from . import users
+from . import roles
+from . import audit_logs
+from . import profile
+from . import settings
+from . import auth
+from . import residents
 
 
 @login_manager.unauthorized_handler
