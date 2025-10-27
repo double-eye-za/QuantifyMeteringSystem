@@ -179,6 +179,16 @@ def billing_page():
         topup_history_query.order_by(Transaction.completed_at.desc()).limit(20).all()
     )
 
+    # Generate dynamic months (current month + last 3 months)
+    from calendar import month_name
+
+    months = []
+    current_date = datetime.now()
+    for i in range(4):
+        month_date = current_date - timedelta(days=30 * i)
+        month_str = month_date.strftime("%B %Y")
+        months.append({"value": month_date.strftime("%Y-%m"), "label": month_str})
+
     return render_template(
         "billing/billing.html",
         # Stats
@@ -192,6 +202,7 @@ def billing_page():
         wallets=wallets,
         recent_transactions=recent_transactions,
         topup_history=topup_history,
+        months=months,
         # Filters
         current_estate=estate_id,
         current_status=status_filter,

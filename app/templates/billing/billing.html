@@ -374,9 +374,9 @@ endblock %} {% block breadcrumb %}
       <select
         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
       >
-        <option>Low Balance Units (47)</option>
-        <option>Zero Balance Units (12)</option>
-        <option>All Units</option>
+       <option value="all">All Units</option>
+        <option value="low_balance">Low Wallet Balance Units ({{ low_balance_units }})</option>
+        <option value="zero_balance">Zero Wallet Balance Units ({{ zero_balance_units }})</option>
       </select>
       <textarea
         placeholder="Message..."
@@ -402,16 +402,18 @@ endblock %} {% block breadcrumb %}
       <select
         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
       >
-        <option>October 2025</option>
-        <option>September 2025</option>
+        {% for month in months %}
+        <option value="{{ month.value }}">{{ month.label }}</option>
+        {% endfor %}
       </select>
+      
       <select
         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
       >
-        <option>All Estates</option>
-        <option>Willow Creek</option>
-        <option>Parkview Gardens</option>
-        <option>Sunset Ridge</option>
+        <option value="all">All Estates</option>
+        {% for estate in estates %}
+        <option value="{{ estate.id }}">{{ estate.name }}</option>
+        {% endfor %}
       </select>
     </div>
     <div class="mt-4">
@@ -424,7 +426,6 @@ endblock %} {% block breadcrumb %}
   </div>
 </div>
 {% endblock %}
-</div>
 
 {% block extra_js %}
 <script src="../../static/js/billing/billing.js"> </script>
