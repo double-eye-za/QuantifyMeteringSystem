@@ -184,7 +184,7 @@
         </button>
       </div>
 
-      <!-- Placeholder metrics -->
+      <!-- Wallet metrics -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div
           class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800"
@@ -196,7 +196,7 @@
             <i class="fas fa-exclamation-triangle text-yellow-500"></i>
           </div>
           <div class="text-2xl font-bold text-yellow-600">
-            {{ unit.wallet_balance | default('R 0.00') }}
+            R {{ wallet.balance | format_number(2) if wallet else '0.00' }}
           </div>
         </div>
 
@@ -210,31 +210,91 @@
             <i class="fas fa-solar-panel text-green-500"></i>
           </div>
           <div class="text-2xl font-bold text-green-600">
-            {{ unit.solar_free_allocation_kwh or 0 }} kWh
+            {{ wallet.solar_balance | format_number(2) if wallet else '0' }} kWh
           </div>
         </div>
 
-        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div
+          class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800"
+        >
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >Daily Usage</span
+              >Low Balance Threshold</span
             >
-            <i class="fas fa-chart-line text-primary"></i>
+            <i class="fas fa-info-circle text-blue-500"></i>
           </div>
-          <div class="text-2xl font-bold text-gray-900 dark:text-white">
-            {{ unit.daily_usage or '—' }}
+          <div class="text-2xl font-bold text-blue-600">
+            R {{ wallet.low_balance_threshold | format_number(2) if wallet else
+            '0.00' }}
           </div>
         </div>
       </div>
 
-      <!-- Placeholder transactions list -->
+      <!-- Recent transactions list -->
       <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Recent Transactions
         </h4>
+        {% if recent_transactions and recent_transactions|length > 0 %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Date
+                </th>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Type
+                </th>
+                <th
+                  class="px-3 py-2 text-right text-gray-600 dark:text-gray-300"
+                >
+                  Amount
+                </th>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              {% for txn in recent_transactions %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-3 py-2 text-gray-900 dark:text-white">
+                  {{ txn.completed_at.strftime('%b %d, %Y') if txn.completed_at
+                  else 'Pending' }}
+                </td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white">
+                  {{ txn.transaction_type.replace('_', ' ')|title }}
+                </td>
+                <td
+                  class="px-3 py-2 text-right {% if txn.transaction_type == 'topup' %}text-green-600{% else %}text-red-600{% endif %}"
+                >
+                  {% if txn.transaction_type == 'topup' %}+{% else %}-{% endif
+                  %}R {{ txn.amount | format_number(2) }}
+                </td>
+                <td class="px-3 py-2">
+                  <span
+                    class="px-2 py-1 rounded text-xs {% if txn.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif txn.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}"
+                  >
+                    {{ txn.status|title }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
         <div class="text-xs text-gray-500 dark:text-gray-400">
           No transactions yet.
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -245,7 +305,7 @@
         Readings
       </h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Electricity Meter -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div class="flex items-center justify-between mb-3">
@@ -256,9 +316,9 @@
               >
             </div>
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800"
+              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Status
+              <i class="fas fa-circle mr-1 text-xs"></i>Active
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -268,6 +328,29 @@
                 >{{ unit.electricity_meter_id or '-' }}</span
               >
             </div>
+            {% if meter_readings.get('electricity') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('electricity').reading_value |
+                format_number(2) }} kWh</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('electricity').reading_date.strftime('%b
+                %d, %Y') if meter_readings.get('electricity').reading_date else
+                '-' }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
           </div>
         </div>
 
@@ -281,9 +364,9 @@
               >
             </div>
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
+              class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Status
+              <i class="fas fa-circle mr-1 text-xs"></i>Active
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -293,6 +376,77 @@
                 >{{ unit.water_meter_id or '-' }}</span
               >
             </div>
+            {% if meter_readings.get('water') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('water').reading_value | format_number(2)
+                }} kL</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('water').reading_date.strftime('%b %d,
+                %Y') if meter_readings.get('water').reading_date else '-'
+                }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Hot Water Meter -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-fire text-red-500 mr-2"></i>
+              <span class="font-medium text-gray-900 dark:text-white"
+                >Hot Water</span
+              >
+            </div>
+            <span
+              class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+            >
+              <i class="fas fa-circle mr-1 text-xs"></i>Active
+            </span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
+              <span class="font-mono text-gray-900 dark:text-white"
+                >{{ unit.hot_water_meter_id or '-' }}</span
+              >
+            </div>
+            {% if meter_readings.get('hot_water') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('hot_water').reading_value |
+                format_number(2) }} kL</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('hot_water').reading_date.strftime('%b
+                %d, %Y') if meter_readings.get('hot_water').reading_date else
+                '-' }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
           </div>
         </div>
 
@@ -306,9 +460,9 @@
               >
             </div>
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
+              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Status
+              <i class="fas fa-circle mr-1 text-xs"></i>Active
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -318,19 +472,31 @@
                 >{{ unit.solar_meter_id or '-' }}</span
               >
             </div>
+            {% if meter_readings.get('solar') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('solar').reading_value | format_number(2)
+                }} kWh</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('solar').reading_date.strftime('%b %d,
+                %Y') if meter_readings.get('solar').reading_date else '-'
+                }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Consumption Chart placeholder -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        <i class="fas fa-chart-area text-primary mr-2"></i>7-Day Consumption
-        History
-      </h3>
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        Chart coming soon.
       </div>
     </div>
 

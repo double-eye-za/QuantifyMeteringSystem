@@ -194,11 +194,73 @@ def unit_details_page(unit_id: int):
     if getattr(unit, "resident_id", None):
         resident = Resident.get_by_id(unit.resident_id)
 
+    # Get wallet for the unit
+    wallet = None
+    if hasattr(unit, "id"):
+        from ...models.wallet import Wallet
+
+        wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+
+    # Get recent transactions for this unit's wallet
+    recent_transactions = []
+    if wallet:
+        from ...models.transaction import Transaction
+
+        recent_transactions = (
+            Transaction.query.filter_by(wallet_id=wallet.id)
+            .order_by(Transaction.completed_at.desc())
+            .limit(10)
+            .all()
+        )
+
+    # Get latest meter readings for all 4 meters
+    meter_readings = {}
+    from ...models.meter_reading import MeterReading
+
+    if unit.electricity_meter_id:
+        latest_electricity = (
+            MeterReading.query.filter_by(meter_id=unit.electricity_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest_electricity:
+            meter_readings["electricity"] = latest_electricity
+
+    if unit.water_meter_id:
+        latest_water = (
+            MeterReading.query.filter_by(meter_id=unit.water_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest_water:
+            meter_readings["water"] = latest_water
+
+    if unit.hot_water_meter_id:
+        latest_hot_water = (
+            MeterReading.query.filter_by(meter_id=unit.hot_water_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest_hot_water:
+            meter_readings["hot_water"] = latest_hot_water
+
+    if unit.solar_meter_id:
+        latest_solar = (
+            MeterReading.query.filter_by(meter_id=unit.solar_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest_solar:
+            meter_readings["solar"] = latest_solar
+
     return render_template(
         "units/unit-details.html",
         unit=unit,
         estate=estate,
         resident=resident,
+        wallet=wallet,
+        recent_transactions=recent_transactions,
+        meter_readings=meter_readings,
     )
 
 
