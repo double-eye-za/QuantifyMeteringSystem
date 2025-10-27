@@ -13,9 +13,7 @@
 >
 <span class="mx-1">/</span>
 <span>Unit {{ unit.unit_number or unit.id }}</span>
-{% endblock %} {% block content %}
-<!-- Critical Alert if Low/No Balance (example placeholder; hide if not applicable) -->
-{% if unit.wallet_low_balance %}
+{% endblock %} {% block content %} {% if unit.wallet_low_balance %}
 <div
   class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-6"
 >
@@ -361,7 +359,5 @@
   </div>
 </div>
 {% endblock %} {% block extra_js %}
-<script>
-  // Placeholder for any dynamic JS for unit details page
-</script>
+<script></script>
 {% endblock %}

@@ -796,15 +796,11 @@ endblock %} {% block breadcrumb %}
 </div>
 {% endblock %} {% block extra_js %}
 <script>
-  // Simulate live updates
   setInterval(() => {
-    // Update random consumption values
     const elecConsumption = (Math.random() * 3 + 1).toFixed(1);
     const solarGen = (Math.random() * 2 + 0.5).toFixed(1);
     const gridDraw = Math.max(0, elecConsumption - solarGen).toFixed(1);
     const waterFlow = (Math.random() * 20 + 5).toFixed(0);
-
-    // You could update the DOM here with these values
   }, 5000);
 </script>
 {% endblock %}
