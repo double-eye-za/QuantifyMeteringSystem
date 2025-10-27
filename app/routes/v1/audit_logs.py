@@ -25,7 +25,7 @@ def audit_logs_page():
     if user_id:
         query = query.filter(AuditLog.user_id == user_id)
 
-    # Date filters (inclusive start/end). If only start provided, end = end of that day
+    # Date filters. If only start provided, end = end of that day
     from datetime import datetime, timedelta
 
     def parse_date(s: str):

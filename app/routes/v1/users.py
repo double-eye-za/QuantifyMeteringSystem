@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import render_template, request, jsonify
-from flask_login import login_required, current_user
+from flask_login import login_required
 from app.models.user import User
 from app.models.role import Role
 from app.utils.decorators import requires_permission

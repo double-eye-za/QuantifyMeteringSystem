@@ -63,7 +63,7 @@ def roles_page():
         "page": page,
         "per_page": per_page,
         "total": total,
-        "total_pages": (total + per_page - 1) // per_page,
+        "total_pages": (total + per_page - 1),
     }
 
     return render_template(

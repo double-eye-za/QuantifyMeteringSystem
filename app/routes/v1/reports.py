@@ -66,7 +66,7 @@ def reports_page():
         next_month = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1)
         end_date = next_month - timedelta(days=1)
 
-    # Get estates for filter dropdown
+    # Get estates
     estates = Estate.query.filter_by(is_active=True).order_by(Estate.name).all()
 
     # Get report data based on category
@@ -175,7 +175,6 @@ def get_consumption_reports(
             Unit.estate_id == estate_id
         )
 
-    # Apply pagination
     total_count = unit_consumption_query.count()
     paginated_query = unit_consumption_query.offset((unit_page - 1) * per_page).limit(
         per_page
@@ -186,7 +185,7 @@ def get_consumption_reports(
         "total": total_count,
         "page": unit_page,
         "per_page": per_page,
-        "pages": (total_count + per_page - 1) // per_page,
+        "pages": (total_count + per_page - 1),
         "has_prev": unit_page > 1,
         "has_next": unit_page * per_page < total_count,
     }
@@ -302,7 +301,7 @@ def get_consumption_reports(
                 "total": total_count,
                 "page": top_page,
                 "per_page": per_page,
-                "pages": (total_count + per_page - 1) // per_page,
+                "pages": (total_count + per_page - 1),
                 "has_prev": top_page > 1,
                 "has_next": top_page * per_page < total_count,
             },
@@ -399,7 +398,7 @@ def get_financial_reports(start_date, end_date, estate_id, page=1, per_page=10):
         "total": total_purchases,
         "page": page,
         "per_page": per_page,
-        "pages": (total_purchases + per_page - 1) // per_page,
+        "pages": (total_purchases + per_page - 1),
         "has_prev": page > 1,
         "has_next": page * per_page < total_purchases,
     }
@@ -455,7 +454,7 @@ def get_financial_reports(start_date, end_date, estate_id, page=1, per_page=10):
     if revenue_result:
         reports["revenue_summary"] = revenue_result
     else:
-        # Create a default revenue summary object
+        # Create revenue summary object
         from types import SimpleNamespace
 
         reports["revenue_summary"] = SimpleNamespace(
@@ -778,9 +777,8 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
         communal_water = float(bulk_water) - float(sub_water)
 
         # Calculate costs (using standard rates)
-        electricity_cost = communal_electricity * 2.50  # R2.50/kWh
-        water_cost = communal_water * 15.00  # R15.00/kL
-
+        electricity_cost = communal_electricity * 2.50 
+        water_cost = communal_water * 15.00  
         communal_usage.append(
             {
                 "estate_name": estate.name,
@@ -1543,7 +1541,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             # Use full width for landscape reports
             num_cols = len(headers)
             # Calculate width to use most of the landscape page (11.69 inches - margins)
-            available_width = 10.5  # Leave some margin
+            available_width = 10.5 
 
             # For specific reports, use custom column widths
             if report_type == "solar_generation_vs_usage":
@@ -1556,7 +1554,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                     2.0 * inch,
                 ]
             elif report_type == "communal_usage":
-                # Communal usage has 6 columns - optimize for landscape
+                # Communal usage has 6 columns 
                 col_widths = [
                     2.0 * inch,  # Estate (wider for longer names)
                     1.7 * inch,  # Communal Electricity

@@ -33,7 +33,7 @@ def billing_page():
     if estate_id != "all":
         estate_filter = [Estate.id == int(estate_id)]
 
-    # 1. Calculate stats
+    #  Calculate stats
     # All wallet balances
     total_balances_query = (
         db.session.query(func.sum(Wallet.balance))
@@ -102,10 +102,10 @@ def billing_page():
         zero_balance_query = zero_balance_query.filter(*estate_filter)
     zero_balance_units = zero_balance_query.scalar() or 0
 
-    # 2. Get estates for dropdown
+    # Get estate
     estates = Estate.query.all()
 
-    # 3. Get wallet overview data with last topup date
+    # Get wallet overview data with last topup date
     from sqlalchemy import func, case
 
     wallet_query = (
@@ -148,7 +148,7 @@ def billing_page():
 
     wallets = wallet_query.order_by(Wallet.balance.desc()).all()
 
-    # 4. Get recent transactions
+    # Get recent transactions
     recent_transactions_query = (
         db.session.query(Transaction, Unit, Estate)
         .join(Wallet, Wallet.id == Transaction.wallet_id)
@@ -164,7 +164,7 @@ def billing_page():
         .all()
     )
 
-    # 5. Get top-up history
+    # Get top-up history
     topup_history_query = (
         db.session.query(Transaction, Unit, Estate)
         .join(Wallet, Wallet.id == Transaction.wallet_id)
@@ -222,7 +222,6 @@ def topup_wallet(wallet_id: int):
     if not wallet:
         return jsonify({"error": "Not Found", "code": 404}), 404
 
-    # Basic validation to avoid DB integrity errors
     if amount is None or payment_method is None:
         return (
             jsonify(

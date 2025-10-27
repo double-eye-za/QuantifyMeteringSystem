@@ -23,7 +23,7 @@ def rate_tables_page():
     water_rate_tables = [
         rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
     ]
-    # All rate tables (any utility)
+    # All rate tables
     raw_rate_tables = RateTable.list_filtered().all()
     all_rate_tables = [r.to_dict() for r in raw_rate_tables]
 
@@ -91,7 +91,7 @@ def rate_table_edit_page(rate_table_id: int):
     rt = RateTable.get_by_id(rate_table_id)
     if not rt:
         return render_template("errors/404.html"), 404
-    # Provide initial dict; page JS will fetch full details (tiers/TOU)
+
     return render_template(
         "rate-tables/edit-rate-table.html",
         rate_table=rt.to_dict(),
@@ -185,7 +185,7 @@ def create_rate_table():
     try:
         structure = payload.get("rate_structure")
         if isinstance(structure, str):
-            json.loads(structure)  # validate
+            json.loads(structure)
             rate_structure_str = structure
         else:
             rate_structure_str = json.dumps(structure or {})
@@ -235,7 +235,7 @@ def rate_preview():
     electricity_markup = payload.get("electricity_markup_percentage")
     water_markup = payload.get("water_markup_percentage")
 
-    # Helper: build a computable structure (with 'tiers') from DB tiers if available
+    # Build a computable structure with tiers from db tiers if available
     def structure_from_db(rt_id: int):
         tiers = (
             RateTableTier.query.filter_by(rate_table_id=rt_id)
@@ -253,7 +253,7 @@ def rate_preview():
                     for t in tiers
                 ]
             }
-        # fallback to stored JSON if already in consumable format
+        # fallback to stored JSON if in consumable format
         rt = RateTable.get_by_id(int(rt_id))
         if not rt:
             return {}
@@ -262,7 +262,7 @@ def rate_preview():
             return rs
         return {}
 
-    # Resolve structures from DB if ids given
+    # Resolve structures from db if ids given
     if electricity_rate_table_id and not electricity_structure:
         electricity_structure = structure_from_db(int(electricity_rate_table_id))
     if water_rate_table_id and not water_structure:
@@ -306,7 +306,6 @@ def update_rate_table(rate_table_id: int):
         ]:
             if f in payload:
                 if f == "rate_structure" and isinstance(payload[f], dict):
-                    # Convert dict to JSON string for database storage
                     import json
 
                     setattr(rt, f, json.dumps(payload[f]))
@@ -338,7 +337,7 @@ def delete_rate_table(rate_table_id: int):
     rt = RateTable.get_by_id(rate_table_id)
     if not rt:
         return jsonify({"error": "Not Found"}), 404
-    # Block delete if linked to estates
+    # Block delete if rate table linked to estates
     in_use = (
         Estate.query.filter(
             (Estate.electricity_rate_table_id == rate_table_id)

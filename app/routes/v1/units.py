@@ -20,7 +20,6 @@ def units_page():
     occupancy_status = request.args.get("occupancy_status")
     q = request.args.get("q")
 
-    # Normalize empty strings to None so filters are optional
     if not estate_id:
         estate_id = None
     if occupancy_status == "":
@@ -33,7 +32,7 @@ def units_page():
     )
     items, meta = paginate_query(query)
 
-    # Preload resident names for nicer display
+    # Preload resident names
     units = []
     for u in items:
         ud = u.to_dict()

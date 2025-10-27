@@ -25,13 +25,9 @@ def meters_page():
     meter_type = request.args.get("meter_type") or None
     comm_status = request.args.get("communication_status") or None
     estate_id = request.args.get("estate_id", type=int) or None
-    credit_status = (
-        request.args.get("credit_status") or None
-    )  # 'low'|'disconnected'|'ok'
+    credit_status = request.args.get("credit_status") or None
 
-    # Base SQL query (filters that are simple go here)
     base_query = Meter.get_all(meter_type=meter_type, communication_status=comm_status)
-    # Pull all to allow derived filters (estate via unit, credit via wallet) then paginate in Python
     all_meters = base_query.all()
 
     def meter_wallet_balance_for_type(w: Wallet | None, m: Meter) -> float:
@@ -47,7 +43,7 @@ def meters_page():
 
     meters_full = []
     for m in all_meters:
-        # Find assigned unit (match any of the three fk columns)
+        # Find assigned unit
         unit = Unit.query.filter(
             (Unit.electricity_meter_id == m.id)
             | (Unit.water_meter_id == m.id)
@@ -93,7 +89,6 @@ def meters_page():
             }
         )
 
-    # Manual pagination on filtered list
     page, per_page = parse_pagination_params()
     total = len(meters_full)
     start = (page - 1) * per_page
@@ -114,7 +109,7 @@ def meters_page():
     # Stats
     total_meters = Meter.count_all()
     total_active = Meter.query.filter(Meter.is_active == True).count()
-    # Low credit meters: evaluate via associated wallets
+    # Low credit meters evaluated via associated wallets
     low_credit_count = 0
     for m in Meter.query.all():
         unit = Unit.query.filter(
@@ -146,7 +141,7 @@ def meters_page():
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
 
-    # Units availability for dropdowns (disable units that already have a meter of a given type)
+    # Units availability
     units_info = []
     for u in Unit.query.order_by(Unit.unit_number.asc()).all():
         units_info.append(
@@ -194,7 +189,6 @@ def meters_page():
 @requires_permission("meters.view")
 def meter_details_page(meter_id: str):
     """Render the meter details page with enriched data for the selected meter."""
-    # Lookup by serial_number first, fallback to numeric id
     meter = Meter.query.filter_by(serial_number=meter_id).first()
     if meter is None and meter_id.isdigit():
         meter = Meter.get_by_id(int(meter_id))
@@ -206,7 +200,7 @@ def meter_details_page(meter_id: str):
             meter_id=meter_id,
         )
 
-    # Assigned unit (any of three FKs)
+    # Assigned unit
     unit = Unit.query.filter(
         (Unit.electricity_meter_id == meter.id)
         | (Unit.water_meter_id == meter.id)
@@ -321,12 +315,11 @@ def create_meter():
     missing = [f for f in required if not payload.get(f)]
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
-    # map status->is_active if provided
     status = (payload.get("status") or "").lower()
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
     meter = Meter.create_from_payload(payload)
-    # assign to unit if provided
+
     unit_id = payload.get("unit_id")
     try:
         if unit_id:
@@ -352,14 +345,14 @@ def update_meter(meter_id: int):
     status = (payload.get("status") or "").lower()
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
-    # Apply updatable fields
+
     for f in ("serial_number", "meter_type", "installation_date", "is_active"):
         if f in payload:
             setattr(meter, f, payload[f])
     from ...db import db
 
     db.session.commit()
-    # Handle assignment changes (unit_id may be empty string => unassign)
+    # Handle assignment changes
     try:
         if "unit_id" in payload:
             _assign_meter_to_unit(
@@ -472,7 +465,7 @@ def export_meters_pdf():
             parent=styles["Heading1"],
             fontSize=18,
             spaceAfter=30,
-            alignment=1,  # Center alignment
+            alignment=1,
         )
         title = Paragraph("Meters Report", title_style)
         story.append(title)
@@ -529,16 +522,13 @@ def export_meters_pdf():
 
             # Get last reading
             readings_query = MeterReading.list_for_meter(meter.id)
-            last_reading = (
-                readings_query.first()
-            )  # First item is latest due to desc order
+            last_reading = readings_query.first()
             last_reading_text = (
                 last_reading.reading_date.strftime("%Y-%m-%d")
                 if last_reading
                 else "No readings"
             )
 
-            # Status
             status = "Active" if meter.is_active else "Inactive"
 
             table_data.append(
@@ -596,7 +586,6 @@ def export_meters_pdf():
             new_values={"export_type": "pdf", "total_records": len(meters)},
         )
 
-        # Return PDF response
         response = Response(buffer.getvalue(), mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f"attachment; filename=meters_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"

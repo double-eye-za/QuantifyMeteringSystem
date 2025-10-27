@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 
 from ...models import Resident, Unit, Estate
 from ...utils.audit import log_action
-from ...utils.pagination import paginate_query, parse_pagination_params
+from ...utils.pagination import paginate_query
 from ...utils.decorators import requires_permission
 from . import api_v1
 
