@@ -179,6 +179,17 @@ def create_rate_table():
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
+    # Validate that rate_structure is not empty
+    rate_structure = payload.get("rate_structure")
+    if not rate_structure or (
+        isinstance(rate_structure, dict) and len(rate_structure) == 0
+    ):
+        return jsonify(
+            {
+                "error": "rate_structure must contain at least one pricing structure (tiered, flat, seasonal, time_of_use, fixed_charge, or demand_charge)"
+            }
+        ), 400
+
     # Normalize rate_structure to JSON string for storage
     import json
 
@@ -201,8 +212,6 @@ def create_rate_table():
         is_default=bool(payload.get("is_default", False)),
         effective_from=payload["effective_from"],
         effective_to=payload.get("effective_to"),
-        category=payload.get("category"),
-        description=payload.get("description"),
         is_active=bool(payload.get("is_active", True)),
         created_by=getattr(current_user, "id", None),
     )
@@ -300,8 +309,6 @@ def update_rate_table(rate_table_id: int):
             "is_default",
             "effective_from",
             "effective_to",
-            "category",
-            "description",
             "is_active",
         ]:
             if f in payload:
