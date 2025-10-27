@@ -48,7 +48,7 @@ class Meter(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "meter_type IN ('electricity','water','solar','bulk_electricity','bulk_water')",
+            "meter_type IN ('electricity','water','solar','hot_water','bulk_electricity','bulk_water')",
             name="ck_meters_type",
         ),
         CheckConstraint(
@@ -78,7 +78,9 @@ class Meter(db.Model):
         from .unit import Unit
 
         subq_ids = db.session.query(Unit.electricity_meter_id).union(
-            db.session.query(Unit.water_meter_id), db.session.query(Unit.solar_meter_id)
+            db.session.query(Unit.water_meter_id),
+            db.session.query(Unit.solar_meter_id),
+            db.session.query(Unit.hot_water_meter_id),
         )
         return (
             Meter.query.filter(Meter.meter_type == meter_type)
@@ -130,6 +132,14 @@ class Meter(db.Model):
     def get_solar_meters():
         return (
             Meter.get_all(meter_type="solar").order_by(Meter.serial_number.asc()).all()
+        )
+
+    @staticmethod
+    def get_hot_water_meters():
+        return (
+            Meter.get_all(meter_type="hot_water")
+            .order_by(Meter.serial_number.asc())
+            .all()
         )
 
     def to_dict(self):

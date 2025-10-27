@@ -18,6 +18,7 @@ class Wallet(db.Model):
     electricity_balance: float
     water_balance: float
     solar_balance: float
+    hot_water_balance: float
     low_balance_threshold: Optional[float]
     low_balance_alert_type: Optional[str]
     low_balance_days_threshold: Optional[int]
@@ -41,6 +42,7 @@ class Wallet(db.Model):
     balance = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
     electricity_balance = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
     water_balance = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
+    hot_water_balance = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
     solar_balance = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
     low_balance_threshold = db.Column(db.Numeric(10, 2), default=50.00)
     low_balance_alert_type = db.Column(db.String(20), default="fixed")
@@ -80,6 +82,7 @@ class Wallet(db.Model):
             "balance": float(self.balance),
             "electricity_balance": float(self.electricity_balance),
             "water_balance": float(self.water_balance),
+            "hot_water_balance": float(self.hot_water_balance),
             "solar_balance": float(self.solar_balance),
             "low_balance_threshold": float(self.low_balance_threshold)
             if self.low_balance_threshold is not None

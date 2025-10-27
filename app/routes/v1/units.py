@@ -53,7 +53,10 @@ def units_page():
 
     assigned_ids = set()
     for u in Unit.query.with_entities(
-        Unit.electricity_meter_id, Unit.water_meter_id, Unit.solar_meter_id
+        Unit.electricity_meter_id,
+        Unit.water_meter_id,
+        Unit.hot_water_meter_id,
+        Unit.solar_meter_id,
     ).all():
         for mid in u:
             if mid:
@@ -68,6 +71,7 @@ def units_page():
 
     electricity_meters = [serialize_meter(m) for m in Meter.get_electricity_meters()]
     water_meters = [serialize_meter(m) for m in Meter.get_water_meters()]
+    hot_water_meters = [serialize_meter(m) for m in Meter.get_hot_water_meters()]
     solar_meters = [serialize_meter(m) for m in Meter.get_solar_meters()]
 
     residents = [
@@ -81,6 +85,7 @@ def units_page():
         estates=estates,
         electricity_meters=electricity_meters,
         water_meters=water_meters,
+        hot_water_meters=hot_water_meters,
         solar_meters=solar_meters,
         residents=residents,
         pagination=meta,

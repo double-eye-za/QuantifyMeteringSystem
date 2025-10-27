@@ -25,6 +25,7 @@ class Unit(db.Model):
     electricity_meter_id: Optional[int]
     water_meter_id: Optional[int]
     solar_meter_id: Optional[int]
+    hot_water_meter_id: Optional[int]
     electricity_rate_table_id: Optional[int]
     water_rate_table_id: Optional[int]
     is_active: Optional[bool]
@@ -53,6 +54,7 @@ class Unit(db.Model):
     electricity_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     solar_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
+    hot_water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     electricity_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     water_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     estate = db.relationship("Estate", backref="units")
@@ -120,6 +122,7 @@ class Unit(db.Model):
             electricity_meter_id=payload.get("electricity_meter_id"),
             water_meter_id=payload.get("water_meter_id"),
             solar_meter_id=payload.get("solar_meter_id"),
+            hot_water_meter_id=payload.get("hot_water_meter_id"),
             electricity_rate_table_id=payload.get("electricity_rate_table_id")
             or (estate.electricity_rate_table_id if estate else None),
             water_rate_table_id=payload.get("water_rate_table_id")
@@ -145,6 +148,7 @@ class Unit(db.Model):
             "electricity_meter_id",
             "water_meter_id",
             "solar_meter_id",
+            "hot_water_meter_id",
             "electricity_rate_table_id",
             "water_rate_table_id",
             "is_active",
@@ -184,6 +188,7 @@ class Unit(db.Model):
             "electricity_meter_id": self.electricity_meter_id,
             "water_meter_id": self.water_meter_id,
             "solar_meter_id": self.solar_meter_id,
+            "hot_water_meter_id": self.hot_water_meter_id,
             "electricity_rate_table_id": self.electricity_rate_table_id,
             "water_rate_table_id": self.water_rate_table_id,
             "is_active": self.is_active,
@@ -205,5 +210,6 @@ class Unit(db.Model):
                 Unit.electricity_meter_id == meter_id,
                 Unit.water_meter_id == meter_id,
                 Unit.solar_meter_id == meter_id,
+                Unit.hot_water_meter_id == meter_id,
             )
         ).first()

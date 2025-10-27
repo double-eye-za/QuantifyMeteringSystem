@@ -152,6 +152,7 @@ def meters_page():
                 "has_electricity": bool(u.electricity_meter_id),
                 "has_water": bool(u.water_meter_id),
                 "has_solar": bool(u.solar_meter_id),
+                "has_hot_water": bool(u.hot_water_meter_id),
             }
         )
 
@@ -159,6 +160,7 @@ def meters_page():
         {"value": "electricity", "label": "Electricity"},
         {"value": "bulk_electricity", "label": "Bulk Electricity"},
         {"value": "water", "label": "Water"},
+        {"value": "hot_water", "label": "Hot Water"},
         {"value": "solar", "label": "Solar"},
     ]
 
