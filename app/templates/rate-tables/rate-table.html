@@ -150,6 +150,51 @@ breadcrumb %}
                             </div>
         {% endif %}
         {% endif %}
+        
+        {# Seasonal rates from rate_structure if present #}
+        {% if rs and rs.seasonal %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-calendar-alt text-green-500 mr-1"></i>Seasonal Rates</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Season</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+            </div>
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">Summer (Dec - Feb)</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.seasonal.summer | format_number(2) }}</div>
+            </div>
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">Winter (Jun - Aug)</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.seasonal.winter | format_number(2) }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        {# Flat rate from rate_structure if present #}
+        {% if rs and rs.flat_rate %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-equals text-purple-500 mr-1"></i>Flat Rate</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.flat_rate | format_number(2) }}/kWh</div>
+        </div>
+        {% endif %}
+        
+        {# Fixed charge from rate_structure if present #}
+        {% if rs and rs.fixed_charge %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-lock text-red-500 mr-1"></i>Fixed Charge</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.fixed_charge | format_number(2) }}/month</div>
+        </div>
+        {% endif %}
+        
+        {# Demand charge from rate_structure if present #}
+        {% if rs and rs.demand_charge %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-chart-line text-orange-500 mr-1"></i>Demand Charge</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.demand_charge | format_number(2) }}/kW</div>
+        </div>
+        {% endif %}
 
         {# Fixed/Additional charges from rate_structure if present #}
         {% if rs and rs.fixed_charges and rs.fixed_charges|length %}

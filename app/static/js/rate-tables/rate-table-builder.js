@@ -161,12 +161,78 @@ function collectFlatStructure() {
   return { flat_rate: rate };
 }
 
+function collectSeasonalStructure() {
+  if (!document.getElementById("seasonalPricing").checked) return null;
+  const seasonalSection = document.getElementById("seasonalSection");
+  if (!seasonalSection || seasonalSection.classList.contains("hidden"))
+    return null;
+  const inputs = seasonalSection.querySelectorAll("input[type='number']");
+  const summer = parseFloat(inputs[0]?.value || "0");
+  const winter = parseFloat(inputs[1]?.value || "0");
+  if (summer === 0 && winter === 0) return null;
+  return { seasonal: { summer, winter } };
+}
+
+function collectTouStructure() {
+  if (!document.getElementById("touPricing").checked) return null;
+  const touSection = document.getElementById("touSection");
+  if (!touSection || touSection.classList.contains("hidden")) return null;
+  const rows = touSection.querySelectorAll("div.flex.items-center.gap-3");
+  const periods = [];
+  rows.forEach((row) => {
+    const inputs = row.querySelectorAll("input");
+    const labelSpan = row.querySelector("span.text-sm.font-medium");
+    const name = labelSpan?.textContent?.replace(":", "").trim() || "Unknown";
+    const start = inputs[0]?.value || "00:00";
+    const end = inputs[1]?.value || "00:00";
+    const rate = parseFloat(inputs[2]?.value || "0");
+    if (rate > 0) {
+      periods.push({
+        period_name: name,
+        start_time: start,
+        end_time: end,
+        rate,
+      });
+    }
+  });
+  if (periods.length === 0) return null;
+  return { time_of_use: periods };
+}
+
+function collectFixedChargeStructure() {
+  if (!document.getElementById("fixedPricing").checked) return null;
+  const fixedSection = document.getElementById("fixedSection");
+  if (!fixedSection || fixedSection.classList.contains("hidden")) return null;
+  const input = fixedSection.querySelector("input[type='number']");
+  const charge = parseFloat(input?.value || "0");
+  if (charge === 0) return null;
+  return { fixed_charge: charge };
+}
+
+function collectDemandChargeStructure() {
+  if (!document.getElementById("demandPricing").checked) return null;
+  const demandSection = document.getElementById("demandSection");
+  if (!demandSection || demandSection.classList.contains("hidden")) return null;
+  const input = demandSection.querySelector("input[type='number']");
+  const charge = parseFloat(input?.value || "0");
+  if (charge === 0) return null;
+  return { demand_charge: charge };
+}
+
 function collectStructure() {
   const out = {};
   const tiered = collectTieredStructure();
   if (tiered) Object.assign(out, tiered);
   const flat = collectFlatStructure();
   if (flat) Object.assign(out, flat);
+  const seasonal = collectSeasonalStructure();
+  if (seasonal) Object.assign(out, seasonal);
+  const tou = collectTouStructure();
+  if (tou) Object.assign(out, tou);
+  const fixed = collectFixedChargeStructure();
+  if (fixed) Object.assign(out, fixed);
+  const demand = collectDemandChargeStructure();
+  if (demand) Object.assign(out, demand);
   return out;
 }
 
@@ -176,20 +242,23 @@ async function createRateTable() {
     const utility = document.getElementById("resourceType").value;
     const effFrom = document.getElementById("effectiveDate").value;
     const effTo = document.getElementById("effectiveTo").value;
-    const category = document.getElementById("category").value;
-    const description = document.getElementById("description").value;
     if (!name || !utility || !effFrom) {
       showFlashMessage("Please complete the required fields", "error");
       return;
     }
     const structure = collectStructure();
+    if (Object.keys(structure).length === 0) {
+      showFlashMessage(
+        "Please configure at least one pricing structure",
+        "error"
+      );
+      return;
+    }
     const payload = {
       name,
       utility_type: utility,
       effective_from: effFrom,
       effective_to: effTo || null,
-      category: category,
-      description: description,
       is_active: true,
       rate_structure: structure,
     };

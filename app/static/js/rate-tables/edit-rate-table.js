@@ -105,6 +105,38 @@ function addTouRow(row) {
   container.appendChild(div);
 }
 
+function collectSeasonalStructure() {
+  if (!document.getElementById("seasonalPricing")?.checked) return null;
+  const seasonalSection = document.getElementById("seasonalSection");
+  if (!seasonalSection || seasonalSection.classList.contains("hidden"))
+    return null;
+  const inputs = seasonalSection.querySelectorAll("input[type='number']");
+  const summer = parseFloat(inputs[0]?.value || "0");
+  const winter = parseFloat(inputs[1]?.value || "0");
+  if (summer === 0 && winter === 0) return null;
+  return { seasonal: { summer, winter } };
+}
+
+function collectFixedChargeStructure() {
+  if (!document.getElementById("fixedPricing")?.checked) return null;
+  const fixedSection = document.getElementById("fixedSection");
+  if (!fixedSection || fixedSection.classList.contains("hidden")) return null;
+  const input = fixedSection.querySelector("input[type='number']");
+  const charge = parseFloat(input?.value || "0");
+  if (charge === 0) return null;
+  return { fixed_charge: charge };
+}
+
+function collectDemandChargeStructure() {
+  if (!document.getElementById("demandPricing")?.checked) return null;
+  const demandSection = document.getElementById("demandSection");
+  if (!demandSection || demandSection.classList.contains("hidden")) return null;
+  const input = demandSection.querySelector("input[type='number']");
+  const charge = parseFloat(input?.value || "0");
+  if (charge === 0) return null;
+  return { demand_charge: charge };
+}
+
 function collectStructure() {
   const structure = {};
   if (document.getElementById("tieredPricing")?.checked) {
@@ -149,6 +181,14 @@ function collectStructure() {
       .filter((p) => p.period_name && p.start_time && p.end_time && p.rate > 0);
     if (tou.length > 0) structure.time_of_use = tou;
   }
+
+  const seasonal = collectSeasonalStructure();
+  if (seasonal) Object.assign(structure, seasonal);
+  const fixed = collectFixedChargeStructure();
+  if (fixed) Object.assign(structure, fixed);
+  const demand = collectDemandChargeStructure();
+  if (demand) Object.assign(structure, demand);
+
   return structure;
 }
 
