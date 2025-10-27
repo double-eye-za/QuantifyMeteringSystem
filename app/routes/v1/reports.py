@@ -105,6 +105,7 @@ def reports_page():
         top_page=top_page,
         start_date=start_date,
         end_date=end_date,
+        datetime=datetime,
         **report_data,
     )
 
@@ -777,8 +778,8 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
         communal_water = float(bulk_water) - float(sub_water)
 
         # Calculate costs (using standard rates)
-        electricity_cost = communal_electricity * 2.50 
-        water_cost = communal_water * 15.00  
+        electricity_cost = communal_electricity * 2.50
+        water_cost = communal_water * 15.00
         communal_usage.append(
             {
                 "estate_name": estate.name,
@@ -1541,7 +1542,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             # Use full width for landscape reports
             num_cols = len(headers)
             # Calculate width to use most of the landscape page (11.69 inches - margins)
-            available_width = 10.5 
+            available_width = 10.5
 
             # For specific reports, use custom column widths
             if report_type == "solar_generation_vs_usage":
@@ -1554,7 +1555,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                     2.0 * inch,
                 ]
             elif report_type == "communal_usage":
-                # Communal usage has 6 columns 
+                # Communal usage has 6 columns
                 col_widths = [
                     2.0 * inch,  # Estate (wider for longer names)
                     1.7 * inch,  # Communal Electricity
