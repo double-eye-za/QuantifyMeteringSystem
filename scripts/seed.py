@@ -587,6 +587,7 @@ def create_estates_and_units(
 
     e_e460_001 = ensure_meter("E460-001", "electricity")
     e_wtr_001 = ensure_meter("WTR-001", "water")
+    e_hw_001 = ensure_meter("HW-001", "hot_water")
     e_sol_001 = ensure_meter("SOL-001", "solar")
 
     unit_a101 = Unit.query.filter_by(
@@ -601,6 +602,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": e_e460_001.id,
                 "water_meter_id": e_wtr_001.id,
+                "hot_water_meter_id": e_hw_001.id,
                 "solar_meter_id": e_sol_001.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -612,6 +614,7 @@ def create_estates_and_units(
     # Another unit
     e_e460_002 = ensure_meter("E460-002", "electricity")
     e_wtr_002 = ensure_meter("WTR-002", "water")
+    e_hw_002 = ensure_meter("HW-002", "hot_water")
     e_sol_002 = ensure_meter("SOL-002", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["OAKR"].id, unit_number="A-102"
@@ -624,6 +627,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": e_e460_002.id,
                 "water_meter_id": e_wtr_002.id,
+                "hot_water_meter_id": e_hw_002.id,
                 "solar_meter_id": e_sol_002.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -645,6 +649,7 @@ def create_estates_and_units(
     # Vacant example in Green Valley Gardens
     gv_e460_051 = ensure_meter("E460-051", "electricity")
     gv_wtr_051 = ensure_meter("WTR-051", "water")
+    gv_hw_051 = ensure_meter("HW-051", "hot_water")
     gv_sol_051 = ensure_meter("SOL-051", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["GRNV"].id, unit_number="B-201"
@@ -657,6 +662,7 @@ def create_estates_and_units(
                 "occupancy_status": "vacant",
                 "electricity_meter_id": gv_e460_051.id,
                 "water_meter_id": gv_wtr_051.id,
+                "hot_water_meter_id": gv_hw_051.id,
                 "solar_meter_id": gv_sol_051.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -668,6 +674,7 @@ def create_estates_and_units(
     # Another Green Valley Gardens occupied unit
     gv_e460_052 = ensure_meter("E460-052", "electricity")
     gv_wtr_052 = ensure_meter("WTR-052", "water")
+    gv_hw_052 = ensure_meter("HW-052", "hot_water")
     gv_sol_052 = ensure_meter("SOL-052", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["GRNV"].id, unit_number="B-202"
@@ -680,6 +687,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": gv_e460_052.id,
                 "water_meter_id": gv_wtr_052.id,
+                "hot_water_meter_id": gv_hw_052.id,
                 "solar_meter_id": gv_sol_052.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -704,6 +712,7 @@ def create_estates_and_units(
     # Durban Heights two units
     dh_e460_050 = ensure_meter("E460-050", "electricity")
     dh_wtr_050 = ensure_meter("WTR-050", "water")
+    dh_hw_050 = ensure_meter("HW-050", "hot_water")
     dh_sol_050 = ensure_meter("SOL-050", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["DRBN"].id, unit_number="C-301"
@@ -716,6 +725,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": dh_e460_050.id,
                 "water_meter_id": dh_wtr_050.id,
+                "hot_water_meter_id": dh_hw_050.id,
                 "solar_meter_id": dh_sol_050.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -726,6 +736,7 @@ def create_estates_and_units(
 
     dh_e460_075 = ensure_meter("E460-075", "electricity")
     dh_wtr_075 = ensure_meter("WTR-075", "water")
+    dh_hw_075 = ensure_meter("HW-075", "hot_water")
     dh_sol_075 = ensure_meter("SOL-075", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["DRBN"].id, unit_number="C-302"
@@ -738,6 +749,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": dh_e460_075.id,
                 "water_meter_id": dh_wtr_075.id,
+                "hot_water_meter_id": dh_hw_075.id,
                 "solar_meter_id": dh_sol_075.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -759,6 +771,7 @@ def create_estates_and_units(
     # Port Elizabeth Bayview with two units
     pe_e460_001 = ensure_meter("E460-PE-001", "electricity")
     pe_wtr_001 = ensure_meter("WTR-PE-001", "water")
+    pe_hw_001 = ensure_meter("HW-PE-001", "hot_water")
     pe_sol_001 = ensure_meter("SOL-PE-001", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["PEBA"].id, unit_number="D-101"
@@ -771,6 +784,7 @@ def create_estates_and_units(
                 "occupancy_status": "occupied",
                 "electricity_meter_id": pe_e460_001.id,
                 "water_meter_id": pe_wtr_001.id,
+                "hot_water_meter_id": pe_hw_001.id,
                 "solar_meter_id": pe_sol_001.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -781,6 +795,7 @@ def create_estates_and_units(
 
     pe_e460_002 = ensure_meter("E460-PE-002", "electricity")
     pe_wtr_002 = ensure_meter("WTR-PE-002", "water")
+    pe_hw_002 = ensure_meter("HW-PE-002", "hot_water")
     pe_sol_002 = ensure_meter("SOL-PE-002", "solar")
     if not Unit.query.filter_by(
         estate_id=estates["PEBA"].id, unit_number="D-102"
@@ -793,6 +808,7 @@ def create_estates_and_units(
                 "occupancy_status": "vacant",
                 "electricity_meter_id": pe_e460_002.id,
                 "water_meter_id": pe_wtr_002.id,
+                "hot_water_meter_id": pe_hw_002.id,
                 "solar_meter_id": pe_sol_002.id,
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
@@ -1063,6 +1079,7 @@ def create_monthly_readings_and_transactions():
             for meter_id, mtype in [
                 (unit.electricity_meter_id, "electricity"),
                 (unit.water_meter_id, "water"),
+                (unit.hot_water_meter_id, "hot_water"),
                 (unit.solar_meter_id, "solar"),
             ]:
                 if not meter_id:
@@ -1076,7 +1093,7 @@ def create_monthly_readings_and_transactions():
                     (20, 100)
                     if mtype == "electricity"
                     else (10, 50)
-                    if mtype == "water"
+                    if mtype in ("water", "hot_water")
                     else (5, 30)
                 )
                 delta = Decimal(str(random.uniform(delta_min, delta_max))).quantize(
