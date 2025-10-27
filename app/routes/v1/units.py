@@ -160,12 +160,16 @@ def wallet_statement_page(unit_id: str):
     )
 
 
-@api_v1.route("/units/<unit_id>/visual", methods=["GET"])
+@api_v1.route("/units/<int:unit_id>/visual", methods=["GET"])
 @login_required
 @requires_permission("units.view")
-def unit_visual_page(unit_id: str):
+def unit_visual_page(unit_id: int):
     """Render the unit visual diagram page"""
-    return render_template("units/unit-visual.html", unit_id=unit_id)
+    unit = Unit.get_by_id(unit_id)
+    if not unit:
+        return render_template("errors/404.html"), 404
+
+    return render_template("units/unit-visual.html", unit=unit)
 
 
 @api_v1.route("/units/<int:unit_id>", methods=["GET"])

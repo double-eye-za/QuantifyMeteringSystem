@@ -1,6 +1,7 @@
-{% extends "base.html" %} {% block title %}Unit A-101 Visual Overview - Quantify
-Metering System{% endblock %} {% block page_title %}Unit A-101 Visual Overview{%
-endblock %} {% block breadcrumb %}
+{% extends "base.html" %} {% block title %}Unit {{ unit.unit_number or unit.id
+}} Visual Overview - Quantify Metering System{% endblock %} {% block page_title
+%}Unit {{ unit.unit_number or unit.id }} Visual Overview{% endblock %} {% block
+breadcrumb %}
 <a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
 <span class="mx-1">/</span>
 <a href="{{ url_for('api_v1.units_page') }}" class="hover:text-primary"
@@ -8,9 +9,9 @@ endblock %} {% block breadcrumb %}
 >
 <span class="mx-1">/</span>
 <a
-  href="{{ url_for('api_v1.unit_details_page', unit_id='A-101') }}"
+  href="{{ url_for('api_v1.unit_details_page', unit_id=unit.id) }}"
   class="hover:text-primary"
-  >Unit A-101</a
+  >Unit {{ unit.unit_number or unit.id }}</a
 >
 <span class="mx-1">/</span>
 <span>Visual Diagram</span>
@@ -160,7 +161,7 @@ endblock %} {% block breadcrumb %}
           text-anchor="middle"
           class="fill-gray-700 dark:fill-gray-300 font-semibold text-sm"
         >
-          Unit A-101
+          Unit {{ unit.unit_number or unit.id }}
         </text>
       </g>
 
