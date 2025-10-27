@@ -113,19 +113,19 @@ def list_units():
     return jsonify({"data": [u.to_dict() for u in items], **meta})
 
 
-@api_v1.route("/units/<unit_id>/wallet-statement", methods=["GET"])
+@api_v1.route("/units/<int:unit_id>/wallet-statement", methods=["GET"])
 @login_required
 @requires_permission("units.view")
-def wallet_statement_page(unit_id: str):
+def wallet_statement_page(unit_id: int):
     """Render the wallet statement page"""
     from ...models import Unit, Wallet, Estate, Transaction
     from ...db import db
     from sqlalchemy import func
 
     # Get unit and wallet data
-    unit = Unit.query.filter_by(unit_number=unit_id).first()
+    unit = Unit.get_by_id(unit_id)
     if not unit:
-        return "Unit not found", 404
+        return render_template("errors/404.html"), 404
 
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
     if not wallet:
