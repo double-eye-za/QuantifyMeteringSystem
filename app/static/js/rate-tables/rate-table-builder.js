@@ -71,15 +71,15 @@ function addTier() {
   const newTier = document.createElement("div");
   newTier.className = "flex items-center gap-3";
   newTier.innerHTML = `
-                <span class="text-sm font-medium w-20">Tier ${tierCount}:</span>
+                <span class="text-sm font-medium w-20 text-gray-900 dark:text-white">Tier ${tierCount}:</span>
                 <input type="number" placeholder="From" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <span>-</span>
+                <span class="text-gray-900 dark:text-white">-</span>
                 <input type="number" placeholder="To" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <span class="text-sm">kWh</span>
-                <span class="text-sm">@</span>
-                <span class="text-sm">R</span>
+                <span class="text-sm text-gray-900 dark:text-white">kWh</span>
+                <span class="text-sm text-gray-900 dark:text-white">@</span>
+                <span class="text-sm text-gray-900 dark:text-white">R</span>
                 <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+                <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
                 <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
                     <i class="fas fa-trash"></i>
                 </button>

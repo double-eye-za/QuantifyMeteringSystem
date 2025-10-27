@@ -97,7 +97,6 @@ endblock %} {% block breadcrumb %}
           <option value="">Select Resource</option>
           <option value="electricity">Electricity</option>
           <option value="water">Water</option>
-          <option value="gas">Gas</option>
           <option value="service">Service Fee</option>
         </select>
       </div>
@@ -329,7 +328,9 @@ endblock %} {% block breadcrumb %}
       </h3>
       <div id="tieredRates" class="space-y-3">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-20">Tier 1:</span>
+          <span class="text-sm font-medium w-20 text-gray-900 dark:text-white"
+            >Tier 1:</span
+          >
           <input
             type="number"
             placeholder="From"
@@ -337,16 +338,16 @@ endblock %} {% block breadcrumb %}
             value="0"
             disabled
           />
-          <span>-</span>
+          <span class="text-gray-900 dark:text-white">-</span>
           <input
             type="number"
             placeholder="To"
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="50"
           />
-          <span class="text-sm">kWh</span>
-          <span class="text-sm">@</span>
-          <span class="text-sm">R</span>
+          <span class="text-sm text-gray-900 dark:text-white">kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
           <input
             type="number"
             step="0.01"
@@ -354,7 +355,7 @@ endblock %} {% block breadcrumb %}
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="1.50"
           />
-          <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
         </div>
       </div>
       <button
@@ -377,20 +378,22 @@ endblock %} {% block breadcrumb %}
       <div class="space-y-3">
         <!-- Peak Hours -->
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-24">Peak Hours:</span>
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Peak Hours:</span
+          >
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="06:00"
           />
-          <span>to</span>
+          <span class="text-gray-900 dark:text-white">to</span>
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="10:00"
           />
-          <span class="text-sm">@</span>
-          <span class="text-sm">R</span>
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
           <input
             type="number"
             step="0.01"
@@ -398,24 +401,26 @@ endblock %} {% block breadcrumb %}
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="3.50"
           />
-          <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
         </div>
         <!-- Standard Hours -->
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-24">Standard:</span>
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Standard:</span
+          >
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="10:00"
           />
-          <span>to</span>
+          <span class="text-gray-900 dark:text-white">to</span>
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="18:00"
           />
-          <span class="text-sm">@</span>
-          <span class="text-sm">R</span>
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
           <input
             type="number"
             step="0.01"
@@ -423,24 +428,26 @@ endblock %} {% block breadcrumb %}
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="2.50"
           />
-          <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
         </div>
         <!-- Off-Peak -->
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-24">Off-Peak:</span>
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Off-Peak:</span
+          >
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="18:00"
           />
-          <span>to</span>
+          <span class="text-gray-900 dark:text-white">to</span>
           <input
             type="time"
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="06:00"
           />
-          <span class="text-sm">@</span>
-          <span class="text-sm">R</span>
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
           <input
             type="number"
             step="0.01"
@@ -448,7 +455,7 @@ endblock %} {% block breadcrumb %}
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="1.50"
           />
-          <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
         </div>
       </div>
       <button
@@ -470,33 +477,35 @@ endblock %} {% block breadcrumb %}
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="p-3 border border-green-200 dark:border-green-700 rounded">
-          <label class="block text-sm font-medium mb-2"
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
             >Summer (Dec - Feb)</label
           >
           <div class="flex items-center gap-2">
-            <span class="text-sm">R</span>
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
             <input
               type="number"
               step="0.01"
               class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value="2.80"
             />
-            <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
           </div>
         </div>
         <div class="p-3 border border-green-200 dark:border-green-700 rounded">
-          <label class="block text-sm font-medium mb-2"
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
             >Winter (Jun - Aug)</label
           >
           <div class="flex items-center gap-2">
-            <span class="text-sm">R</span>
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
             <input
               type="number"
               step="0.01"
               class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               value="3.20"
             />
-            <span class="text-sm text-gray-700 dark:text-gray-300">/kWh</span>
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
           </div>
         </div>
       </div>
@@ -512,8 +521,10 @@ endblock %} {% block breadcrumb %}
         Configuration
       </h3>
       <div class="flex items-center gap-3">
-        <span class="text-sm font-medium">Rate:</span>
-        <span class="text-sm">R</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white"
+          >Rate:</span
+        >
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
         <input
           type="number"
           step="0.01"
@@ -540,8 +551,10 @@ endblock %} {% block breadcrumb %}
         <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge Configuration
       </h3>
       <div class="flex items-center gap-3">
-        <span class="text-sm font-medium">Charge:</span>
-        <span class="text-sm">R</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white"
+          >Charge:</span
+        >
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
         <input
           type="number"
           step="0.01"
@@ -570,8 +583,10 @@ endblock %} {% block breadcrumb %}
       </h3>
       <div class="space-y-3">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-32">Demand Charge:</span>
-          <span class="text-sm">R</span>
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Demand Charge:</span
+          >
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
           <input
             type="number"
             step="0.01"
@@ -579,12 +594,14 @@ endblock %} {% block breadcrumb %}
             class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             value="50.00"
           />
-          <span class="text-sm text-gray-700 dark:text-gray-300"
+          <span class="text-sm text-gray-900 dark:text-white"
             >per kW of peak demand</span
           >
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium w-32">Measurement:</span>
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Measurement:</span
+          >
           <select
             class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
@@ -612,7 +629,9 @@ endblock %} {% block breadcrumb %}
           </h3>
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="text-sm">Apply Markup</label>
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Apply Markup</label
+              >
               <div class="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -625,11 +644,13 @@ endblock %} {% block breadcrumb %}
                   value="20"
                   class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                 />
-                <span class="text-sm">%</span>
+                <span class="text-sm text-gray-900 dark:text-white">%</span>
               </div>
             </div>
             <div class="flex items-center justify-between">
-              <label class="text-sm">Include VAT</label>
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Include VAT</label
+              >
               <div class="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -637,7 +658,7 @@ endblock %} {% block breadcrumb %}
                   checked
                   class="rounded"
                 />
-                <span class="text-sm">15%</span>
+                <span class="text-sm text-gray-900 dark:text-white">15%</span>
               </div>
             </div>
           </div>
@@ -650,7 +671,9 @@ endblock %} {% block breadcrumb %}
           </h3>
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="text-sm">Free Units</label>
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Free Units</label
+              >
               <div class="flex items-center gap-2">
                 <input
                   type="number"
@@ -667,7 +690,9 @@ endblock %} {% block breadcrumb %}
               </div>
             </div>
             <div class="flex items-center justify-between">
-              <label class="text-sm">Applies to</label>
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Applies to</label
+              >
               <select
                 class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
               >

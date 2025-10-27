@@ -57,16 +57,16 @@ function addTierRow(row) {
   const div = document.createElement("div");
   div.className = "flex items-center gap-3";
   div.innerHTML = `
-      <span class="text-sm font-medium w-20">Tier:</span>
+      <span class="text-sm font-medium w-20 text-gray-900 dark:text-white">Tier:</span>
       <input type="number" placeholder="From" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.from ?? 0
       }" />
-      <span>-</span>
+      <span class="text-gray-900 dark:text-white">-</span>
       <input type="number" placeholder="To" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.to ?? ""
       }" />
-      <span class="text-sm">@</span>
-      <span class="text-sm">R</span>
+      <span class="text-sm text-gray-900 dark:text-white">@</span>
+      <span class="text-sm text-gray-900 dark:text-white">R</span>
       <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.rate ?? 0
       }" />
@@ -86,17 +86,17 @@ function addTouRow(row) {
       <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.start_time ?? ""
       }" />
-      <span>to</span>
+      <span class="text-gray-900 dark:text-white">to</span>
       <input type="time" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.end_time ?? ""
       }" />
-      <label class="text-xs flex items-center gap-1"><input type="checkbox" ${
+      <label class="text-xs flex items-center gap-1 text-gray-900 dark:text-white"><input type="checkbox" ${
         row?.weekdays ? "checked" : ""
       }/> Weekdays</label>
-      <label class="text-xs flex items-center gap-1"><input type="checkbox" ${
+      <label class="text-xs flex items-center gap-1 text-gray-900 dark:text-white"><input type="checkbox" ${
         row?.weekends ? "checked" : ""
       }/> Weekends</label>
-      <span class="text-sm">R</span>
+      <span class="text-sm text-gray-900 dark:text-white">R</span>
       <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${
         row?.rate ?? 0
       }" />
