@@ -64,10 +64,12 @@ function refreshUnitDisableState(scope) {
     const hasElec = opt.getAttribute("data-has-electricity") === "1";
     const hasWater = opt.getAttribute("data-has-water") === "1";
     const hasSolar = opt.getAttribute("data-has-solar") === "1";
+    const hasHotWater = opt.getAttribute("data-has-hot-water") === "1";
     let disabled = false;
     if (type === "electricity" && hasElec) disabled = true;
     if (type === "water" && hasWater) disabled = true;
     if (type === "solar" && hasSolar) disabled = true;
+    if (type === "hot_water" && hasHotWater) disabled = true;
     opt.disabled = disabled;
   });
 }

@@ -57,7 +57,8 @@ function editUnit(buttonEl) {
     const estateCell = row.querySelector("td:nth-child(3)");
     const emeter = row.querySelector("td:nth-child(5) span.font-mono");
     const wmeter = row.querySelector("td:nth-child(6) span.font-mono");
-    const smeter = row.querySelector("td:nth-child(7) span.font-mono");
+    const hwmeter = row.querySelector("td:nth-child(7) span.font-mono");
+    const smeter = row.querySelector("td:nth-child(8) span.font-mono");
 
     const unitNumber = unitLink
       ? unitLink.textContent.trim().replace(/^Unit\s+/i, "")
@@ -70,6 +71,7 @@ function editUnit(buttonEl) {
     const editUnitEstate = document.getElementById("edit_unit_estate");
     const editEmeter = document.getElementById("edit_unit_emeter");
     const editWmeter = document.getElementById("edit_unit_wmeter");
+    const editHwmeter = document.getElementById("edit_unit_hwmeter");
     const editSmeter = document.getElementById("edit_unit_smeter");
     const editResident = document.getElementById("edit_unit_resident");
 
@@ -82,6 +84,7 @@ function editUnit(buttonEl) {
     }
     if (editEmeter && emeter) editEmeter.value = emeter.textContent.trim();
     if (editWmeter && wmeter) editWmeter.value = wmeter.textContent.trim();
+    if (editHwmeter && hwmeter) editHwmeter.value = hwmeter.textContent.trim();
     if (editSmeter && smeter) editSmeter.value = smeter.textContent.trim();
     if (editResident && row.hasAttribute("data-unit")) {
       try {
@@ -162,6 +165,8 @@ function collectEditUnitFormPayload() {
     electricity_meter_id:
       document.getElementById("edit_unit_emeter")?.value || null,
     water_meter_id: document.getElementById("edit_unit_wmeter")?.value || null,
+    hot_water_meter_id:
+      document.getElementById("edit_unit_hwmeter")?.value || null,
     solar_meter_id: document.getElementById("edit_unit_smeter")?.value || null,
   };
   return payload;

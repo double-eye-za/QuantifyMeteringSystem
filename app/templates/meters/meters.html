@@ -207,6 +207,7 @@ block breadcrumb %}
         {% if m.wallet %}
           {% if m.meter_type=='electricity' %}{% set balance = m.wallet.electricity_balance %}
           {% elif m.meter_type=='water' %}{% set balance = m.wallet.water_balance %}
+          {% elif m.meter_type=='hot_water' %}{% set balance = m.wallet.hot_water_balance %}
           {% elif m.meter_type=='solar' %}{% set balance = m.wallet.solar_balance %}
           {% endif %}
         {% endif %}
@@ -290,6 +291,7 @@ block breadcrumb %}
                     <option value="electricity">Electricity</option>
                     <option value="bulk_electricity">Bulk Electricity</option>
                     <option value="water">Water</option>
+                    <option value="hot_water">Hot Water</option>
                     <option value="solar">Solar</option>
                   </select>
                 </div>
@@ -309,7 +311,7 @@ block breadcrumb %}
                   <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">-- Unassigned --</option>
                     {% for u in units %}
-                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}">Unit {{ u.unit_number }}</option>
+                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}" data-has-hot-water="{{ '1' if u.has_hot_water else '0' }}">Unit {{ u.unit_number }}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -355,6 +357,7 @@ block breadcrumb %}
                     <option value="electricity">Electricity</option>
                     <option value="bulk_electricity">Bulk Electricity</option>
                     <option value="water">Water</option>
+                    <option value="hot_water">Hot Water</option>
                     <option value="solar">Solar</option>
                   </select>
                 </div>
@@ -374,7 +377,7 @@ block breadcrumb %}
                   <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="">-- Unassigned --</option>
                     {% for u in units %}
-                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}">Unit {{ u.unit_number }}</option>
+                    <option value="{{ u.id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}" data-has-hot-water="{{ '1' if u.has_hot_water else '0' }}">Unit {{ u.unit_number }}</option>
                     {% endfor %}
                   </select>
                 </div>
