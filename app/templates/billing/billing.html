@@ -241,7 +241,7 @@ endblock %} {% block breadcrumb %}
                 <button
                   class="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                   title="View Statement"
-                  onclick="window.location.href='{{ url_for('api_v1.wallet_statement_page', unit_id=unit.unit_number) }}'"
+                  onclick="window.location.href='{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}'"
                 >
                   <i class="fas fa-file-invoice"></i>
                 </button>
