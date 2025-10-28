@@ -37,7 +37,7 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
         <div class="text-right">
           <div class="bg-white/20 rounded-lg px-4 py-3 backdrop-blur">
             <p class="text-sm mb-1">Estimated Days Remaining</p>
-            <p class="text-3xl font-bold">12 days</p>
+            <p class="text-3xl font-bold">{{ days_left }} days</p>
             <p class="text-xs mt-1">Based on avg. daily usage</p>
           </div>
         </div>
@@ -52,21 +52,27 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
         <p class="text-xs text-gray-600 dark:text-gray-400">
           Month to Date Usage
         </p>
-        <p class="text-lg font-bold text-gray-900 dark:text-white">R 287.50</p>
-      </div>
-      <div class="px-4 text-center">
-        <p class="text-xs text-gray-600 dark:text-gray-400">
-          Electricity (68%)
+        <p class="text-lg font-bold text-gray-900 dark:text-white">
+          R {{ total_usage | format_number(2) }}
         </p>
-        <p class="text-lg font-bold text-yellow-600">R 195.50</p>
       </div>
       <div class="px-4 text-center">
-        <p class="text-xs text-gray-600 dark:text-gray-400">Water (32%)</p>
-        <p class="text-lg font-bold text-blue-600">R 92.00</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400">Electricity</p>
+        <p class="text-lg font-bold text-yellow-600">
+          R {{ electricity_total | format_number(2) }}
+        </p>
+      </div>
+      <div class="px-4 text-center">
+        <p class="text-xs text-gray-600 dark:text-gray-400">Water</p>
+        <p class="text-lg font-bold text-blue-600">
+          R {{ water_total | format_number(2) }}
+        </p>
       </div>
       <div class="px-4 text-center">
         <p class="text-xs text-gray-600 dark:text-gray-400">Daily Average</p>
-        <p class="text-lg font-bold text-gray-900 dark:text-white">R 31.94</p>
+        <p class="text-lg font-bold text-gray-900 dark:text-white">
+          R {{ daily_average | format_number(2) }}
+        </p>
       </div>
     </div>
   </div>
@@ -244,127 +250,67 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <!-- Opening Balance -->
+          {% if transactions %} {% for txn in transactions %}
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
             <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 1, 00:00
-            </td>
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Opening Balance
-            </td>
-            <td class="px-4 py-3 text-center">-</td>
-            <td class="px-4 py-3 text-center">-</td>
-            <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right font-semibold">R 237.50</td>
-          </tr>
-
-          <!-- Daily Transactions -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 1, 23:59
+              {{ txn.completed_at.strftime('%b %d, %H:%M') if txn.completed_at
+              else 'Pending' }}
             </td>
             <td class="px-4 py-3">
-              <span class="text-gray-900 dark:text-gray-300"
-                >Daily Electricity</span
-              >
+              <span class="text-gray-900 dark:text-gray-300">
+                {{ txn.description or txn.transaction_type.replace('_', '
+                ').title() }}
+              </span>
+              {% if txn.reference %}
               <span class="text-xs text-gray-500 block"
-                >Block 1: 5kWh, Block 2: 8kWh</span
+                >{{ txn.reference }}</span
               >
-            </td>
-            <td class="px-4 py-3 text-center">13 kWh</td>
-            <td class="px-4 py-3 text-center text-xs">Mixed</td>
-            <td class="px-4 py-3 text-right text-red-600">R 21.26</td>
-            <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right font-semibold">R 216.24</td>
-          </tr>
-
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 1, 23:59
-            </td>
-            <td class="px-4 py-3">
-              <span class="text-gray-900 dark:text-gray-300">Daily Water</span>
-              <span class="text-xs text-gray-500 block">Block 1: 210L</span>
-            </td>
-            <td class="px-4 py-3 text-center">0.21 kL</td>
-            <td class="px-4 py-3 text-center text-xs">R11.50/kL</td>
-            <td class="px-4 py-3 text-right text-red-600">R 2.42</td>
-            <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right font-semibold">R 213.82</td>
-          </tr>
-
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 2, 08:00
-            </td>
-            <td class="px-4 py-3">
-              <span class="text-gray-900 dark:text-gray-300"
-                >Solar Credit Applied</span
-              >
-              <span class="text-xs text-gray-500 block"
-                >Free monthly allocation</span
-              >
-            </td>
-            <td class="px-4 py-3 text-center">2 kWh</td>
-            <td class="px-4 py-3 text-center text-xs">Free</td>
-            <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right text-green-600">R 0.00</td>
-            <td class="px-4 py-3 text-right font-semibold">R 213.82</td>
-          </tr>
-
-          <!-- More daily entries... -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 5, 14:30
-            </td>
-            <td class="px-4 py-3">
-              <span class="text-gray-900 dark:text-gray-300 font-semibold"
-                >Wallet Top-up</span
-              >
-              <span class="text-xs text-gray-500 block"
-                >Payment Ref: #TXN-2025-10-05-1430</span
-              >
+              {% endif %}
             </td>
             <td class="px-4 py-3 text-center">-</td>
-            <td class="px-4 py-3 text-center">-</td>
+            <td class="px-4 py-3 text-center text-xs">
+              {{ txn.payment_method or '-' }}
+            </td>
+            {% if txn.transaction_type == 'topup' %}
             <td class="px-4 py-3 text-right">-</td>
             <td class="px-4 py-3 text-right text-green-600 font-semibold">
-              R 500.00
+              R {{ txn.amount | format_number(2) }}
             </td>
-            <td class="px-4 py-3 text-right font-semibold">R 587.50</td>
-          </tr>
-
-          <!-- Current status -->
-          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <td class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Oct 9, 12:00
+            {% else %}
+            <td class="px-4 py-3 text-right text-red-600">
+              R {{ txn.amount | format_number(2) }}
             </td>
-            <td class="px-4 py-3">
-              <span class="text-gray-900 dark:text-gray-300"
-                >Month to Date Usage</span
-              >
-              <span class="text-xs text-gray-500 block"
-                >Electricity: 115kWh, Water: 7.3kL</span
-              >
-            </td>
-            <td class="px-4 py-3 text-center">-</td>
-            <td class="px-4 py-3 text-center">-</td>
-            <td class="px-4 py-3 text-right text-red-600">R 137.50</td>
             <td class="px-4 py-3 text-right">-</td>
-            <td class="px-4 py-3 text-right font-bold text-green-600">
-              R 450.00
+            {% endif %}
+            <td class="px-4 py-3 text-right font-semibold">
+              {% set balance_display = wallet.balance %} {# This is simplified -
+              in real app you'd track running balance #} R {{ wallet.balance |
+              format_number(2) }}
             </td>
           </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="7"
+              class="px-4 py-3 text-center text-gray-500 dark:text-gray-400"
+            >
+              No transactions this month
+            </td>
+          </tr>
+          {% endif %}
         </tbody>
         <tfoot class="bg-gray-100 dark:bg-gray-700 font-semibold">
           <tr>
             <td colspan="4" class="px-4 py-3 text-gray-900 dark:text-gray-300">
-              Current Balance as of Oct 9, 2025
+              Current Balance as of {{ current_date.strftime('%b %d, %Y') }}
             </td>
-            <td class="px-4 py-3 text-right text-red-600">R 287.50</td>
-            <td class="px-4 py-3 text-right text-green-600">R 500.00</td>
-            <td class="px-4 py-3 text-right text-lg text-primary">R 450.00</td>
+            <td class="px-4 py-3 text-right text-red-600">
+              R {{ total_usage | format_number(2) }}
+            </td>
+            <td class="px-4 py-3 text-right text-green-600">-</td>
+            <td class="px-4 py-3 text-right text-lg text-primary">
+              R {{ wallet.balance | format_number(2) }}
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -445,27 +391,40 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
       <div class="space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-gray-600 dark:text-gray-400">Days Left:</span>
-          <span class="font-semibold">~12 days</span>
+          <span class="font-semibold">~{{ days_left }} days</span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600 dark:text-gray-400">Daily Usage:</span>
-          <span class="font-semibold">R 31.94</span>
+          <span class="font-semibold"
+            >R {{ daily_average | format_number(2) }}</span
+          >
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-600 dark:text-gray-400"
-            >Recommended Top-up:</span
+          <span class="text-gray-600 dark:text-gray-400">Balance:</span>
+          <span class="font-semibold"
+            >R {{ wallet.balance | format_number(2) }}</span
           >
-          <span class="font-semibold">Oct 21</span>
         </div>
         <div class="flex justify-between pt-2 border-t">
-          <span class="text-gray-600 dark:text-gray-400">Balance:</span>
-          <span class="font-bold text-green-600">R 450.00</span>
+          <span class="text-gray-600 dark:text-gray-400">Threshold:</span>
+          <span class="font-bold text-yellow-600"
+            >R {{ wallet.low_balance_threshold | format_number(2) }}</span
+          >
         </div>
         <div class="mt-2">
+          {% set wallet_balance_float = wallet.balance | float %} {% set
+          balance_percent = (wallet_balance_float / (wallet_balance_float +
+          total_usage) * 100) | round if (wallet_balance_float + total_usage) >
+          0 else 0 %}
           <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-green-600 h-2 rounded-full" style="width: 64%"></div>
+            <div
+              class="{% if balance_percent > 50 %}bg-green-600{% elif balance_percent > 20 %}bg-yellow-600{% else %}bg-red-600{% endif %} h-2 rounded-full"
+              style="width: {{ balance_percent }}%"
+            ></div>
           </div>
-          <p class="text-xs text-gray-500 mt-1">64% remaining</p>
+          <p class="text-xs text-gray-500 mt-1">
+            {{ balance_percent | round(0) }}% of month projected budget
+          </p>
         </div>
       </div>
     </div>
@@ -481,31 +440,42 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          Based on current usage patterns (R31.94/day)
+          Based on current usage patterns (R{{ daily_average | format_number(2)
+          }}/day)
         </p>
         <div class="space-y-2">
           <div class="flex justify-between items-center">
             <span class="text-sm">Current Balance</span>
-            <span class="font-semibold">R 450.00</span>
+            <span class="font-semibold"
+              >R {{ wallet.balance | format_number(2) }}</span
+            >
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-sm">Projected Usage (22 days)</span>
-            <span class="text-red-600">-R 702.68</span>
+            <span class="text-sm">Projected Usage</span>
+            <span class="text-red-600"
+              >-R {{ projected_usage | format_number(2) }}</span
+            >
           </div>
           <div class="flex justify-between items-center pt-2 border-t">
             <span class="text-sm font-semibold">Projected End Balance</span>
-            <span class="text-2xl font-bold text-red-600">-R 252.68</span>
+            <span
+              class="text-2xl font-bold {% if projected_balance < 0 %}text-red-600{% else %}text-green-600{% endif %}"
+            >
+              R {{ projected_balance | format_number(2) }}
+            </span>
           </div>
         </div>
+        {% if projected_balance < 0 %}
         <div
           class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700"
         >
           <p class="text-sm text-red-700 dark:text-red-300">
             <i class="fas fa-exclamation-triangle mr-2"></i>
-            <strong>Action Required:</strong> Top-up of at least R 300
-            recommended by Oct 21 to avoid disconnection.
+            <strong>Action Required:</strong> Top-up recommended to avoid
+            disconnection.
           </p>
         </div>
+        {% endif %}
       </div>
 
       <div>

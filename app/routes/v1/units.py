@@ -154,6 +154,90 @@ def wallet_statement_page(unit_id: int):
         .order_by(Transaction.completed_at.desc())
         .first()
     )
+    last_topup_date = last_topup.completed_at if last_topup else None
+
+    # Calculate month-to-date usage
+    from datetime import datetime, timedelta
+
+    now = datetime.now()
+    month_start = datetime(now.year, now.month, 1)
+
+    month_transactions = (
+        Transaction.query.filter_by(wallet_id=wallet.id)
+        .filter(
+            Transaction.completed_at >= month_start, Transaction.completed_at <= now
+        )
+        .all()
+    )
+
+    # Calculate usage statistics
+    electricity_total = 0.0
+    water_total = 0.0
+    hot_water_total = 0.0
+    solar_credits = 0.0
+
+    for txn in month_transactions:
+        if txn.transaction_type == "consumption_electricity":
+            electricity_total += float(txn.amount or 0)
+        elif txn.transaction_type == "consumption_water":
+            water_total += float(txn.amount or 0)
+        elif txn.transaction_type == "consumption_hot_water":
+            hot_water_total += float(txn.amount or 0)
+        elif txn.transaction_type == "solar_credit":
+            solar_credits += float(txn.amount or 0)
+
+    total_usage = electricity_total + water_total + hot_water_total
+    daily_average = total_usage / now.day if now.day > 0 else 0
+
+    # Calculate days until depletion
+    days_left = 0
+    if daily_average > 0:
+        days_left = int(float(wallet.balance) / daily_average)
+
+    # Calculate projected end-of-month balance
+    days_remaining = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - now
+    projected_usage = daily_average * days_remaining.days
+    projected_balance = float(wallet.balance) - projected_usage
+
+    # Get meter readings for consumption display
+    from ...models.meter_reading import MeterReading
+
+    meter_readings = {}
+    if unit.electricity_meter_id:
+        latest = (
+            MeterReading.query.filter_by(meter_id=unit.electricity_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest:
+            meter_readings["electricity"] = latest
+
+    if unit.water_meter_id:
+        latest = (
+            MeterReading.query.filter_by(meter_id=unit.water_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest:
+            meter_readings["water"] = latest
+
+    if unit.hot_water_meter_id:
+        latest = (
+            MeterReading.query.filter_by(meter_id=unit.hot_water_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest:
+            meter_readings["hot_water"] = latest
+
+    if unit.solar_meter_id:
+        latest = (
+            MeterReading.query.filter_by(meter_id=unit.solar_meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+        if latest:
+            meter_readings["solar"] = latest
 
     return render_template(
         "wallets/wallet-statement.html",
@@ -161,7 +245,18 @@ def wallet_statement_page(unit_id: int):
         wallet=wallet,
         estate=estate,
         transactions=transactions,
-        last_topup_date=last_topup.completed_at if last_topup else None,
+        last_topup_date=last_topup_date,
+        # Usage statistics
+        electricity_total=electricity_total,
+        water_total=water_total,
+        hot_water_total=hot_water_total,
+        total_usage=total_usage,
+        daily_average=daily_average,
+        days_left=days_left,
+        projected_balance=projected_balance,
+        projected_usage=projected_usage,
+        meter_readings=meter_readings,
+        current_date=now,
     )
 
 
