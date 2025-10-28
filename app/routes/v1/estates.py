@@ -78,6 +78,13 @@ def estates_page():
         .all()
     )
 
+    hot_water_counts = dict(
+        db.session.query(Unit.estate_id, func.count(Unit.hot_water_meter_id.distinct()))
+        .filter(Unit.hot_water_meter_id.isnot(None))
+        .group_by(Unit.estate_id)
+        .all()
+    )
+
     meter_configs = {}
     for e in estates:
         eid = e["id"]
@@ -87,6 +94,7 @@ def estates_page():
             "elec": f"{elec_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_e else ''}",
             "water": f"{water_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_w else ''}",
             "solar": f"{solar_counts.get(eid, 0)} unit",
+            "hot_water": f"{hot_water_counts.get(eid, 0)} unit",
         }
 
     # Rate tables for dropdowns
