@@ -42,5 +42,3 @@ class SystemSetting(db.Model):
             name="ck_system_settings_type",
         ),
     )
-
-    # Static methods removed; use app.services.system_settings for reading and writing settings

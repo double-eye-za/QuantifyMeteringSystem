@@ -38,11 +38,11 @@ def list_residents_for_dropdown():
     return list_residents().all()
 
 
-def get_resident_by_id(resident_id: int) -> Resident | None:
+def get_resident_by_id(resident_id: int):
     return Resident.query.get(resident_id)
 
 
-def create_resident(payload: dict, user_id: Optional[int] = None) -> Resident:
+def create_resident(payload: dict, user_id: Optional[int] = None):
     status = (payload.get("status") or "active").lower()
     is_active = payload.get("is_active")
     if is_active is None:
@@ -70,7 +70,7 @@ def create_resident(payload: dict, user_id: Optional[int] = None) -> Resident:
 
 def update_resident(
     resident: Resident, payload: dict, user_id: Optional[int] = None
-) -> Resident:
+):
     for field in (
         "id_number",
         "first_name",

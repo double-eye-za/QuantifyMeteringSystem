@@ -23,11 +23,11 @@ def list_transactions(
     return q.order_by(desc(Transaction.completed_at))
 
 
-def get_transaction_by_id(txn_id: int) -> Optional[Transaction]:
+def get_transaction_by_id(txn_id: int):
     return Transaction.query.get(txn_id)
 
 
-def reverse_transaction(t: Transaction, reason: Optional[str] = None) -> Transaction:
+def reverse_transaction(t: Transaction, reason: Optional[str] = None):
     t.reverse(reason=reason)
     db.session.commit()
     return t
@@ -40,7 +40,7 @@ def create_transaction(
     reference: str | None = None,
     payment_method: str | None = None,
     metadata: dict | None = None,
-) -> Transaction:
+):
     txn = Transaction(
         transaction_number=f"TXN{Transaction.created_at.func.now()}",
         wallet_id=wallet_id,

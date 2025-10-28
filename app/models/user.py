@@ -54,15 +54,3 @@ class User(UserMixin, db.Model):
     def get_id(self):
         return str(self.id)
 
-    # Static methods removed; use app.services.users for user operations
-
-    def has_permission(self, permission_code):
-        """Check if user has specific permission"""
-        if self.is_super_admin:
-            return True
-
-        if not self.role or not self.role.permission:
-            return False
-
-        permissions = self.role.permission.permissions
-        return permissions.get(permission_code, False)

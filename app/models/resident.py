@@ -51,34 +51,6 @@ class Resident(db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
 
-    def update_from_payload(self, payload: dict, user_id: Optional[int] = None):
-        for field in (
-            "id_number",
-            "first_name",
-            "last_name",
-            "email",
-            "phone",
-            "alternate_phone",
-            "emergency_contact_name",
-            "emergency_contact_phone",
-            "lease_start_date",
-            "lease_end_date",
-            "status",
-            "is_active",
-            "app_user_id",
-        ):
-            if field in payload:
-                setattr(self, field, payload[field])
-        # Keep is_active aligned with status if status provided
-        if "status" in payload and "is_active" not in payload:
-            self.is_active = (
-                False if (payload.get("status") or "").lower() == "vacated" else True
-            )
-        if user_id is not None:
-            self.updated_by = user_id
-        db.session.commit()
-        return self
-
     def to_dict(self):
         return {
             "id": self.id,
@@ -102,22 +74,3 @@ class Resident(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-
-    def delete(self):
-        """Delete resident if not assigned to a unit.
-        Returns (True, None) on success, or (False, details) with details including code/unit_id.
-        """
-        from .unit import Unit
-        from ..db import db
-
-        assigned_unit = Unit.query.filter_by(resident_id=self.id).first()
-        if assigned_unit:
-            return False, {
-                "code": 409,
-                "message": "Resident is assigned to a unit and cannot be deleted. Unassign the resident first.",
-                "unit_id": assigned_unit.id,
-            }
-
-        db.session.delete(self)
-        db.session.commit()
-        return True, None

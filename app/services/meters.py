@@ -20,11 +20,11 @@ def list_meters(
     return query
 
 
-def get_meter_by_id(meter_id: int) -> Optional[Meter]:
+def get_meter_by_id(meter_id: int):
     return Meter.query.get(meter_id)
 
 
-def create_meter(payload: dict) -> Meter:
+def create_meter(payload: dict):
     meter = Meter(
         serial_number=payload["serial_number"],
         meter_type=payload["meter_type"],

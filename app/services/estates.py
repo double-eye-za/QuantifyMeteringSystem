@@ -18,11 +18,11 @@ def list_estates(search: Optional[str] = None, is_active: Optional[bool] = None)
     return query
 
 
-def get_estate_by_id(estate_id: int) -> Optional[Estate]:
+def get_estate_by_id(estate_id: int):
     return Estate.query.get(estate_id)
 
 
-def create_estate(payload: dict, user_id: Optional[int] = None) -> Estate:
+def create_estate(payload: dict, user_id: Optional[int] = None):
     estate = Estate(
         code=payload.get("code"),
         name=payload.get("name"),
@@ -50,9 +50,7 @@ def create_estate(payload: dict, user_id: Optional[int] = None) -> Estate:
     return estate
 
 
-def update_estate(
-    estate: Estate, payload: dict, user_id: Optional[int] = None
-) -> Estate:
+def update_estate(estate: Estate, payload: dict, user_id: Optional[int] = None):
     old_elec = estate.electricity_rate_table_id
     old_water = estate.water_rate_table_id
 
@@ -101,7 +99,7 @@ def update_estate(
     return estate
 
 
-def delete_estate(estate: Estate) -> None:
+def delete_estate(estate: Estate):
     # Delete related units and their wallets, then the estate
     units = Unit.query.filter_by(estate_id=estate.id).all()
     for unit in units:

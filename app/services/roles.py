@@ -9,7 +9,7 @@ from app.models.permissions import Permission
 
 def list_roles(
     search: Optional[str] = None, page: int = 1, per_page: int = 25
-) -> Tuple[List[Role], int]:
+):
     query = Role.query
     if search:
         like = f"%{search}%"
@@ -22,7 +22,7 @@ def list_roles(
     return items, total
 
 
-def get_role_by_id(role_id: int) -> Optional[Role]:
+def get_role_by_id(role_id: int):
     return Role.query.get(role_id)
 
 
@@ -31,7 +31,7 @@ def create_role(
     description: str = "",
     permissions_data: dict | None = None,
     permission_id: int | None = None,
-) -> Role:
+):
     if permissions_data and not permission_id:
         permission = Permission(
             name=f"{name} Permissions",
@@ -58,7 +58,7 @@ def update_role(
     description: Optional[str] = None,
     permissions_data: dict | None = None,
     permission_id: int | None = None,
-) -> Role:
+):
     role = Role.query.get(role_id)
     if not role:
         raise ValueError("Role not found")
@@ -86,7 +86,7 @@ def update_role(
     return role
 
 
-def delete_role(role_id: int) -> None:
+def delete_role(role_id: int):
     role = Role.query.get(role_id)
     if not role:
         return

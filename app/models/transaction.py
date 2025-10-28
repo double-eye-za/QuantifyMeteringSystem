@@ -80,8 +80,3 @@ class Transaction(db.Model):
             name="ck_transactions_status",
         ),
     )
-
-    def reverse(self, reason: str = None) -> "Transaction":
-        self.status = "reversed"
-        db.session.commit()
-        return self

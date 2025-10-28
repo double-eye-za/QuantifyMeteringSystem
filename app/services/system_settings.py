@@ -6,7 +6,7 @@ from app.db import db
 from app.models.system_setting import SystemSetting
 
 
-def list_settings_as_dict() -> dict[str, Any]:
+def list_settings_as_dict():
     settings = SystemSetting.query.all()
     result: dict[str, Any] = {}
     for s in settings:
@@ -21,7 +21,7 @@ def list_settings_as_dict() -> dict[str, Any]:
 
 def save_settings(
     settings_data: Iterable[tuple[str, Any, str]], category: str, updated_by: int
-) -> bool:
+):
     for key, value, setting_type in settings_data:
         setting = SystemSetting.query.filter_by(setting_key=key).first()
         if setting:
@@ -41,7 +41,7 @@ def save_settings(
     return True
 
 
-def get_setting(key: str, default_value: Any = None) -> Any:
+def get_setting(key: str, default_value: Any = None):
     s = SystemSetting.query.filter_by(setting_key=key).first()
     if not s:
         return default_value
@@ -59,7 +59,7 @@ def save_setting(
     category: str,
     updated_by: int,
     description: str | None = None,
-) -> SystemSetting:
+):
     s = SystemSetting.query.filter_by(setting_key=key).first()
     if s:
         s.setting_value = value

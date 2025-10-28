@@ -26,11 +26,11 @@ def list_units(
     return query
 
 
-def get_unit_by_id(unit_id: int) -> Optional[Unit]:
+def get_unit_by_id(unit_id: int):
     return Unit.query.get(unit_id)
 
 
-def create_unit(payload: dict, user_id: Optional[int] = None) -> Unit:
+def create_unit(payload: dict, user_id: Optional[int] = None):
     estate = (
         Estate.query.get(payload["estate_id"]) if payload.get("estate_id") else None
     )
@@ -63,7 +63,7 @@ def create_unit(payload: dict, user_id: Optional[int] = None) -> Unit:
     return unit
 
 
-def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None) -> Unit:
+def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
     for field in (
         "estate_id",
         "unit_number",
@@ -90,16 +90,16 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None) -> Uni
     return unit
 
 
-def delete_unit(unit: Unit) -> None:
+def delete_unit(unit: Unit):
     db.session.delete(unit)
     db.session.commit()
 
 
-def count_units() -> int:
+def count_units():
     return Unit.query.count()
 
 
-def find_unit_by_meter_id(meter_id: int) -> Optional[Unit]:
+def find_unit_by_meter_id(meter_id: int):
     if not meter_id:
         return None
     return Unit.query.filter(

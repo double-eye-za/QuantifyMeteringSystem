@@ -5,7 +5,7 @@ from typing import Optional
 from app.models import RateTable
 
 
-def get_rate_table_by_id(rate_table_id: int) -> Optional[RateTable]:
+def get_rate_table_by_id(rate_table_id: int):
     return RateTable.query.get(rate_table_id)
 
 

@@ -40,11 +40,11 @@ def list_users(
     return users, total
 
 
-def get_user_by_id(user_id: int) -> Optional[User]:
+def get_user_by_id(user_id: int):
     return User.query.get(user_id)
 
 
-def create_user(**data) -> User:
+def create_user(**data):
     user = User(
         username=data["username"],
         email=data["email"],
@@ -54,13 +54,13 @@ def create_user(**data) -> User:
         is_active=data.get("is_active", True),
         role_id=data.get("role_id"),
     )
-    user.set_password(data["password"])  # assuming method exists
+    user.set_password(data["password"])
     db.session.add(user)
     db.session.commit()
     return user
 
 
-def update_user(user_id: int, payload: dict) -> None:
+def update_user(user_id: int, payload: dict):
     user = User.query.get(user_id)
     if not user:
         raise ValueError("User not found")
@@ -76,11 +76,11 @@ def update_user(user_id: int, payload: dict) -> None:
         if f in payload and payload[f] is not None:
             setattr(user, f, payload[f])
     if payload.get("password"):
-        user.set_password(payload["password"])  # assuming method exists
+        user.set_password(payload["password"])
     db.session.commit()
 
 
-def delete_user(user_id: int) -> None:
+def delete_user(user_id: int):
     user = User.query.get(user_id)
     if not user:
         return
@@ -90,7 +90,7 @@ def delete_user(user_id: int) -> None:
     db.session.commit()
 
 
-def set_active_status(user_id: int, active: bool) -> None:
+def set_active_status(user_id: int, active: bool):
     user = User.query.get(user_id)
     if not user:
         return
@@ -104,7 +104,7 @@ def list_roles_for_dropdown():
     ]
 
 
-def update_profile(user: User, payload: dict) -> User:
+def update_profile(user: User, payload: dict):
     if not user or not payload:
         return user
     for field in ("first_name", "last_name", "email", "phone"):
@@ -116,7 +116,7 @@ def update_profile(user: User, payload: dict) -> User:
 
 def change_password(
     user: User, current_password: str, new_password: str, confirm_password: str
-) -> Tuple[bool, Optional[str]]:
+):
     if not current_password or not new_password or not confirm_password:
         return False, "All password fields are required"
     if new_password != confirm_password:
