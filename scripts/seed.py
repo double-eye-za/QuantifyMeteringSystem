@@ -327,7 +327,7 @@ def create_tiers_and_time_of_use(rate_tables: dict[str, RateTable]) -> None:
 
 def ensure_roles_and_super_admin() -> None:
     """Create Super Administrator, Administrator, Standard User roles with appropriate permissions and a super admin user."""
-    from app.models.permissions import Permission
+    from app.services.permissions import create_permission
 
     # Define permissions for each module
     full_crud = {"view": True, "create": True, "edit": True, "delete": True}
@@ -424,9 +424,11 @@ def ensure_roles_and_super_admin() -> None:
         role = Role.query.filter_by(name=name).first()
         if role and role.permission_id:
             return role.id
+        from app.models.permissions import Permission
+
         perm = Permission.query.filter_by(name=f"{name} Permissions").first()
         if not perm:
-            perm = Permission.create_permission(
+            perm = create_permission(
                 name=f"{name} Permissions",
                 description=f"Permissions for {name}",
                 permissions_data=permissions_data,
@@ -458,7 +460,9 @@ def ensure_roles_and_super_admin() -> None:
     # Ensure the requested super admin user
     user = User.query.filter_by(email="takudzwa@metalogix.solutions").first()
     if not user:
-        user = User.create_user(
+        from app.services.users import create_user as svc_create_user
+
+        user = svc_create_user(
             username="takudzwa",
             email="takudzwa@metalogix.solutions",
             first_name="Takudzwa",

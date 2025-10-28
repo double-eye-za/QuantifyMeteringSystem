@@ -8,6 +8,12 @@ from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from . import api_v1
 
+from ...services.wallets import get_wallet_by_id as svc_get_wallet_by_id
+from ...services.transactions import (
+    list_transactions as svc_list_transactions,
+    create_transaction as svc_create_transaction,
+)
+
 
 @api_v1.route("/billing", methods=["GET"])
 @login_required
@@ -213,7 +219,7 @@ def billing_page():
 @api_v1.get("/wallets/<int:wallet_id>")
 @login_required
 def get_wallet(wallet_id: int):
-    wallet = Wallet.get_by_id(wallet_id)
+    wallet = svc_get_wallet_by_id(wallet_id)
     if not wallet:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": wallet.to_dict()})
@@ -229,7 +235,7 @@ def topup_wallet(wallet_id: int):
     metadata = payload.get("metadata")
 
     # Validate wallet exists
-    wallet = Wallet.get_by_id(wallet_id)
+    wallet = svc_get_wallet_by_id(wallet_id)
     if not wallet:
         return jsonify({"error": "Not Found", "code": 404}), 404
 
@@ -244,7 +250,7 @@ def topup_wallet(wallet_id: int):
             400,
         )
 
-    txn = Transaction.create(
+    txn = svc_create_transaction(
         wallet_id=wallet_id,
         transaction_type="topup",
         amount=amount,
@@ -279,7 +285,7 @@ def topup_wallet(wallet_id: int):
 @api_v1.get("/wallets/<int:wallet_id>/pending-transactions")
 @login_required
 def list_pending_transactions(wallet_id: int):
-    query = Transaction.list_filtered(wallet_id=wallet_id, status="pending")
+    query = svc_list_transactions(wallet_id=wallet_id, status="pending")
     items, meta = paginate_query(query)
     return jsonify(
         {

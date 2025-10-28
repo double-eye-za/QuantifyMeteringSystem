@@ -81,52 +81,6 @@ class Transaction(db.Model):
         ),
     )
 
-    @staticmethod
-    def list_filtered(
-        wallet_id: int = None, transaction_type: str = None, status: str = None
-    ):
-        query = Transaction.query
-        if wallet_id is not None:
-            query = query.filter(Transaction.wallet_id == wallet_id)
-        if transaction_type is not None:
-            query = query.filter(Transaction.transaction_type == transaction_type)
-        if status is not None:
-            query = query.filter(Transaction.status == status)
-        return query.order_by(Transaction.created_at.desc())
-
-    @staticmethod
-    def get_by_id(txn_id: int):
-        return Transaction.query.get(txn_id)
-
-    @staticmethod
-    def create(
-        wallet_id: int,
-        transaction_type: str,
-        amount,
-        reference: str = None,
-        payment_method: str = None,
-        metadata: dict = None,
-    ) -> "Transaction":
-        # balance updates should be handled at Wallet-level; this just records
-        txn = Transaction(
-            transaction_number=f"TXN{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}",
-            wallet_id=wallet_id,
-            transaction_type=transaction_type,
-            amount=amount,
-            balance_before=0,
-            balance_after=0,
-            reference=reference,
-            payment_method=payment_method,
-            payment_metadata=json.dumps(metadata or {}),
-            status="pending"
-            if transaction_type.startswith("purchase")
-            or payment_method in ("eft", "card", "instant_eft")
-            else "completed",
-        )
-        db.session.add(txn)
-        db.session.commit()
-        return txn
-
     def reverse(self, reason: str = None) -> "Transaction":
         self.status = "reversed"
         db.session.commit()

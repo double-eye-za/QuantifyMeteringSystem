@@ -10,6 +10,16 @@ from app.utils.pagination import paginate_query
 
 from . import api_v1
 
+from ...services.users import (
+    list_users as svc_list_users,
+    create_user as svc_create_user,
+    update_user as svc_update_user,
+    delete_user as svc_delete_user,
+    get_user_by_id as svc_get_user_by_id,
+    set_active_status as svc_set_active_status,
+    list_roles_for_dropdown as svc_list_roles_for_dropdown,
+)
+
 
 @api_v1.route("/users", methods=["GET"])
 @login_required
@@ -35,7 +45,7 @@ def users_page():
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 25))
 
-    users, total = User.get_all(
+    users, total = svc_list_users(
         search=search if search else None,
         is_active=is_active,
         role_id=role_id_int,
@@ -64,7 +74,7 @@ def users_page():
             }
         )
 
-    roles = Role.get_roles_for_dropdown()
+    roles = svc_list_roles_for_dropdown()
 
     pagination = {
         "page": page,
@@ -94,16 +104,7 @@ def create_user():
             if not data.get(field):
                 return jsonify({"error": f"{field} is required"}), 400
 
-        user = User.create_user(
-            username=data["username"],
-            email=data["email"],
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            password=data["password"],
-            role_id=data.get("role_id"),
-            phone=data.get("phone"),
-            is_active=data.get("is_active", True),
-        )
+        user = svc_create_user(**data)
 
         # audit
         log_action(
@@ -132,9 +133,9 @@ def update_user(user_id):
     data = request.get_json()
 
     try:
-        before = User.get_by_id(user_id)
+        before = svc_get_user_by_id(user_id)
         before_dict = before.to_dict() if hasattr(before, "to_dict") and before else {}
-        User.update_user(user_id, data)
+        svc_update_user(user_id, data)
         log_action(
             "user.update",
             entity_type="user",
@@ -153,7 +154,7 @@ def update_user(user_id):
 @requires_permission("users.delete")
 def delete_user(user_id):
     try:
-        User.delete_user(user_id)
+        svc_delete_user(user_id)
         log_action("user.delete", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User deleted successfully"}), 200
 
@@ -166,7 +167,7 @@ def delete_user(user_id):
 @requires_permission("users.enable")
 def enable_user(user_id):
     try:
-        User.set_active_status(user_id, True)
+        svc_set_active_status(user_id, True)
         log_action("user.enable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User enabled successfully"}), 200
 
@@ -179,7 +180,7 @@ def enable_user(user_id):
 @requires_permission("users.disable")
 def disable_user(user_id):
     try:
-        User.set_active_status(user_id, False)
+        svc_set_active_status(user_id, False)
         log_action("user.disable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User disabled successfully"}), 200
 

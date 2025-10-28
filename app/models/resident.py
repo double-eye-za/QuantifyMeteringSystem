@@ -51,69 +51,6 @@ class Resident(db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
 
-    @staticmethod
-    def get_all(
-        search: Optional[str] = None,
-        is_active: Optional[bool] = None,
-        unit_id: Optional[int] = None,
-    ):
-        query = Resident.query
-        if search:
-            like = f"%{search}%"
-            query = query.filter(
-                db.or_(
-                    Resident.first_name.ilike(like),
-                    Resident.last_name.ilike(like),
-                    Resident.email.ilike(like),
-                    Resident.phone.ilike(like),
-                    Resident.id_number.ilike(like),
-                )
-            )
-        if is_active is not None:
-            query = query.filter(Resident.is_active == is_active)
-        if unit_id is not None:
-            from .unit import Unit
-
-            query = query.join(Unit, Resident.id == Unit.resident_id).filter(
-                Unit.id == unit_id
-            )
-        return query.order_by(Resident.first_name.asc(), Resident.last_name.asc())
-
-    @staticmethod
-    def get_all_for_dropdown():
-        return Resident.get_all().all()
-
-    @staticmethod
-    def get_by_id(resident_id: int):
-        return Resident.query.get(resident_id)
-
-    @staticmethod
-    def create_from_payload(payload: dict, user_id: Optional[int] = None):
-        status = (payload.get("status") or "active").lower()
-        is_active = payload.get("is_active")
-        # Derive is_active from status if not explicitly provided
-        if is_active is None:
-            is_active = False if status == "vacated" else True
-        r = Resident(
-            id_number=payload.get("id_number"),
-            first_name=payload["first_name"],
-            last_name=payload["last_name"],
-            email=payload["email"],
-            phone=payload["phone"],
-            alternate_phone=payload.get("alternate_phone"),
-            emergency_contact_name=payload.get("emergency_contact_name"),
-            emergency_contact_phone=payload.get("emergency_contact_phone"),
-            lease_start_date=payload.get("lease_start_date"),
-            lease_end_date=payload.get("lease_end_date"),
-            status=status,
-            is_active=is_active,
-            app_user_id=payload.get("app_user_id"),
-            created_by=user_id,
-        )
-        db.session.add(r)
-        db.session.commit()
-        return r
-
     def update_from_payload(self, payload: dict, user_id: Optional[int] = None):
         for field in (
             "id_number",

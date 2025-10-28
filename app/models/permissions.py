@@ -23,19 +23,6 @@ class Permission(db.Model):
     permissions = db.Column(db.JSON, nullable=False, default=dict)
     roles = db.relationship("Role", back_populates="permission")
 
-    @staticmethod
-    def create_permission(name, description, permissions_data):
-        try:
-            permission_set = Permission(
-                name=name, description=description, permissions=permissions_data
-            )
-            db.session.add(permission_set)
-            db.session.flush()
-            return permission_set
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            raise e
-
     def update_permissions(self, permissions_data):
         try:
             self.permissions = permissions_data
@@ -54,6 +41,4 @@ class Permission(db.Model):
             db.session.rollback()
             raise e
 
-    @staticmethod
-    def get_all_permissions():
-        return Permission.query.order_by(Permission.name.asc()).all()
+    # Static methods removed; use app.services.permissions for CRUD operations

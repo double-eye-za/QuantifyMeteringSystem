@@ -10,6 +10,14 @@ from app.utils.pagination import paginate_query
 
 from . import api_v1
 
+from ...services.roles import (
+    list_roles as svc_list_roles,
+    create_role as svc_create_role,
+    update_role as svc_update_role,
+    delete_role as svc_delete_role,
+)
+from ...services.permissions import list_permissions as svc_list_permissions
+
 
 @api_v1.route("/roles", methods=["GET"])
 @login_required
@@ -20,7 +28,7 @@ def roles_page():
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 25))
 
-    roles, total = Role.get_all(
+    roles, total = svc_list_roles(
         search=search if search else None, page=page, per_page=per_page
     )
 
@@ -45,7 +53,7 @@ def roles_page():
         )
 
     # Get permissions for dropdown
-    permissions = Permission.get_all_permissions()
+    permissions = svc_list_permissions()
 
     modules_actions = {}
     for perm in permissions:
@@ -86,7 +94,7 @@ def create_role():
         if not data.get("name"):
             return jsonify({"error": "Role name is required"}), 400
 
-        role = Role.create_role(
+        role = svc_create_role(
             name=data["name"],
             description=data.get("description", ""),
             permissions_data=data.get("permissions", {}),
@@ -114,7 +122,7 @@ def update_role(role_id):
     data = request.get_json()
 
     try:
-        Role.update_role(
+        svc_update_role(
             role_id=role_id,
             name=data.get("name"),
             description=data.get("description"),
@@ -135,7 +143,7 @@ def update_role(role_id):
 @requires_permission("roles.delete")
 def delete_role(role_id):
     try:
-        Role.delete_role(role_id)
+        svc_delete_role(role_id)
         log_action("role.delete", entity_type="role", entity_id=role_id)
         return jsonify({"success": True, "message": "Role deleted successfully"}), 200
 

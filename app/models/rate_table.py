@@ -49,19 +49,6 @@ class RateTable(db.Model):
         ),
     )
 
-    @staticmethod
-    def get_by_id(rate_table_id: int) -> Optional["RateTable"]:
-        return RateTable.query.get(rate_table_id)
-
-    @staticmethod
-    def list_filtered(utility_type: str = None, is_active: bool = None):
-        query = RateTable.query
-        if utility_type:
-            query = query.filter(RateTable.utility_type == utility_type)
-        if is_active is not None:
-            query = query.filter(RateTable.is_active == is_active)
-        return query.order_by(RateTable.effective_from.desc())
-
     def to_dict(self):
         return {
             "id": self.id,

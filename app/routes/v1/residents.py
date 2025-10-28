@@ -4,6 +4,13 @@ from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
 from ...models import Resident, Unit, Estate
+from ...services.residents import (
+    list_residents as svc_list_residents,
+    get_resident_by_id,
+    create_resident as svc_create_resident,
+    update_resident as svc_update_resident,
+    delete_resident as svc_delete_resident,
+)
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
 from ...utils.decorators import requires_permission
@@ -28,7 +35,7 @@ def residents_page():
     if not unit_id:
         unit_id = None
 
-    query = Resident.get_all(search=search, is_active=is_active_val, unit_id=unit_id)
+    query = svc_list_residents(search=search, is_active=is_active_val, unit_id=unit_id)
     items, meta = paginate_query(query)
 
     residents = []
@@ -75,7 +82,7 @@ def residents_page():
 @requires_permission("residents.view")
 def list_residents():
     search = request.args.get("q") or None
-    items, meta = paginate_query(Resident.get_all(search=search))
+    items, meta = paginate_query(svc_list_residents(search=search))
     return jsonify({"data": [r.to_dict() for r in items], **meta})
 
 
@@ -88,7 +95,7 @@ def create_resident():
     missing = [f for f in required if not payload.get(f)]
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
-    r = Resident.create_from_payload(payload, user_id=getattr(current_user, "id", None))
+    r = svc_create_resident(payload, user_id=getattr(current_user, "id", None))
     log_action(
         "resident.create", entity_type="resident", entity_id=r.id, new_values=payload
     )
@@ -99,12 +106,12 @@ def create_resident():
 @login_required
 @requires_permission("residents.edit")
 def update_resident(resident_id: int):
-    r = Resident.get_by_id(resident_id)
+    r = get_resident_by_id(resident_id)
     if not r:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
     before = r.to_dict()
-    r.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    svc_update_resident(r, payload, user_id=getattr(current_user, "id", None))
     log_action(
         "resident.update",
         entity_type="resident",
@@ -119,10 +126,10 @@ def update_resident(resident_id: int):
 @login_required
 @requires_permission("residents.delete")
 def delete_resident(resident_id: int):
-    r = Resident.get_by_id(resident_id)
+    r = get_resident_by_id(resident_id)
     if not r:
         return jsonify({"error": "Not Found", "code": 404}), 404
-    ok, err = r.delete()
+    ok, err = svc_delete_resident(r)
     if not ok:
         return jsonify({"error": "Conflict", **err}), err.get("code", 409)
     log_action("resident.delete", entity_type="resident", entity_id=resident_id)

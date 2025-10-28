@@ -10,6 +10,19 @@ from ...utils.decorators import requires_permission
 from . import api_v1
 from ...utils.rates import calculate_estate_bill
 
+from ...services.units import (
+    list_units as svc_list_units,
+    get_unit_by_id as svc_get_unit_by_id,
+    create_unit as svc_create_unit,
+    update_unit as svc_update_unit,
+    delete_unit as svc_delete_unit,
+)
+from ...services.meters import list_available_by_type as svc_list_available_meters
+from ...services.residents import (
+    list_residents_for_dropdown as svc_list_residents_for_dropdown,
+)
+from ...services.rate_tables import get_rate_table_by_id as svc_get_rate_table_by_id
+
 
 @api_v1.route("/units", methods=["GET"])
 @login_required
@@ -27,7 +40,7 @@ def units_page():
     if q == "":
         q = None
 
-    query = Unit.get_all(
+    query = svc_list_units(
         estate_id=estate_id, occupancy_status=occupancy_status, search=q
     )
     items, meta = paginate_query(query)
@@ -48,7 +61,7 @@ def units_page():
         units.append(ud)
     estates = [
         {"id": e.id, "name": e.name}
-        for e in Estate.get_all().order_by(Estate.name.asc()).all()
+        for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
 
     assigned_ids = set()
@@ -69,14 +82,18 @@ def units_page():
             "disabled": m.id in assigned_ids,
         }
 
-    electricity_meters = [serialize_meter(m) for m in Meter.get_electricity_meters()]
-    water_meters = [serialize_meter(m) for m in Meter.get_water_meters()]
-    hot_water_meters = [serialize_meter(m) for m in Meter.get_hot_water_meters()]
-    solar_meters = [serialize_meter(m) for m in Meter.get_solar_meters()]
+    electricity_meters = [
+        serialize_meter(m) for m in svc_list_available_meters("electricity")
+    ]
+    water_meters = [serialize_meter(m) for m in svc_list_available_meters("water")]
+    hot_water_meters = [
+        serialize_meter(m) for m in svc_list_available_meters("hot_water")
+    ]
+    solar_meters = [serialize_meter(m) for m in svc_list_available_meters("solar")]
 
     residents = [
         {"id": r.id, "name": f"{r.first_name} {r.last_name}"}
-        for r in Resident.get_all_for_dropdown()
+        for r in svc_list_residents_for_dropdown()
     ]
 
     return render_template(
@@ -111,7 +128,7 @@ def list_units():
         occupancy_status = None
     if q == "":
         q = None
-    query = Unit.get_all(
+    query = svc_list_units(
         estate_id=estate_id, occupancy_status=occupancy_status, search=q
     )
     items, meta = paginate_query(query)
@@ -128,7 +145,7 @@ def wallet_statement_page(unit_id: int):
     from sqlalchemy import func
 
     # Get unit and wallet data
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return render_template("errors/404.html"), 404
 
@@ -265,7 +282,7 @@ def wallet_statement_page(unit_id: int):
 @requires_permission("units.view")
 def unit_visual_page(unit_id: int):
     """Render the unit visual diagram page"""
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return render_template("errors/404.html"), 404
 
@@ -277,17 +294,17 @@ def unit_visual_page(unit_id: int):
 @requires_permission("units.view")
 def unit_details_page(unit_id: int):
     """Render the unit details page with dynamic unit and resident info"""
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return render_template("errors/404.html"), 404
 
     estate = None
     if getattr(unit, "estate_id", None):
-        estate = Estate.get_by_id(unit.estate_id)
+        estate = Estate.query.get(unit.estate_id)
 
     resident = None
     if getattr(unit, "resident_id", None):
-        resident = Resident.get_by_id(unit.resident_id)
+        resident = Resident.query.get(unit.resident_id)
 
     # Get wallet for the unit
     wallet = None
@@ -363,7 +380,7 @@ def unit_details_page(unit_id: int):
 @login_required
 @requires_permission("units.view")
 def get_unit(unit_id: int):
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": unit.to_dict()})
@@ -381,7 +398,7 @@ def apply_unit_overrides():
     if not rate_table_id:
         return jsonify({"error": "rate_table_id is required"}), 400
 
-    rt = RateTable.get_by_id(int(rate_table_id))
+    rt = svc_get_rate_table_by_id(int(rate_table_id))
     if not rt:
         return jsonify({"error": "Invalid rate_table_id"}), 400
 
@@ -397,12 +414,12 @@ def apply_unit_overrides():
         elif utility_type == "water":
             unit_obj.water_rate_table_id = int(rate_table_id)
 
-        unit_obj.update_from_payload({}, current_user.id)
+        svc_update_unit(unit_obj, {}, getattr(current_user, "id", None))
         updated_unit_ids.append(unit_obj.id)
 
     if unit_ids:
         for uid in unit_ids:
-            u = Unit.get_by_id(int(uid))
+            u = svc_get_unit_by_id(int(uid))
             if u:
                 apply_override_to_unit(u)
 
@@ -485,12 +502,12 @@ def remove_unit_overrides():
         elif utility_type == "water":
             unit_obj.water_rate_table_id = None
 
-        unit_obj.update_from_payload({}, current_user.id)
+        svc_update_unit(unit_obj, {}, getattr(current_user, "id", None))
         updated_unit_ids.append(unit_obj.id)
 
     if unit_ids:
         for uid in unit_ids:
-            u = Unit.get_by_id(int(uid))
+            u = svc_get_unit_by_id(int(uid))
             if u:
                 remove_override_from_unit(u)
 
@@ -528,7 +545,7 @@ def remove_unit_overrides():
 @requires_permission("units.create")
 def create_unit():
     payload = request.get_json(force=True) or {}
-    unit = Unit.create_from_payload(payload, user_id=getattr(current_user, "id", None))
+    unit = svc_create_unit(payload, user_id=getattr(current_user, "id", None))
     log_action("unit.create", entity_type="unit", entity_id=unit.id, new_values=payload)
     return jsonify({"data": unit.to_dict()}), 201
 
@@ -537,12 +554,12 @@ def create_unit():
 @login_required
 @requires_permission("units.edit")
 def update_unit(unit_id: int):
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
     before = unit.to_dict()
-    unit.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    svc_update_unit(unit, payload, user_id=getattr(current_user, "id", None))
     log_action(
         "unit.update",
         entity_type="unit",
@@ -557,9 +574,9 @@ def update_unit(unit_id: int):
 @login_required
 @requires_permission("units.delete")
 def delete_unit(unit_id: int):
-    unit = Unit.get_by_id(unit_id)
+    unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
-    unit.delete()
+    svc_delete_unit(unit)
     log_action("unit.delete", entity_type="unit", entity_id=unit_id)
     return jsonify({"message": "Deleted"})

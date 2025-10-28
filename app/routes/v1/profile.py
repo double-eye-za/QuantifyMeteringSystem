@@ -4,7 +4,10 @@ from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
 from . import api_v1
-from ...models.user import User
+from ...services.users import (
+    update_profile as svc_update_profile,
+    change_password as svc_change_password,
+)
 from ...utils.audit import log_action
 
 
@@ -41,7 +44,7 @@ def update_profile():
         "phone": current_user.phone,
     }
 
-    user = User.update_profile(current_user, payload)
+    user = svc_update_profile(current_user, payload)
 
     # Audit log profile update
     log_action(
@@ -71,7 +74,7 @@ def update_profile():
 @login_required
 def profile_change_password():
     payload = request.get_json(force=True) or {}
-    ok, err = User.change_password(
+    ok, err = svc_change_password(
         current_user,
         payload.get("current_password"),
         payload.get("new_password"),

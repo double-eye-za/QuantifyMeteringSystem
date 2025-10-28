@@ -3,7 +3,10 @@ from __future__ import annotations
 from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
-from ...models import SystemSetting
+from ...services.system_settings import (
+    list_settings_as_dict,
+    save_settings as svc_save_settings,
+)
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
 from . import api_v1
@@ -22,7 +25,7 @@ def settings_page():
 def get_settings():
     """Get all system settings"""
     try:
-        settings = SystemSetting.get_all_settings()
+        settings = list_settings_as_dict()
         return jsonify({"settings": settings})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -49,7 +52,7 @@ def save_general_settings():
             ("session_timeout", str(data.get("session_timeout", 15)), "number"),
         ]
 
-        SystemSetting.save_settings(settings_to_save, "general", current_user.id)
+        svc_save_settings(settings_to_save, "general", current_user.id)
 
         log_action(
             "settings.general.update",
@@ -102,7 +105,7 @@ def save_security_settings():
             ("allowed_ips", data.get("allowed_ips", ""), "string"),
         ]
 
-        SystemSetting.save_settings(settings_to_save, "security", current_user.id)
+        svc_save_settings(settings_to_save, "security", current_user.id)
 
         log_action(
             "settings.security.update",
@@ -145,7 +148,7 @@ def save_notification_settings():
             ),
         ]
 
-        SystemSetting.save_settings(settings_to_save, "notifications", current_user.id)
+        svc_save_settings(settings_to_save, "notifications", current_user.id)
 
         log_action(
             "settings.notifications.update",

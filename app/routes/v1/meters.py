@@ -16,6 +16,15 @@ from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
 from . import api_v1
 
+from ...services.meters import (
+    list_meters as svc_list_meters,
+    get_meter_by_id as svc_get_meter_by_id,
+    create_meter as svc_create_meter,
+    list_available_by_type as svc_list_available_by_type,
+    list_for_meter_readings as svc_list_for_meter_readings,
+)
+from ...services.units import find_unit_by_meter_id as svc_find_unit_by_meter_id
+
 
 @api_v1.route("/meters", methods=["GET"])
 @login_required
@@ -27,7 +36,9 @@ def meters_page():
     estate_id = request.args.get("estate_id", type=int) or None
     credit_status = request.args.get("credit_status") or None
 
-    base_query = Meter.get_all(meter_type=meter_type, communication_status=comm_status)
+    base_query = svc_list_meters(
+        meter_type=meter_type, communication_status=comm_status
+    )
     all_meters = base_query.all()
 
     def meter_wallet_balance_for_type(w: Wallet | None, m: Meter) -> float:
@@ -107,7 +118,7 @@ def meters_page():
     }
 
     # Stats
-    total_meters = Meter.count_all()
+    total_meters = Meter.query.count()
     total_active = Meter.query.filter(Meter.is_active == True).count()
     # Low credit meters evaluated via associated wallets
     low_credit_count = 0
@@ -193,7 +204,7 @@ def meter_details_page(meter_id: str):
     """Render the meter details page with enriched data for the selected meter."""
     meter = Meter.query.filter_by(serial_number=meter_id).first()
     if meter is None and meter_id.isdigit():
-        meter = Meter.get_by_id(int(meter_id))
+        meter = svc_get_meter_by_id(int(meter_id))
     if meter is None:
         return render_template(
             "meters/meter-details.html",
@@ -238,7 +249,7 @@ def meter_details_page(meter_id: str):
     )
 
     # Recent readings (latest 20)
-    readings_query = MeterReading.list_for_meter(meter.id)
+    readings_query = svc_list_for_meter_readings(meter.id)
     readings_items, _ = paginate_query(readings_query)
     recent_readings = [r.to_dict() for r in readings_items]
 
@@ -267,7 +278,7 @@ def meter_details_page(meter_id: str):
 @login_required
 @requires_permission("meters.view")
 def get_meter(meter_id: int):
-    meter = Meter.get_by_id(meter_id)
+    meter = svc_get_meter_by_id(meter_id)
     if not meter:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": meter.to_dict()})
@@ -320,7 +331,7 @@ def create_meter():
     status = (payload.get("status") or "").lower()
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
-    meter = Meter.create_from_payload(payload)
+    meter = svc_create_meter(payload)
 
     unit_id = payload.get("unit_id")
     try:
@@ -338,7 +349,7 @@ def create_meter():
 @login_required
 @requires_permission("meters.edit")
 def update_meter(meter_id: int):
-    meter = Meter.get_by_id(meter_id)
+    meter = svc_get_meter_by_id(meter_id)
     if not meter:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
@@ -376,7 +387,7 @@ def update_meter(meter_id: int):
 @login_required
 @requires_permission("meters.delete")
 def delete_meter(meter_id: int):
-    meter = Meter.get_by_id(meter_id)
+    meter = svc_get_meter_by_id(meter_id)
     if not meter:
         return jsonify({"error": "Not Found", "code": 404}), 404
     # Unassign from any unit
@@ -399,7 +410,7 @@ def available_meters():
     meter_type = request.args.get("meter_type")
     if not meter_type:
         return jsonify({"error": "meter_type is required"}), 400
-    items = Meter.list_available_by_type(meter_type)
+    items = svc_list_available_by_type(meter_type)
     return jsonify(
         {
             "data": [
@@ -422,7 +433,7 @@ def meter_readings(meter_id: int):
     end = request.args.get("end_date")
     start_dt = datetime.fromisoformat(start) if start else None
     end_dt = datetime.fromisoformat(end) if end else None
-    query = MeterReading.list_for_meter(meter_id, start=start_dt, end=end_dt)
+    query = svc_list_for_meter_readings(meter_id, start=start_dt, end=end_dt)
     items, meta = paginate_query(query)
     return jsonify({"data": [r.to_dict() for r in items], **meta})
 
@@ -497,12 +508,12 @@ def export_meters_pdf():
 
         for meter in meters:
             # Get unit and estate info
-            unit = Unit.find_by_meter_id(meter.id)
+            unit = svc_find_unit_by_meter_id(meter.id)
             estate_name = ""
             unit_location = ""
 
             if unit:
-                estate = Estate.get_by_id(unit.estate_id)
+                estate = Estate.query.get(unit.estate_id)
                 estate_name = estate.name if estate else ""
                 unit_location = (
                     f"{unit.unit_number}" if unit.unit_number else f"Unit {unit.id}"
@@ -523,7 +534,7 @@ def export_meters_pdf():
                 balance = "N/A"
 
             # Get last reading
-            readings_query = MeterReading.list_for_meter(meter.id)
+            readings_query = svc_list_for_meter_readings(meter.id)
             last_reading = readings_query.first()
             last_reading_text = (
                 last_reading.reading_date.strftime("%Y-%m-%d")

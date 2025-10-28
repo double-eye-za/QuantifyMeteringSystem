@@ -11,6 +11,17 @@ from . import api_v1
 
 from sqlalchemy import union, func
 
+from ...services.estates import (
+    list_estates as svc_list_estates,
+    get_estate_by_id as svc_get_estate_by_id,
+    create_estate as svc_create_estate,
+    update_estate as svc_update_estate,
+    delete_estate as svc_delete_estate,
+    count_estates as svc_count_estates,
+    list_rate_tables_for_dropdown,
+    get_meter_by_id as svc_get_meter_by_id,
+)
+
 
 @api_v1.route("/estates", methods=["GET"])
 @login_required
@@ -23,20 +34,22 @@ def estates_page():
     if is_active is not None:
         is_active_bool = is_active.lower() in ("1", "true", "yes")
 
-    query = Estate.get_all(search=q, is_active=is_active_bool)
+    query = svc_list_estates(search=q, is_active=is_active_bool)
     items, meta = paginate_query(query)
 
-    # Summary counts via model statics
-    total_estates = Estate.count_all()
+    # Summary counts via services
+    total_estates = svc_count_estates()
     from ...models import (
         Unit,
         Meter,
         RateTable,
     )  # local import to avoid circulars at module import
 
-    total_units = Unit.count_all()
-    total_meters = Meter.count_all()
-    active_dc450s = Meter.count_active_dc450s()
+    total_units = Unit.query.count()
+    total_meters = Meter.query.count()
+    active_dc450s = Meter.query.filter(
+        Meter.model == "DC450", Meter.is_active == True
+    ).count()
 
     estates = [e.to_dict() for e in items]
 
@@ -78,11 +91,9 @@ def estates_page():
 
     # Rate tables for dropdowns
     electricity_rate_tables = [
-        rt.to_dict() for rt in RateTable.list_filtered(utility_type="electricity").all()
+        rt.to_dict() for rt in list_rate_tables_for_dropdown("electricity")
     ]
-    water_rate_tables = [
-        rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
-    ]
+    water_rate_tables = [rt.to_dict() for rt in list_rate_tables_for_dropdown("water")]
 
     # Fetch bulk meter data for overview
     bulk_meters_data = []
@@ -92,7 +103,7 @@ def estates_page():
 
         # Get bulk electricity meter
         if estate["bulk_electricity_meter_id"]:
-            bulk_elec_meter = Meter.get_by_id(estate["bulk_electricity_meter_id"])
+            bulk_elec_meter = svc_get_meter_by_id(estate["bulk_electricity_meter_id"])
             if bulk_elec_meter:
                 bulk_meters_data.append(
                     {
@@ -113,7 +124,7 @@ def estates_page():
 
         # Get bulk water meter
         if estate["bulk_water_meter_id"]:
-            bulk_water_meter = Meter.get_by_id(estate["bulk_water_meter_id"])
+            bulk_water_meter = svc_get_meter_by_id(estate["bulk_water_meter_id"])
             if bulk_water_meter:
                 bulk_meters_data.append(
                     {
@@ -153,7 +164,7 @@ def estates_page():
 @login_required
 @requires_permission("estates.view")
 def get_estate(estate_id: int):
-    estate = Estate.get_by_id(estate_id)
+    estate = svc_get_estate_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": estate.to_dict()})
@@ -163,7 +174,7 @@ def get_estate(estate_id: int):
 @login_required
 @requires_permission("estates.edit")
 def update_estate_rate_assignment(estate_id: int):
-    estate = Estate.get_by_id(estate_id)
+    estate = svc_get_estate_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
 
@@ -201,9 +212,7 @@ def update_estate_rate_assignment(estate_id: int):
 @requires_permission("estates.create")
 def create_estate():
     payload = request.get_json(force=True) or {}
-    estate = Estate.create_from_payload(
-        payload, user_id=getattr(current_user, "id", None)
-    )
+    estate = svc_create_estate(payload, user_id=getattr(current_user, "id", None))
     log_action(
         "estate.create", entity_type="estate", entity_id=estate.id, new_values=payload
     )
@@ -214,12 +223,12 @@ def create_estate():
 @login_required
 @requires_permission("estates.edit")
 def update_estate(estate_id: int):
-    estate = Estate.get_by_id(estate_id)
+    estate = svc_get_estate_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
     before = estate.to_dict()
-    estate.update_from_payload(payload, user_id=getattr(current_user, "id", None))
+    svc_update_estate(estate, payload, user_id=getattr(current_user, "id", None))
     log_action(
         "estate.update",
         entity_type="estate",
@@ -234,10 +243,10 @@ def update_estate(estate_id: int):
 @login_required
 @requires_permission("estates.delete")
 def delete_estate(estate_id: int):
-    estate = Estate.get_by_id(estate_id)
+    estate = svc_get_estate_by_id(estate_id)
     if not estate:
         return jsonify({"error": "Not Found", "code": 404}), 404
-    estate.delete()
+    svc_delete_estate(estate)
     log_action("estate.delete", entity_type="estate", entity_id=estate_id)
     return jsonify({"message": "Deleted"}), 200
 
@@ -246,17 +255,17 @@ def delete_estate(estate_id: int):
 @login_required
 @requires_permission("estates.view")
 def estate_details_page(estate_id: int):
-    estate = Estate.get_by_id(estate_id)
+    estate = svc_get_estate_by_id(estate_id)
     if not estate:
         return render_template("errors/404.html"), 404
 
-    units_query = Unit.get_all(estate_id=estate_id)
+    units_query = Unit.query.filter_by(estate_id=estate_id)
     units, pagination = paginate_query(units_query)
 
     # Enrich units with resident, wallet balance
     enriched_units = []
     for u in units:
-        resident = Resident.get_by_id(u.resident_id) if u.resident_id else None
+        resident = Resident.query.get(u.resident_id) if u.resident_id else None
         wallet = u.wallet
         balance = float(wallet.balance or 0) if wallet else 0
         enriched_units.append(
@@ -321,22 +330,22 @@ def estate_details_page(estate_id: int):
     }
 
     bulk_elec_meter = (
-        Meter.get_by_id(estate.bulk_electricity_meter_id)
+        svc_get_meter_by_id(estate.bulk_electricity_meter_id)
         if estate.bulk_electricity_meter_id
         else None
     )
     bulk_water_meter = (
-        Meter.get_by_id(estate.bulk_water_meter_id)
+        svc_get_meter_by_id(estate.bulk_water_meter_id)
         if estate.bulk_water_meter_id
         else None
     )
     elec_rate_table = (
-        RateTable.get_by_id(estate.electricity_rate_table_id)
+        RateTable.query.get(estate.electricity_rate_table_id)
         if estate.electricity_rate_table_id
         else None
     )
     water_rate_table = (
-        RateTable.get_by_id(estate.water_rate_table_id)
+        RateTable.query.get(estate.water_rate_table_id)
         if estate.water_rate_table_id
         else None
     )

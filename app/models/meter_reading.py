@@ -39,17 +39,6 @@ class MeterReading(db.Model):
         ),
     )
 
-    @staticmethod
-    def list_for_meter(
-        meter_id: int, start: Optional[datetime] = None, end: Optional[datetime] = None
-    ):
-        query = MeterReading.query.filter(MeterReading.meter_id == meter_id)
-        if start is not None:
-            query = query.filter(MeterReading.reading_date >= start)
-        if end is not None:
-            query = query.filter(MeterReading.reading_date <= end)
-        return query.order_by(MeterReading.reading_date.desc())
-
     def to_dict(self):
         return {
             "id": self.id,

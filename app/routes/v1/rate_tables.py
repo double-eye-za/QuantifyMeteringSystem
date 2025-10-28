@@ -10,6 +10,11 @@ from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
 from . import api_v1
 
+from ...services.rate_tables import (
+    list_rate_tables as svc_list_rate_tables,
+    get_rate_table_by_id as svc_get_rate_table_by_id,
+)
+
 
 @api_v1.route("/rate-tables", methods=["GET"])
 @login_required
@@ -18,13 +23,13 @@ def rate_tables_page():
     """Render the rate tables page with available rate tables and estate assignments"""
 
     electricity_rate_tables = [
-        rt.to_dict() for rt in RateTable.list_filtered(utility_type="electricity").all()
+        rt.to_dict() for rt in svc_list_rate_tables(utility_type="electricity").all()
     ]
     water_rate_tables = [
-        rt.to_dict() for rt in RateTable.list_filtered(utility_type="water").all()
+        rt.to_dict() for rt in svc_list_rate_tables(utility_type="water").all()
     ]
     # All rate tables
-    raw_rate_tables = RateTable.list_filtered().all()
+    raw_rate_tables = svc_list_rate_tables().all()
     all_rate_tables = [r.to_dict() for r in raw_rate_tables]
 
     rate_table_id_to_tiers = {}
@@ -62,7 +67,7 @@ def rate_tables_page():
             for p in tou_periods
         ]
 
-    estates = [e.to_dict() for e in Estate.get_all().order_by(Estate.name.asc()).all()]
+    estates = [e.to_dict() for e in Estate.query.order_by(Estate.name.asc()).all()]
 
     return render_template(
         "rate-tables/rate-table.html",
@@ -88,7 +93,7 @@ def rate_table_builder_page():
 @requires_permission("rate_tables.edit")
 def rate_table_edit_page(rate_table_id: int):
     """Render the edit page for a specific rate table"""
-    rt = RateTable.get_by_id(rate_table_id)
+    rt = svc_get_rate_table_by_id(rate_table_id)
     if not rt:
         return render_template("errors/404.html"), 404
 
@@ -107,7 +112,7 @@ def list_rate_tables():
     is_active_bool = None
     if is_active is not None:
         is_active_bool = is_active.lower() in ("1", "true", "yes")
-    query = RateTable.list_filtered(utility_type=utility_type, is_active=is_active_bool)
+    query = svc_list_rate_tables(utility_type=utility_type, is_active=is_active_bool)
     items, meta = paginate_query(query)
     return jsonify({"data": [r.to_dict() for r in items], **meta})
 
@@ -116,7 +121,7 @@ def list_rate_tables():
 @login_required
 @requires_permission("rate_tables.view")
 def get_rate_table(rate_table_id: int):
-    rt = RateTable.get_by_id(rate_table_id)
+    rt = svc_get_rate_table_by_id(rate_table_id)
     if not rt:
         return jsonify({"error": "Not Found", "code": 404}), 404
     return jsonify({"data": rt.to_dict()})
@@ -126,7 +131,7 @@ def get_rate_table(rate_table_id: int):
 @login_required
 @requires_permission("rate_tables.view")
 def get_rate_table_details(rate_table_id: int):
-    rt = RateTable.get_by_id(rate_table_id)
+    rt = svc_get_rate_table_by_id(rate_table_id)
     if not rt:
         return jsonify({"error": "Not Found", "code": 404}), 404
     tiers = (
@@ -263,7 +268,7 @@ def rate_preview():
                 ]
             }
         # fallback to stored JSON if in consumable format
-        rt = RateTable.get_by_id(int(rt_id))
+        rt = svc_get_rate_table_by_id(int(rt_id))
         if not rt:
             return {}
         rs = rt.to_dict().get("rate_structure") or {}
@@ -294,7 +299,7 @@ def rate_preview():
 @requires_permission("rate_tables.edit")
 def update_rate_table(rate_table_id: int):
     try:
-        rt = RateTable.get_by_id(rate_table_id)
+        rt = svc_get_rate_table_by_id(rate_table_id)
         if not rt:
             return jsonify({"error": "Not Found"}), 404
 
@@ -341,7 +346,7 @@ def update_rate_table(rate_table_id: int):
 @login_required
 @requires_permission("rate_tables.delete")
 def delete_rate_table(rate_table_id: int):
-    rt = RateTable.get_by_id(rate_table_id)
+    rt = svc_get_rate_table_by_id(rate_table_id)
     if not rt:
         return jsonify({"error": "Not Found"}), 404
     # Block delete if rate table linked to estates
