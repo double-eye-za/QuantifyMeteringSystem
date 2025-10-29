@@ -71,7 +71,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.electricity_used_kwh | round(1) }} kWh</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.electricity_used_kwh | format_number(1) }} kWh</p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Electricity Used</p>
   </div>
 
@@ -83,7 +83,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.cold_water_kL | round(1) }} kL</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.cold_water_kL | format_number(1) }} kL</p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Cold Water Used</p>
   </div>
 
@@ -95,7 +95,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.hot_water_kL | round(1) }} kL</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.hot_water_kL | format_number(1) }} kL</p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Hot Water Used</p>
   </div>
 
@@ -107,9 +107,9 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.solar_kwh | round(1) }} kWh</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ kpis.solar_kwh | format_number(1) }} kWh</p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Solar Consumption</p>
-    <p class="text-xs text-green-600 font-medium mt-1">{{ kpis.solar_contribution_percent | round(1) }}% contribution</p>
+    <p class="text-xs text-green-600 font-medium mt-1">{{ kpis.solar_contribution_percent | format_number(1) }}% contribution</p>
   </div>
 
   <!-- Total Revenue (R) -->
@@ -120,7 +120,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       </div>
       <span class="text-xs text-gray-500">{{ current_month }}</span>
     </div>
-    <p class="text-2xl font-bold text-gray-900 dark:text-white">R {{ kpis.total_revenue | round(0) }}</p>
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">R {{ kpis.total_revenue | format_number(0) }}</p>
     <p class="text-xs text-gray-600 dark:text-gray-400">Total Revenue</p>
   </div>
 </div>
@@ -134,7 +134,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           <i class="fas fa-chart-bar text-primary mr-2"></i>Estate Usage Comparison
-        </h3>
+  </h3>
       </div>
       <div id="estateComparisonChart" class="h-64 flex items-center justify-center text-gray-500">
         <canvas id="estateChart"></canvas>
@@ -216,7 +216,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
               {% elif utility.utility == 'Solar' %}bg-yellow-500
               {% else %}bg-gray-500{% endif %}"></div>
             <span class="text-gray-600 dark:text-gray-400">{{ utility.utility }}</span>
-            <span class="font-semibold text-gray-900 dark:text-white">R{{ utility.revenue | round(0) }}</span>
+            <span class="font-semibold text-gray-900 dark:text-white">R{{ utility.revenue | format_number(0) }}</span>
           </div>
           {% endfor %}
         </div>
@@ -229,7 +229,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
       <div>
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Average Spend per Resident</h4>
         <div class="text-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-          <div class="text-3xl font-bold text-green-600">R{{ avg_spend_per_resident | round(0) }}</div>
+          <div class="text-3xl font-bold text-green-600">R{{ avg_spend_per_resident | format_number(0) }}</div>
           <p class="text-xs text-gray-600 dark:text-gray-400">Current Month Average</p>
         </div>
       </div>
