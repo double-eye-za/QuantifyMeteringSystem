@@ -155,13 +155,11 @@ def wallet_statement_page(unit_id: int):
 
     estate = Estate.query.get(unit.estate_id)
 
-    # Get recent transactions for this wallet
-    transactions = (
-        Transaction.query.filter_by(wallet_id=wallet.id)
-        .order_by(Transaction.completed_at.desc())
-        .limit(50)
-        .all()
+    # Transactions
+    txn_query = Transaction.query.filter_by(wallet_id=wallet.id).order_by(
+        Transaction.completed_at.desc()
     )
+    txn_items, txn_meta = paginate_query(txn_query)
 
     # Get last topup date
     last_topup = (
@@ -261,9 +259,9 @@ def wallet_statement_page(unit_id: int):
         unit=unit,
         wallet=wallet,
         estate=estate,
-        transactions=transactions,
+        transactions=txn_items,
+        transactions_pagination=txn_meta,
         last_topup_date=last_topup_date,
-        # Usage statistics
         electricity_total=electricity_total,
         water_total=water_total,
         hot_water_total=hot_water_total,
@@ -286,7 +284,196 @@ def unit_visual_page(unit_id: int):
     if not unit:
         return render_template("errors/404.html"), 404
 
-    return render_template("units/unit-visual.html", unit=unit)
+    elec_serial = water_serial = solar_serial = hot_water_serial = None
+    if unit.electricity_meter_id:
+        m = Meter.query.get(unit.electricity_meter_id)
+        elec_serial = getattr(m, "serial_number", None) if m else None
+    if unit.water_meter_id:
+        m = Meter.query.get(unit.water_meter_id)
+        water_serial = getattr(m, "serial_number", None) if m else None
+    if unit.solar_meter_id:
+        m = Meter.query.get(unit.solar_meter_id)
+        solar_serial = getattr(m, "serial_number", None) if m else None
+    if unit.hot_water_meter_id:
+        m = Meter.query.get(unit.hot_water_meter_id)
+        hot_water_serial = getattr(m, "serial_number", None) if m else None
+
+    # Rate tables - use unit override if available, else estate default
+    estate = Estate.query.get(unit.estate_id) if unit.estate_id else None
+    elec_rate_table_id = unit.electricity_rate_table_id or (
+        estate.electricity_rate_table_id if estate else None
+    )
+    water_rate_table_id = unit.water_rate_table_id or (
+        estate.water_rate_table_id if estate else None
+    )
+
+    elec_rate_name = water_rate_name = ""
+    if elec_rate_table_id:
+        rt = RateTable.query.get(elec_rate_table_id)
+        elec_rate_name = rt.name if rt else "Standard Residential"
+    else:
+        elec_rate_name = "Standard Residential"
+
+    if water_rate_table_id:
+        rt = RateTable.query.get(water_rate_table_id)
+        water_rate_name = rt.name if rt else "Standard Residential Water"
+    else:
+        water_rate_name = "Standard Residential Water"
+
+    # Wallet
+    wallet = getattr(unit, "wallet", None)
+
+    # Resident data
+    resident = None
+    if unit.resident_id:
+        resident = Resident.query.get(unit.resident_id)
+
+    # Today's usage from transactions
+    from datetime import datetime, timedelta
+    from ...models.transaction import Transaction
+    from ...db import db
+    from sqlalchemy import func
+
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = datetime.now()
+
+    today_usage = {"electricity": 0.0, "solar": 0.0, "water": 0.0, "hot_water": 0.0}
+    if wallet:
+        today_transactions = (
+            Transaction.query.filter_by(wallet_id=wallet.id)
+            .filter(
+                Transaction.completed_at >= today_start,
+                Transaction.completed_at <= today_end,
+            )
+            .all()
+        )
+
+        for txn in today_transactions:
+            if txn.transaction_type == "consumption_electricity":
+                # Use consumption_kwh if available, otherwise estimate from amount
+                today_usage["electricity"] += float(
+                    txn.consumption_kwh or txn.amount or 0
+                )
+            elif txn.transaction_type == "consumption_solar":
+                today_usage["solar"] += float(txn.consumption_kwh or txn.amount or 0)
+            elif txn.transaction_type == "consumption_water":
+                # Convert amount or use consumption if available (in kL)
+                today_usage["water"] += float(txn.consumption_kwh or txn.amount or 0)
+            elif txn.transaction_type == "consumption_hot_water":
+                today_usage["hot_water"] += float(
+                    txn.consumption_kwh or txn.amount or 0
+                )
+
+    # Meter details
+    from ...models.meter_reading import MeterReading
+
+    def get_meter_details(meter_id, meter_type):
+        if not meter_id:
+            return None
+
+        meter = Meter.query.get(meter_id)
+        if not meter:
+            return None
+
+        # Latest reading
+        latest_reading = (
+            MeterReading.query.filter_by(meter_id=meter_id)
+            .order_by(MeterReading.reading_date.desc())
+            .first()
+        )
+
+        # Total usage/generation (sum of all consumption_since_last)
+        total_usage = (
+            db.session.query(func.sum(MeterReading.consumption_since_last))
+            .filter_by(meter_id=meter_id)
+            .scalar()
+        ) or 0.0
+
+        # Last reading date
+        last_reading_date = latest_reading.reading_date if latest_reading else None
+        last_reading_ago = None
+        if last_reading_date:
+            delta = datetime.now() - last_reading_date
+            if delta.days > 0:
+                last_reading_ago = (
+                    f"{delta.days} day{'s' if delta.days > 1 else ''} ago"
+                )
+            elif delta.seconds > 3600:
+                hours = delta.seconds // 3600
+                last_reading_ago = f"{hours} hour{'s' if hours > 1 else ''} ago"
+            else:
+                minutes = delta.seconds // 60
+                last_reading_ago = (
+                    f"{minutes} min{'s' if minutes > 1 else ''} ago"
+                    if minutes > 0
+                    else "Just now"
+                )
+
+        return {
+            "serial_number": meter.serial_number,
+            "type": f"{meter.model or 'Unknown'} {meter.meter_type.title()}"
+            if meter.model
+            else meter.meter_type.title(),
+            "total_usage": float(total_usage),
+            "last_reading_date": last_reading_date,
+            "last_reading_ago": last_reading_ago or "No readings",
+            "communication_status": meter.communication_status or "unknown",
+        }
+
+    # Get meter details
+    elec_meter_details = get_meter_details(unit.electricity_meter_id, "electricity")
+    water_meter_details = get_meter_details(unit.water_meter_id, "water")
+    solar_meter_details = get_meter_details(unit.solar_meter_id, "solar")
+    hot_water_meter_details = get_meter_details(unit.hot_water_meter_id, "hot_water")
+
+    # calculate free remaining for solar (based on current month usage)
+    if solar_meter_details and estate:
+        free_allocation = float(estate.solar_free_allocation_kwh or 0)
+        total_generated = solar_meter_details["total_usage"]
+        solar_meter_details["total_generated"] = total_generated
+
+        # Calculate current month's solar generation
+        month_start = datetime.now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        if unit.solar_meter_id:
+            month_solar = (
+                db.session.query(func.sum(MeterReading.consumption_since_last))
+                .filter_by(meter_id=unit.solar_meter_id)
+                .filter(MeterReading.reading_date >= month_start)
+                .scalar()
+            ) or 0.0
+            # Free remaining is allocation minus what's been used this month
+            solar_meter_details["free_remaining"] = max(
+                0, free_allocation - float(month_solar)
+            )
+        else:
+            solar_meter_details["free_remaining"] = free_allocation
+
+    # Supply status for electricity (based on wallet balance)
+    if elec_meter_details and wallet:
+        if float(wallet.balance) > 0:
+            elec_meter_details["supply_status"] = "Connected"
+        else:
+            elec_meter_details["supply_status"] = "Disconnected"
+
+    return render_template(
+        "units/unit-visual.html",
+        unit=unit,
+        elec_serial=elec_serial,
+        water_serial=water_serial,
+        solar_serial=solar_serial,
+        hot_water_serial=hot_water_serial,
+        elec_rate_name=elec_rate_name,
+        water_rate_name=water_rate_name,
+        wallet=wallet,
+        resident=resident,
+        today_usage=today_usage,
+        elec_meter_details=elec_meter_details,
+        water_meter_details=water_meter_details,
+        solar_meter_details=solar_meter_details,
+        hot_water_meter_details=hot_water_meter_details,
+    )
 
 
 @api_v1.route("/units/<int:unit_id>", methods=["GET"])
