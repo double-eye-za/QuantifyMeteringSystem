@@ -49,10 +49,13 @@ def dashboard():
         MeterAlert,
     )
     from datetime import datetime, timedelta, date
+    from sqlalchemy import func, case
+    from ...db import db
 
     # Get filter parameters
     estate_id = request.args.get("estate", "all")
     period = request.args.get("period", "current-month")
+    utility_type = request.args.get("utility", "all")
 
     # Calculate date range based on period
     today = date.today()
@@ -88,7 +91,7 @@ def dashboard():
     if estate_id != "all":
         estate_filter = [Estate.id == int(estate_id)]
 
-    # 1. Summary Metrics (KPI Cards)
+    # Summary Metrics
 
     # Total Electricity Consumption (kWh) - current month
     electricity_query = (
@@ -121,6 +124,22 @@ def dashboard():
     if estate_filter:
         water_query = water_query.filter(*estate_filter)
     total_water_liters = water_query.scalar() or 0.0
+
+    # Total Hot Water Consumption (L) - current month
+    hot_water_query = (
+        db.session.query(func.sum(MeterReading.consumption_since_last))
+        .join(Meter, Meter.id == MeterReading.meter_id)
+        .join(Unit, Unit.hot_water_meter_id == Meter.id)
+        .join(Estate, Estate.id == Unit.estate_id)
+        .filter(
+            Meter.meter_type == "hot_water",
+            MeterReading.reading_date >= month_start,
+            MeterReading.reading_date < next_month,
+        )
+    )
+    if estate_filter:
+        hot_water_query = hot_water_query.filter(*estate_filter)
+    total_hot_water_liters = hot_water_query.scalar() or 0.0
 
     # Solar Contribution (kWh) - current month
     solar_query = (
@@ -161,7 +180,12 @@ def dashboard():
         .join(
             Meter,
             Meter.id.in_(
-                [Unit.electricity_meter_id, Unit.water_meter_id, Unit.solar_meter_id]
+                [
+                    Unit.electricity_meter_id,
+                    Unit.water_meter_id,
+                    Unit.hot_water_meter_id,
+                    Unit.solar_meter_id,
+                ]
             ),
         )
         .join(MeterReading, MeterReading.meter_id == Meter.id)
@@ -178,7 +202,12 @@ def dashboard():
         .join(
             Unit,
             Unit.id.in_(
-                [Unit.electricity_meter_id, Unit.water_meter_id, Unit.solar_meter_id]
+                [
+                    Unit.electricity_meter_id,
+                    Unit.water_meter_id,
+                    Unit.hot_water_meter_id,
+                    Unit.solar_meter_id,
+                ]
             ),
         )
         .join(Estate, Estate.id == Unit.estate_id)
@@ -228,7 +257,7 @@ def dashboard():
         communal_water_query = communal_water_query.filter(*estate_filter)
     communal_water = communal_water_query.scalar() or 0.0
 
-    # 2. Alerts & Notifications Panel
+    #  Alerts & Notifications
 
     # Offline Meters Alert
     offline_meters_alert = (
@@ -341,13 +370,17 @@ def dashboard():
         or 0.0
     )
 
-    # Revenue per Utility
+    # Revenue per Utility - based on consumption transactions
     revenue_per_utility_query = (
         db.session.query(
             case(
-                (Transaction.description.ilike("%electricity%"), "Electricity"),
-                (Transaction.description.ilike("%water%"), "Water"),
-                (Transaction.description.ilike("%solar%"), "Solar"),
+                (
+                    Transaction.transaction_type == "consumption_electricity",
+                    "Electricity",
+                ),
+                (Transaction.transaction_type == "consumption_water", "Water"),
+                (Transaction.transaction_type == "consumption_hot_water", "Hot Water"),
+                (Transaction.transaction_type == "consumption_solar", "Solar"),
                 else_="Other",
             ).label("utility"),
             func.sum(Transaction.amount).label("revenue"),
@@ -356,7 +389,14 @@ def dashboard():
         .join(Unit, Unit.id == Wallet.unit_id)
         .join(Estate, Estate.id == Unit.estate_id)
         .filter(
-            Transaction.transaction_type == "topup",
+            Transaction.transaction_type.in_(
+                [
+                    "consumption_electricity",
+                    "consumption_water",
+                    "consumption_hot_water",
+                    "consumption_solar",
+                ]
+            ),
             Transaction.status == "completed",
             Transaction.completed_at >= month_start,
             Transaction.completed_at < next_month,
@@ -398,39 +438,257 @@ def dashboard():
         float(communal_water) * 15.0
     )
 
+    # Calculate KPIs for new dashboard spec
+    cold_water_kL = float(total_water_liters) / 1000.0  # Convert L to kL
+    hot_water_kL = float(total_hot_water_liters) / 1000.0  # Convert L to kL
+
+    # Calculate solar contribution percentage
+    total_electricity_all = float(total_electricity_kwh) + float(solar_contribution_kwh)
+    solar_contribution_percent = (
+        (float(solar_contribution_kwh) / total_electricity_all * 100)
+        if total_electricity_all > 0
+        else 0
+    )
+
+    # Revenue by utility type breakdown - based on consumption transactions
+
+    revenue_by_utility_query = (
+        db.session.query(
+            case(
+                (
+                    Transaction.transaction_type == "consumption_electricity",
+                    "Electricity",
+                ),
+                (Transaction.transaction_type == "consumption_water", "Water"),
+                (Transaction.transaction_type == "consumption_solar", "Solar"),
+                else_="Other",
+            ).label("utility"),
+            func.sum(Transaction.amount).label("revenue"),
+        )
+        .join(Wallet, Wallet.id == Transaction.wallet_id)
+        .join(Unit, Unit.id == Wallet.unit_id)
+        .join(Estate, Estate.id == Unit.estate_id)
+        .filter(
+            Transaction.transaction_type.in_(
+                ["consumption_electricity", "consumption_water", "consumption_solar"]
+            ),
+            Transaction.status == "completed",
+            Transaction.completed_at >= month_start,
+            Transaction.completed_at < next_month,
+        )
+    )
+    if estate_filter:
+        revenue_by_utility_query = revenue_by_utility_query.filter(*estate_filter)
+    revenue_by_utility = revenue_by_utility_query.group_by("utility").all()
+
+    # Format for template
+    # Normalize to include all
+    revenue_map = {u: 0.0 for u in ["Electricity", "Water", "Hot Water", "Solar"]}
+    for item in revenue_by_utility:
+        revenue_map[item.utility] = float(item.revenue)
+    revenue_by_utility = [
+        {"utility": key, "revenue": revenue_map[key]}
+        for key in ["Electricity", "Water", "Hot Water", "Solar"]
+    ]
+
+    # Estate Usage Data for comparison chart
+    estate_usage_query = (
+        db.session.query(
+            Estate.name,
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_electricity",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("electricity"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_water",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("water"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_hot_water",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("hot_water"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_solar",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("solar"),
+        )
+        .join(Unit, Estate.id == Unit.estate_id)
+        .join(Wallet, Wallet.unit_id == Unit.id)
+        .join(Transaction, Transaction.wallet_id == Wallet.id)
+        .filter(
+            Transaction.transaction_type.in_(
+                [
+                    "consumption_electricity",
+                    "consumption_water",
+                    "consumption_hot_water",
+                    "consumption_solar",
+                ]
+            ),
+            Transaction.status == "completed",
+            Transaction.completed_at >= month_start,
+            Transaction.completed_at < next_month,
+        )
+    )
+    if estate_filter:
+        estate_usage_query = estate_usage_query.filter(*estate_filter)
+    estate_usage_data = estate_usage_query.group_by(Estate.name).all()
+
+    # Format estate usage data
+    estate_usage_data = [
+        {
+            "name": item.name,
+            "electricity": float(item.electricity),
+            "water": float(item.water),
+            "hot_water": float(item.hot_water),
+            "solar": float(item.solar),
+        }
+        for item in estate_usage_data
+    ]
+
+    # Daily Consumption for trend chart
+    daily_consumption_query = (
+        db.session.query(
+            func.date(Transaction.completed_at).label("date"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_electricity",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("electricity"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_water",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("water"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_hot_water",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("hot_water"),
+            func.sum(
+                case(
+                    (
+                        Transaction.transaction_type == "consumption_solar",
+                        Transaction.amount,
+                    ),
+                    else_=0,
+                )
+            ).label("solar"),
+        )
+        .join(Wallet, Wallet.id == Transaction.wallet_id)
+        .join(Unit, Unit.id == Wallet.unit_id)
+        .join(Estate, Estate.id == Unit.estate_id)
+        .filter(
+            Transaction.transaction_type.in_(
+                [
+                    "consumption_electricity",
+                    "consumption_water",
+                    "consumption_hot_water",
+                    "consumption_solar",
+                ]
+            ),
+            Transaction.status == "completed",
+            Transaction.completed_at >= month_start,
+            Transaction.completed_at < next_month,
+        )
+    )
+    if estate_filter:
+        daily_consumption_query = daily_consumption_query.filter(*estate_filter)
+    daily_consumption_data = (
+        daily_consumption_query.group_by("date").order_by("date").all()
+    )
+
+    # Format daily consumption data
+    daily_consumption_data = [
+        {
+            "date": item.date.strftime("%b %d") if item.date else "",
+            "electricity": float(item.electricity),
+            "water": float(item.water),
+            "hot_water": float(item.hot_water),
+            "solar": float(item.solar),
+        }
+        for item in daily_consumption_data
+    ]
+
+    # Average spend per resident
+    resident_count = (
+        db.session.query(func.count(func.distinct(Unit.resident_id)))
+        .filter(Unit.resident_id.isnot(None))
+        .scalar()
+        or 1
+    )
+    avg_spend_per_resident = (
+        float(revenue_collected) / resident_count if resident_count > 0 else 0.0
+    )
+
+    # Alerts format
+    alerts = []
+    for alert in tamper_alerts[:5]:
+        alerts.append(
+            {
+                "alert_type": "system",
+                "title": f"{alert.alert_type.replace('_', ' ').title()} Alert",
+                "timestamp": alert.created_at
+                if hasattr(alert, "created_at")
+                else datetime.now(),
+                "severity": alert.severity if hasattr(alert, "severity") else "warning",
+                "estate_name": None,
+                "unit_number": None,
+            }
+        )
+
     return render_template(
         "dashboard/index.html",
         # KPI Cards
         kpis={
-            "total_electricity_kwh": float(total_electricity_kwh),
-            "total_water_liters": float(total_water_liters),
-            "solar_contribution_kwh": float(solar_contribution_kwh),
-            "revenue_collected": float(revenue_collected),
-            "active_units": active_units,
-            "offline_meters": offline_meters,
-            "disconnected_units": disconnected_units,
-            "communal_electricity": float(communal_electricity),
-            "communal_water": float(communal_water),
+            "electricity_used_kwh": float(total_electricity_kwh),
+            "cold_water_kL": cold_water_kL,
+            "hot_water_kL": hot_water_kL,
+            "solar_kwh": float(solar_contribution_kwh),
+            "solar_contribution_percent": solar_contribution_percent,
+            "total_revenue": float(revenue_collected),
         },
-        # Alerts
-        offline_meters_alert=offline_meters_alert,
-        low_credit_alerts=low_credit_alerts,
-        tamper_alerts=tamper_alerts,
-        failed_topups=failed_topups,
-        # Estate Overview
+        alerts=alerts,
+        revenue_by_utility=revenue_by_utility,
+        avg_spend_per_resident=avg_spend_per_resident,
+        estate_usage_data=estate_usage_data,
+        daily_consumption_data=daily_consumption_data,
+        estate_filter=estate_id,
+        period=period,
+        utility_type=utility_type,
         estates=estates,
-        live_status=live_status,
-        bulk_meter_status=bulk_meter_status,
-        solar_offset_percentage=float(solar_offset_percentage),
-        communal_usage_percentage=float(communal_usage_percentage),
-        # Financial Snapshot
-        todays_topups=float(todays_topups),
-        revenue_per_utility=revenue_per_utility,
-        top_paying_units=top_paying_units,
-        communal_cost_estimate=float(communal_cost_estimate),
-        # Meta
         current_month=current_month,
-        current_date=today.strftime("%B %d, %Y"),
     )
 
 
