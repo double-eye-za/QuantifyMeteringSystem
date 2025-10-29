@@ -383,7 +383,10 @@ def get_financial_reports(start_date, end_date, estate_id, page=1, per_page=10):
             Unit.unit_number,
             Estate.name.label("estate_name"),
             Transaction.amount,
-            Transaction.payment_method,
+            case(
+                (Transaction.payment_method.is_(None), "Unknown"),
+                else_=Transaction.payment_method,
+            ).label("payment_method"),
             Transaction.status,
             Transaction.description,
         )
@@ -1025,7 +1028,7 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                         row.unit_number,
                         row.estate_name,
                         row.amount,
-                        row.payment_method,
+                        row.payment_method or "Unknown",
                         row.status,
                         row.description,
                     ]
