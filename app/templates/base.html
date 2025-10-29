@@ -69,6 +69,34 @@
       .dark input::placeholder {
         color: #6b7280;
       }
+
+      input[type="date"],
+      input[type="datetime-local"],
+      input[type="month"],
+      input[type="time"],
+      input[type="week"] {
+        color-scheme: light;
+      }
+
+      .dark input[type="date"]::-webkit-calendar-picker-indicator,
+      .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+      .dark input[type="month"]::-webkit-calendar-picker-indicator,
+      .dark input[type="time"]::-webkit-calendar-picker-indicator,
+      .dark input[type="week"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+        cursor: pointer;
+      }
+
+      .dark input[type="date"]::-moz-calendar-picker-indicator,
+      .dark input[type="datetime-local"]::-moz-calendar-picker-indicator,
+      .dark input[type="month"]::-moz-calendar-picker-indicator,
+      .dark input[type="time"]::-moz-calendar-picker-indicator,
+      .dark input[type="week"]::-moz-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+        cursor: pointer;
+      }
     </style>
 
     <!-- Additional CSS -->
