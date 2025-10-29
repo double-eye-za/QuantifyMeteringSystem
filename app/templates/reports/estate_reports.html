@@ -38,6 +38,7 @@
             <th class="px-6 py-3">Occupancy Rate</th>
             <th class="px-6 py-3">Total Electricity (kWh)</th>
             <th class="px-6 py-3">Total Water (kL)</th>
+            <th class="px-6 py-3">Total Hot Water (kL)</th>
             <th class="px-6 py-3">Total Solar (kWh)</th>
           </tr>
         </thead>
@@ -74,6 +75,9 @@
             </td>
             <td class="px-6 py-4">
               {{ (row.total_water or 0) | format_number(2) }}
+            </td>
+            <td class="px-6 py-4">
+              {{ (row.total_hot_water or 0) | format_number(2) }}
             </td>
             <td class="px-6 py-4">
               {{ (row.total_solar or 0) | format_number(2) }}
@@ -406,6 +410,16 @@
       ],
       backgroundColor: 'rgba(26, 115, 232, 0.8)',
       borderColor: '#1A73E8',
+      borderWidth: 1
+    }, {
+      label: 'Hot Water (kL)',
+      data: [
+        {% for row in estate_utility_summary %}
+          {{ row.total_hot_water or 0 }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ],
+      backgroundColor: 'rgba(249, 115, 22, 0.8)',
+      borderColor: '#F97316',
       borderWidth: 1
     }, {
       label: 'Solar (kWh)',

@@ -119,6 +119,7 @@ def get_consumption_reports(
         "bulk_sub_comparison": [],
         "top_consumers_electricity": [],
         "top_consumers_water": [],
+        "top_consumers_hot_water": [],
         "top_consumers_solar": [],
         "solar_generation_vs_usage": [],
     }
@@ -145,6 +146,15 @@ def get_consumption_reports(
             ).label("water_kL"),
             func.sum(
                 case(
+                    (
+                        Meter.meter_type == "hot_water",
+                        MeterReading.consumption_since_last,
+                    ),
+                    else_=0,
+                )
+            ).label("hot_water_kL"),
+            func.sum(
+                case(
                     (Meter.meter_type == "solar", MeterReading.consumption_since_last),
                     else_=0,
                 )
@@ -156,6 +166,7 @@ def get_consumption_reports(
             or_(
                 Unit.electricity_meter_id == Meter.id,
                 Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
                 Unit.solar_meter_id == Meter.id,
             ),
         )
@@ -276,6 +287,7 @@ def get_consumption_reports(
                 or_(
                     Unit.electricity_meter_id == Meter.id,
                     Unit.water_meter_id == Meter.id,
+                    Unit.hot_water_meter_id == Meter.id,
                     Unit.solar_meter_id == Meter.id,
                 ),
             )
@@ -311,9 +323,10 @@ def get_consumption_reports(
     # Get top consumers for each utility type
     reports["top_consumers_electricity"] = get_top_consumers_by_type("electricity")
     reports["top_consumers_water"] = get_top_consumers_by_type("water")
+    reports["top_consumers_hot_water"] = get_top_consumers_by_type("hot_water")
     reports["top_consumers_solar"] = get_top_consumers_by_type("solar")
 
-    # 4. Solar Generation vs Usage
+    # Solar Generation vs Usage
     solar_data = (
         db.session.query(
             Estate.name.label("estate_name"),
@@ -506,6 +519,7 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
             or_(
                 Unit.electricity_meter_id == Meter.id,
                 Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
                 Unit.solar_meter_id == Meter.id,
             ),
         )
@@ -540,6 +554,7 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
             or_(
                 Unit.electricity_meter_id == Meter.id,
                 Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
                 Unit.solar_meter_id == Meter.id,
             ),
         )
@@ -582,6 +597,7 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
             or_(
                 Unit.electricity_meter_id == Meter.id,
                 Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
                 Unit.solar_meter_id == Meter.id,
             ),
         )
@@ -688,6 +704,15 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
             ).label("total_water"),
             func.sum(
                 case(
+                    (
+                        Meter.meter_type == "hot_water",
+                        MeterReading.consumption_since_last,
+                    ),
+                    else_=0,
+                )
+            ).label("total_hot_water"),
+            func.sum(
+                case(
                     (Meter.meter_type == "solar", MeterReading.consumption_since_last),
                     else_=0,
                 )
@@ -703,6 +728,7 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
             or_(
                 Unit.electricity_meter_id == Meter.id,
                 Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
                 Unit.solar_meter_id == Meter.id,
             ),
         )
@@ -879,6 +905,7 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                     "Estate",
                     "Electricity (kWh)",
                     "Water (kL)",
+                    "Hot Water (kL)",
                     "Solar (kWh)",
                 ]
             )
@@ -892,6 +919,7 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                         row.estate_name,
                         row.electricity_kwh,
                         row.water_kL,
+                        getattr(row, "hot_water_kL", 0),
                         row.solar_kwh,
                     ]
                 )
@@ -1070,6 +1098,7 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                     "Occupied Units",
                     "Total Electricity",
                     "Total Water",
+                    "Total Hot Water",
                     "Total Solar",
                 ]
             )
@@ -1084,6 +1113,7 @@ def export_csv(report_type, category, start_date, end_date, estate_id):
                         row.occupied_units,
                         row.total_electricity,
                         row.total_water,
+                        getattr(row, "total_hot_water", 0),
                         row.total_solar,
                     ]
                 )
@@ -1207,6 +1237,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                 "Estate",
                 "Electricity (kWh)",
                 "Water (kL)",
+                "Hot Water (kL)",
                 "Solar (kWh)",
             ]
             report_data = get_consumption_reports(
@@ -1219,6 +1250,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                         str(row.estate_name),
                         f"{row.electricity_kwh:.2f}" if row.electricity_kwh else "0.00",
                         f"{row.water_kL:.2f}" if row.water_kL else "0.00",
+                        f"{getattr(row, 'hot_water_kL', 0):.2f}",
                         f"{row.solar_kwh:.2f}" if row.solar_kwh else "0.00",
                     ]
                 )
@@ -1451,6 +1483,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                 "Occupied Units",
                 "Total Electricity",
                 "Total Water",
+                "Total Hot Water",
                 "Total Solar",
             ]
             report_data = get_estate_level_reports(start_date, end_date, estate_id)[
@@ -1466,6 +1499,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
                         if row.total_electricity
                         else "0.00",
                         f"{row.total_water:.2f}" if row.total_water else "0.00",
+                        f"{row.total_hot_water:.2f}" if row.total_hot_water else "0.00",
                         f"{row.total_solar:.2f}" if row.total_solar else "0.00",
                     ]
                 )
