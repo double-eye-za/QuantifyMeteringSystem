@@ -185,34 +185,49 @@ def wallet_statement_page(unit_id: int):
         .all()
     )
 
-    # Calculate usage statistics
-    electricity_total = 0.0
-    water_total = 0.0
-    hot_water_total = 0.0
-    solar_credits = 0.0
+    # Calculate usage statistics (in physical units via meter readings)
+    # Sum meter readings for the current month
+    from ...models.meter_reading import MeterReading
+    from ...db import db
+    from sqlalchemy import func
 
-    for txn in month_transactions:
-        if txn.transaction_type == "consumption_electricity":
-            electricity_total += float(txn.amount or 0)
-        elif txn.transaction_type == "consumption_water":
-            water_total += float(txn.amount or 0)
-        elif txn.transaction_type == "consumption_hot_water":
-            hot_water_total += float(txn.amount or 0)
-        elif txn.transaction_type == "solar_credit":
-            solar_credits += float(txn.amount or 0)
+    def sum_month_usage_for_meter(meter_id: int):
+        if not meter_id:
+            return 0.0
+        total = (
+            db.session.query(func.sum(MeterReading.consumption_since_last))
+            .filter_by(meter_id=meter_id)
+            .filter(
+                MeterReading.reading_date >= month_start,
+                MeterReading.reading_date <= now,
+            )
+            .scalar()
+        ) or 0.0
+        return float(total)
 
-    total_usage = electricity_total + water_total + hot_water_total
-    daily_average = total_usage / now.day if now.day > 0 else 0
+    electricity_kwh = sum_month_usage_for_meter(unit.electricity_meter_id)
+    water_kl = sum_month_usage_for_meter(unit.water_meter_id)
+    hot_water_kwh = sum_month_usage_for_meter(unit.hot_water_meter_id)
+    solar_kwh = sum_month_usage_for_meter(unit.solar_meter_id)
 
-    # Calculate days until depletion
+    # Daily averages per utility (units/day)
+    days_in_period = now.day if now.day > 0 else 1
+    electricity_kwh_daily = electricity_kwh / days_in_period
+    water_kl_daily = water_kl / days_in_period
+    hot_water_kwh_daily = hot_water_kwh / days_in_period
+    solar_kwh_daily = solar_kwh / days_in_period
+
+    # For backward compatibility with template pieces that referenced totals
+    electricity_total = electricity_kwh
+    water_total = water_kl
+    hot_water_total = hot_water_kwh
+    total_usage = electricity_kwh + water_kl + hot_water_kwh
+    daily_average = electricity_kwh_daily + water_kl_daily + hot_water_kwh_daily
+
+    # Calculate days until depletion based on previous currency-based estimate is no longer meaningful; set to 0
     days_left = 0
-    if daily_average > 0:
-        days_left = int(float(wallet.balance) / daily_average)
-
-    # Calculate projected end-of-month balance
-    days_remaining = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - now
-    projected_usage = daily_average * days_remaining.days
-    projected_balance = float(wallet.balance) - projected_usage
+    projected_usage = 0
+    projected_balance = float(wallet.balance)
 
     # Get meter readings for consumption display
     from ...models.meter_reading import MeterReading
@@ -270,6 +285,15 @@ def wallet_statement_page(unit_id: int):
         days_left=days_left,
         projected_balance=projected_balance,
         projected_usage=projected_usage,
+        # New unit-based fields
+        electricity_kwh=electricity_kwh,
+        water_kl=water_kl,
+        hot_water_kwh=hot_water_kwh,
+        solar_kwh=solar_kwh,
+        electricity_kwh_daily=electricity_kwh_daily,
+        water_kl_daily=water_kl_daily,
+        hot_water_kwh_daily=hot_water_kwh_daily,
+        solar_kwh_daily=solar_kwh_daily,
         meter_readings=meter_readings,
         current_date=now,
     )
@@ -473,6 +497,176 @@ def unit_visual_page(unit_id: int):
         water_meter_details=water_meter_details,
         solar_meter_details=solar_meter_details,
         hot_water_meter_details=hot_water_meter_details,
+    )
+
+
+@api_v1.get("/units/<int:unit_id>/wallet-statement.pdf")
+@login_required
+@requires_permission("units.view")
+def wallet_statement_pdf(unit_id: int):
+    """Generate a PDF wallet statement for the unit using ReportLab."""
+    from flask import send_file
+    import io
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Table,
+        TableStyle,
+        Paragraph,
+        Spacer,
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+
+    # Compute current month unit totals
+    unit = svc_get_unit_by_id(unit_id)
+    if not unit:
+        return render_template("errors/404.html"), 404
+
+    from ...models import Wallet, Transaction
+
+    wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+    if not wallet:
+        return "Wallet not found", 404
+
+    now = datetime.now()
+    month_start = datetime(now.year, now.month, 1)
+
+    # Sum usage from meter readings
+    from ...models.meter_reading import MeterReading
+    from ...db import db
+    from sqlalchemy import func
+
+    def sum_month_usage_for_meter(meter_id: int) -> float:
+        if not meter_id:
+            return 0.0
+        total = (
+            db.session.query(func.sum(MeterReading.consumption_since_last))
+            .filter_by(meter_id=meter_id)
+            .filter(
+                MeterReading.reading_date >= month_start,
+                MeterReading.reading_date <= now,
+            )
+            .scalar()
+        ) or 0.0
+        return float(total)
+
+    electricity_kwh = sum_month_usage_for_meter(unit.electricity_meter_id)
+    water_kl = sum_month_usage_for_meter(unit.water_meter_id)
+    hot_water_kwh = sum_month_usage_for_meter(unit.hot_water_meter_id)
+    solar_kwh = sum_month_usage_for_meter(unit.solar_meter_id)
+
+    # Gather this month's transactions
+    month_txns = (
+        Transaction.query.filter_by(wallet_id=wallet.id)
+        .filter(
+            Transaction.completed_at >= month_start, Transaction.completed_at <= now
+        )
+        .order_by(Transaction.completed_at.asc())
+        .all()
+    )
+
+    # Build PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "StatementTitle",
+        parent=styles["Heading1"],
+        fontSize=16,
+        spaceAfter=18,
+        alignment=1,
+    )
+    story = []
+
+    # Title and header
+    statement_title = f"Wallet Statement - Unit {unit.unit_number}"
+    story.append(Paragraph(statement_title, title_style))
+    date_text = (
+        f"Period: {month_start.strftime('%Y-%m-%d')} to {now.strftime('%Y-%m-%d')}"
+    )
+    story.append(Paragraph(date_text, styles["Normal"]))
+    story.append(
+        Paragraph(f"Current Balance: R {float(wallet.balance):.2f}", styles["Normal"])
+    )
+    story.append(Spacer(1, 12))
+
+    # Utility summary table
+    summary_headers = [
+        "Utility",
+        "Total",
+        "Unit",
+    ]
+    summary_rows = [
+        ["Electricity", f"{electricity_kwh:.2f}", "kWh"],
+        ["Water", f"{water_kl:.2f}", "kL"],
+        ["Hot Water", f"{hot_water_kwh:.2f}", "kWh"],
+        ["Solar", f"{solar_kwh:.2f}", "kWh"],
+    ]
+    summary_table = Table([summary_headers] + summary_rows)
+    summary_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black),
+            ]
+        )
+    )
+    story.append(summary_table)
+    story.append(Spacer(1, 18))
+
+    # Transactions table (limited columns)
+    txn_headers = ["Date", "Type", "Description", "Debit", "Credit"]
+    txn_rows = []
+    for t in month_txns:
+        date_str = t.completed_at.strftime("%Y-%m-%d %H:%M") if t.completed_at else ""
+        is_topup = t.transaction_type == "topup"
+        debit = f"R {float(t.amount):.2f}" if not is_topup else ""
+        credit = f"R {float(t.amount):.2f}" if is_topup else ""
+        txn_rows.append(
+            [
+                date_str,
+                (t.transaction_type or "").replace("_", " ").title(),
+                t.description or (t.reference or ""),
+                debit,
+                credit,
+            ]
+        )
+
+    if txn_rows:
+        txn_table = Table([txn_headers] + txn_rows)
+        txn_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
+        )
+        story.append(Paragraph("Transactions (Current Month)", styles["Heading3"]))
+        story.append(Spacer(1, 6))
+        story.append(txn_table)
+    else:
+        story.append(Paragraph("No transactions for this month.", styles["Normal"]))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    filename = f"wallet_statement_unit_{unit.unit_number}_{now.strftime('%Y_%m')}.pdf"
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=filename,
     )
 
 
