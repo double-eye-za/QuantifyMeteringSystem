@@ -5,7 +5,7 @@ import io
 from flask import jsonify, request, render_template, Response
 from sqlalchemy.exc import IntegrityError
 from flask_login import login_required, current_user
-from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -547,7 +547,14 @@ def export_meters_pdf():
         buffer = io.BytesIO()
 
         # Create PDF document
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            leftMargin=0.5 * inch,
+            rightMargin=0.5 * inch,
+            topMargin=0.5 * inch,
+            bottomMargin=0.5 * inch,
+        )
         styles = getSampleStyleSheet()
         story = []
 
@@ -636,30 +643,24 @@ def export_meters_pdf():
             )
 
         # Create table
-        table = Table(
-            table_data,
-            colWidths=[
-                1.2 * inch,
-                0.8 * inch,
-                0.6 * inch,
-                1 * inch,
-                1 * inch,
-                1 * inch,
-                0.8 * inch,
-            ],
-        )
+        available_width = doc.width
+        col_weights = [1.6, 1.2, 1.0, 1.6, 1.6, 1.4, 1.2]
+        total_weight = sum(col_weights)
+        col_widths = [available_width * (w / total_weight) for w in col_weights]
+        table = Table(table_data, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
         table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                    ("ALIGN", (0, 1), (-1, -1), "LEFT"),
                     ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, 0), 10),
+                    ("FONTSIZE", (0, 0), (-1, 0), 11),
                     ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-                    ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
+                    ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
                     ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                    ("FONTSIZE", (0, 1), (-1, -1), 8),
+                    ("FONTSIZE", (0, 1), (-1, -1), 9),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ]
             )
