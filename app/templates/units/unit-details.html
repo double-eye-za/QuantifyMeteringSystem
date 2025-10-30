@@ -166,6 +166,29 @@
       </button>
       {% endif %}
     </div>
+
+    <!-- Quick Action -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        Quick Actions
+      </h3>
+      <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
+        <a
+          href="{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 text-center"
+        >
+          <i class="fas fa-file-invoice mb-1"></i>
+          <div class="text-sm">Statement</div>
+        </a>
+        <a
+          href="{{ url_for('api_v1.unit_visual_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 text-center"
+        >
+          <i class="fas fa-diagram-project mb-1"></i>
+          <div class="text-sm">Visual Diagram</div>
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Center Column - Wallet & Meters -->
@@ -497,29 +520,6 @@
             {% endif %}
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Quick Actions
-      </h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <a
-          href="{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}"
-          class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 text-center"
-        >
-          <i class="fas fa-file-invoice mb-1"></i>
-          <div class="text-sm">Statement</div>
-        </a>
-        <a
-          href="{{ url_for('api_v1.unit_visual_page', unit_id=unit.id) }}"
-          class="px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 text-center"
-        >
-          <i class="fas fa-diagram-project mb-1"></i>
-          <div class="text-sm">Visual Diagram</div>
-        </a>
       </div>
     </div>
   </div>
