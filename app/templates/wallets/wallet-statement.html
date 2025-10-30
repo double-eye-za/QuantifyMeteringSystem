@@ -74,13 +74,27 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-3">
       <select
+        id="statementPeriod"
         onchange="changeStatementPeriod(this.value)"
         class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
       >
-        <option value="current">Current Month</option>
-        <option value="last">Last Month</option>
-        <option value="custom">Custom Period</option>
+        <option value="current" {% if period=='current' or not period %}selected{% endif %}>Current Month</option>
+        <option value="last" {% if period=='last' %}selected{% endif %}>Last Month</option>
+        <option value="custom" {% if period=='custom' %}selected{% endif %}>Custom Period</option>
       </select>
+      <div id="customPeriodControls" class="flex items-center gap-2 {% if period!='custom' %}hidden{% endif %}">
+        <input id="startDate" type="date" value="{{ start_date or '' }}" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm" />
+        <span class="text-gray-600 dark:text-gray-400 text-sm">to</span>
+        <input id="endDate" type="date" value="{{ end_date or '' }}" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm" />
+        <button onclick="applyCustomPeriod()" class="px-3 py-2 bg-primary hover:bg-blue-700 text-white rounded text-sm flex items-center gap-2">
+          <i class="fas fa-filter"></i>
+          Apply Filters
+        </button>
+        <button onclick="clearCustomPeriod()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+          <i class="fas fa-times"></i>
+          Clear Filters
+        </button>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button
@@ -104,7 +118,7 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Transaction Details - October 2025
+        Transaction Details
       </h3>
     </div>
 
@@ -436,8 +450,40 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
 
   // Functions
   function changeStatementPeriod(period) {
-    console.log("Changing period to:", period);
-    // Reload data for selected period
+    const controls = document.getElementById("customPeriodControls");
+    if (period === "custom") {
+      controls.classList.remove("hidden");
+    } else {
+      controls.classList.add("hidden");
+      const url = new URL(window.location.href);
+      url.searchParams.set("period", period);
+      url.searchParams.delete("start_date");
+      url.searchParams.delete("end_date");
+      window.location.href = url.toString();
+    }
+  }
+
+  function applyCustomPeriod() {
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+    if (!start || !end) {
+      if (typeof showFlashMessage === 'function') {
+        showFlashMessage("Please select start and end dates", "error", true);
+      } else {
+        alert("Please select start and end dates");
+      }
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("period", "custom");
+    url.searchParams.set("start_date", start);
+    url.searchParams.set("end_date", end);
+    window.location.href = url.toString();
+  }
+
+  function clearCustomPeriod() {
+    const baseUrl = "{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}";
+    window.location.href = baseUrl;
   }
 
   function printStatement() {

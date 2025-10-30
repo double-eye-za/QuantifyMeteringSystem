@@ -143,6 +143,7 @@ def wallet_statement_page(unit_id: int):
     from ...models import Unit, Wallet, Estate, Transaction
     from ...db import db
     from sqlalchemy import func
+    from datetime import datetime, date, timedelta
 
     # Get unit and wallet data
     unit = svc_get_unit_by_id(unit_id)
@@ -155,10 +156,45 @@ def wallet_statement_page(unit_id: int):
 
     estate = Estate.query.get(unit.estate_id)
 
-    # Transactions
-    txn_query = Transaction.query.filter_by(wallet_id=wallet.id).order_by(
-        Transaction.completed_at.desc()
-    )
+    # Transactions period filter
+    period = (request.args.get("period") or "current").lower()
+    start_param = request.args.get("start_date")
+    end_param = request.args.get("end_date")
+
+    # Compute date range
+    now = datetime.now()
+    start_dt = None
+    end_dt = None
+    if period == "current":
+        start_dt = datetime(now.year, now.month, 1)
+        end_dt = now
+    elif period == "last":
+        first_of_this_month = datetime(now.year, now.month, 1)
+        last_month_end = first_of_this_month - timedelta(seconds=1)
+        start_dt = datetime(last_month_end.year, last_month_end.month, 1)
+        end_dt = datetime.combine(last_month_end.date(), datetime.max.time())
+    elif period == "custom":
+        try:
+            if start_param:
+                start_dt = datetime.fromisoformat(start_param)
+            if end_param:
+                # include entire end day if only date provided
+                try:
+                    end_dt = datetime.fromisoformat(end_param)
+                except ValueError:
+                    end_dt = None
+            if end_dt and end_dt.time() == datetime.min.time():
+                end_dt = datetime.combine(end_dt.date(), datetime.max.time())
+        except Exception:
+            start_dt = None
+            end_dt = None
+
+    txn_query = Transaction.query.filter_by(wallet_id=wallet.id)
+    if start_dt:
+        txn_query = txn_query.filter(Transaction.completed_at >= start_dt)
+    if end_dt:
+        txn_query = txn_query.filter(Transaction.completed_at <= end_dt)
+    txn_query = txn_query.order_by(Transaction.completed_at.desc())
     txn_items, txn_meta = paginate_query(txn_query)
 
     # Get last topup date
@@ -172,9 +208,6 @@ def wallet_statement_page(unit_id: int):
     last_topup_date = last_topup.completed_at if last_topup else None
 
     # Calculate month-to-date usage
-    from datetime import datetime, timedelta
-
-    now = datetime.now()
     month_start = datetime(now.year, now.month, 1)
 
     month_transactions = (
@@ -276,6 +309,9 @@ def wallet_statement_page(unit_id: int):
         estate=estate,
         transactions=txn_items,
         transactions_pagination=txn_meta,
+        period=period,
+        start_date=start_param,
+        end_date=end_param,
         last_topup_date=last_topup_date,
         electricity_total=electricity_total,
         water_total=water_total,
