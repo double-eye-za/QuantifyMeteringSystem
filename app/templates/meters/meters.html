@@ -214,7 +214,15 @@ block breadcrumb %}
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" data-meter='{{ m | tojson }}'>
           <td class="px-6 py-4 font-mono text-xs text-gray-900 dark:text-white">{{ m.serial_number }}</td>
                             <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else 'Unassigned' }}</div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {% if unit %}
+                {{ unit.unit_number }}
+              {% elif m.assigned_estate %}
+                {{ m.assigned_estate.name }}
+              {% else %}
+                Unassigned
+              {% endif %}
+            </div>
             <div class="text-xs text-gray-500 dark:text-gray-400">{{ unit.estate_name if unit else '' }}</div>
                             </td>
                             <td class="px-6 py-4">

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import io
 from flask import jsonify, request, render_template, Response
+from sqlalchemy.exc import IntegrityError
 from flask_login import login_required, current_user
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -60,9 +61,23 @@ def meters_page():
             | (Unit.water_meter_id == m.id)
             | (Unit.solar_meter_id == m.id)
         ).first()
-        # Estate filter via unit if requested
-        if estate_id and (not unit or unit.estate_id != estate_id):
-            continue
+        # For bulk meters, resolve estate assignment directly on estate
+        assigned_estate = None
+        if not unit and m.meter_type in ("bulk_electricity", "bulk_water"):
+            if m.meter_type == "bulk_electricity":
+                assigned_estate = Estate.query.filter_by(
+                    bulk_electricity_meter_id=m.id
+                ).first()
+            elif m.meter_type == "bulk_water":
+                assigned_estate = Estate.query.filter_by(
+                    bulk_water_meter_id=m.id
+                ).first()
+        # Estate filter via unit or assigned estate (for bulk meters) if requested
+        if estate_id:
+            unit_estate_id = unit.estate_id if unit else None
+            bulk_estate_id = assigned_estate.id if assigned_estate else None
+            if unit_estate_id != estate_id and bulk_estate_id != estate_id:
+                continue
 
         wallet = Wallet.query.filter_by(unit_id=unit.id).first() if unit else None
         bal = meter_wallet_balance_for_type(wallet, m)
@@ -94,6 +109,12 @@ def meters_page():
                     "occupancy_status": unit.occupancy_status,
                 }
                 if unit
+                else None,
+                "assigned_estate": {
+                    "id": assigned_estate.id,
+                    "name": assigned_estate.name,
+                }
+                if assigned_estate
                 else None,
                 "wallet": wallet.to_dict() if wallet else None,
                 "credit_status": derived_credit,
@@ -319,6 +340,37 @@ def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
     db.session.commit()
 
 
+def _assign_bulk_meter_to_estate(meter: Meter, estate_id: int | None):
+    """Assign a bulk meter to an estate by updating the estate's bulk meter field.
+    Clears previous estate linkage if moving.
+    """
+    if meter.meter_type not in ("bulk_electricity", "bulk_water"):
+        return
+    from ...db import db
+
+    # Clear any existing estate referencing this meter
+    prev = None
+    if meter.meter_type == "bulk_electricity":
+        prev = Estate.query.filter_by(bulk_electricity_meter_id=meter.id).first()
+    elif meter.meter_type == "bulk_water":
+        prev = Estate.query.filter_by(bulk_water_meter_id=meter.id).first()
+    if prev:
+        if meter.meter_type == "bulk_electricity":
+            prev.bulk_electricity_meter_id = None
+        else:
+            prev.bulk_water_meter_id = None
+
+    if estate_id:
+        target = Estate.query.get(estate_id)
+        if target:
+            if meter.meter_type == "bulk_electricity":
+                target.bulk_electricity_meter_id = meter.id
+            else:
+                target.bulk_water_meter_id = meter.id
+
+    db.session.commit()
+
+
 @api_v1.post("/meters")
 @login_required
 @requires_permission("meters.create")
@@ -327,22 +379,36 @@ def create_meter():
     required = ["serial_number", "meter_type"]
     missing = [f for f in required if not payload.get(f)]
     if missing:
-        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+        return jsonify({"message": f"Missing fields: {', '.join(missing)}"}), 400
     status = (payload.get("status") or "").lower()
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
-    meter = svc_create_meter(payload)
+    try:
+        meter = svc_create_meter(payload)
+    except IntegrityError:
+        return jsonify({"message": "Serial number already exists"}), 409
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
 
     unit_id = payload.get("unit_id")
     try:
         if unit_id:
             _assign_meter_to_unit(meter, int(unit_id))
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"message": str(e)}), 400
+    # Bulk meter estate assignment (if provided)
+    try:
+        estate_id_val = payload.get("estate_id")
+        if estate_id_val:
+            _assign_bulk_meter_to_estate(meter, int(estate_id_val))
+    except ValueError as e:
+        return jsonify({"message": str(e)}), 400
     log_action(
         "meter.create", entity_type="meter", entity_id=meter.id, new_values=payload
     )
-    return jsonify({"data": meter.to_dict()}), 201
+    return jsonify(
+        {"message": "Meter created successfully", "data": meter.to_dict()}
+    ), 201
 
 
 @api_v1.put("/meters/<int:meter_id>")
@@ -351,7 +417,7 @@ def create_meter():
 def update_meter(meter_id: int):
     meter = svc_get_meter_by_id(meter_id)
     if not meter:
-        return jsonify({"error": "Not Found", "code": 404}), 404
+        return jsonify({"message": "Not Found", "code": 404}), 404
     payload = request.get_json(force=True) or {}
     before = meter.to_dict()
     # Status mapping
@@ -364,7 +430,12 @@ def update_meter(meter_id: int):
             setattr(meter, f, payload[f])
     from ...db import db
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        return jsonify({"message": "Serial number already exists"}), 409
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
     # Handle assignment changes
     try:
         if "unit_id" in payload:
@@ -372,7 +443,15 @@ def update_meter(meter_id: int):
                 meter, int(payload["unit_id"]) if payload["unit_id"] else None
             )
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"message": str(e)}), 400
+    # Handle bulk meter estate assignment change
+    try:
+        if "estate_id" in payload and payload["estate_id"] is not None:
+            _assign_bulk_meter_to_estate(
+                meter, int(payload["estate_id"]) if payload["estate_id"] else None
+            )
+    except ValueError as e:
+        return jsonify({"message": str(e)}), 400
     log_action(
         "meter.update",
         entity_type="meter",
@@ -380,7 +459,7 @@ def update_meter(meter_id: int):
         old_values=before,
         new_values=payload,
     )
-    return jsonify({"data": meter.to_dict()})
+    return jsonify({"message": "Meter updated successfully", "data": meter.to_dict()})
 
 
 @api_v1.delete("/meters/<int:meter_id>")

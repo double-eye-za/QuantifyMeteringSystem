@@ -25,6 +25,8 @@ function openEditMeter(btn) {
   // preselect estate if available via unit
   if (data.unit && data.unit.estate_id) {
     form.elements.estate_id.value = data.unit.estate_id;
+  } else if (data.assigned_estate && data.assigned_estate.id) {
+    form.elements.estate_id.value = data.assigned_estate.id;
   }
   if (data.unit && data.unit.id) {
     form.elements.unit_id.value = data.unit.id;
@@ -94,13 +96,18 @@ async function submitCreateMeter() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  let msg = "";
+  try {
+    const data = await resp.json();
+    msg = data && data.message ? data.message : msg;
+  } catch (_) {}
   if (!resp.ok) {
-    showFlashMessage("Failed to create meter", "error", true);
+    showFlashMessage(msg || "Failed to create meter", "error", false);
     return;
   }
   hideCreateMeter();
+  showFlashMessage(msg || "Meter created successfully", "success", true);
   window.location.reload();
-  showFlashMessage("Meter created successfully", "success", true);
 }
 
 async function submitEditMeter() {
@@ -114,8 +121,10 @@ async function submitEditMeter() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  const data = await resp.json();
+  const msg = data && data.message ? data.message : "";
   if (!resp.ok) {
-    showFlashMessage("Failed to update meter details", "error", true);
+    showFlashMessage(msg || "Failed to update meter details", "error", false);
     return;
   }
   hideEditMeter();
