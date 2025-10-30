@@ -55,7 +55,7 @@ def dashboard():
     # Get filter parameters
     estate_id = request.args.get("estate", "all")
     period = request.args.get("period", "current-month")
-    utility_type = request.args.get("utility", "all")
+
 
     # Calculate date range based on period
     today = date.today()
@@ -686,7 +686,6 @@ def dashboard():
         daily_consumption_data=daily_consumption_data,
         estate_filter=estate_id,
         period=period,
-        utility_type=utility_type,
         estates=estates,
         current_month=current_month,
     )
