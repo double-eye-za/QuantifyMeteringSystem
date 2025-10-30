@@ -11,6 +11,39 @@ function hideAddUnitModal() {
 function saveUnit() {
   (async () => {
     try {
+      // Client-side required validation
+      const addModal = document.getElementById("addUnitModal");
+      const requiredSelectors = [
+        "select[name=estate_id]",
+        "input[name=unit_number]",
+        "select[name=electricity_meter_id]",
+        "select[name=water_meter_id]",
+        "select[name=hot_water_meter_id]",
+        "select[name=solar_meter_id]",
+      ];
+      const missingLabels = [];
+      requiredSelectors.forEach((sel) => {
+        const el = addModal ? addModal.querySelector(sel) : null;
+        if (!el) return;
+
+        el.classList.remove("ring-2", "ring-red-500", "border-red-500");
+        const val = (el.value || "").trim();
+        if (!val) {
+          el.classList.add("ring-2", "ring-red-500", "border-red-500");
+
+          const name = el.getAttribute("name") || sel;
+          missingLabels.push(name.replace(/_/g, " "));
+        }
+      });
+      if (missingLabels.length) {
+        showFlashMessage(
+          `Please fill required fields: ${missingLabels.join(", ")}`,
+          "error",
+          true
+        );
+        return;
+      }
+
       const payload = collectUnitFormPayload();
       const resp = await fetch(`${BASE_URL}`, {
         method: "POST",
@@ -106,6 +139,36 @@ function editUnit(buttonEl) {
 function saveEditedUnit() {
   (async () => {
     try {
+      // Client-side required validation for edit modal
+      const editModal = document.getElementById("editUnitModal");
+      const requiredIds = [
+        "#edit_unit_number",
+        "#edit_unit_estate",
+        "#edit_unit_emeter",
+        "#edit_unit_wmeter",
+        "#edit_unit_hwmeter",
+        "#edit_unit_smeter",
+      ];
+      const missing = [];
+      requiredIds.forEach((sel) => {
+        const el = editModal ? editModal.querySelector(sel) : null;
+        if (!el) return;
+        el.classList.remove("ring-2", "ring-red-500", "border-red-500");
+        const val = (el.value || "").trim();
+        if (!val) {
+          el.classList.add("ring-2", "ring-red-500", "border-red-500");
+          missing.push(sel.replace(/^#edit_unit_/, "").replace(/_/g, " "));
+        }
+      });
+      if (missing.length) {
+        showFlashMessage(
+          `Please fill required fields: ${missing.join(", ")}`,
+          "error",
+          true
+        );
+        return;
+      }
+
       const modal = document.getElementById("editUnitModal");
       const unitDataAttr =
         modal && modal.dataset && modal.dataset.unitId
