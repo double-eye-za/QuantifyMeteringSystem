@@ -8,6 +8,10 @@ import os
 from flask_migrate import Migrate
 from datetime import timedelta
 from flask_login import current_user
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def create_app() -> Flask:
