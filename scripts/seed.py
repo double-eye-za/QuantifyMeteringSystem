@@ -36,6 +36,8 @@ import random
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from app.services.estates import create_estate as svc_create_estate
+from app.services.units import create_unit as svc_create_unit
 
 def ensure_admin_user() -> User:
     user = User.query.filter_by(username="admin").first()
@@ -560,7 +562,7 @@ def create_estates_and_units(
         estate_code: str = ed["code"]
         estate = Estate.query.filter_by(code=estate_code).first()
         if not estate:
-            estate = Estate.create_from_payload(ed)
+            estate = svc_create_estate(ed, user_id=admin_user.id)
             estates_created += 1
         estates[estate_code] = estate
 
@@ -598,7 +600,7 @@ def create_estates_and_units(
         estate_id=estates["OAKR"].id, unit_number="A-101"
     ).first()
     if not unit_a101:
-        unit_a101 = Unit.create_from_payload(
+        unit_a101 = svc_create_unit(
             {
                 "estate_id": estates["OAKR"].id,
                 "unit_number": "A-101",
@@ -611,7 +613,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -623,7 +626,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["OAKR"].id, unit_number="A-102"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["OAKR"].id,
                 "unit_number": "A-102",
@@ -636,7 +639,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -658,7 +662,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["GRNV"].id, unit_number="B-201"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["GRNV"].id,
                 "unit_number": "B-201",
@@ -671,7 +675,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -683,7 +688,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["GRNV"].id, unit_number="B-202"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["GRNV"].id,
                 "unit_number": "B-202",
@@ -696,7 +701,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -721,7 +727,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["DRBN"].id, unit_number="C-301"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["DRBN"].id,
                 "unit_number": "C-301",
@@ -734,7 +740,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -745,7 +752,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["DRBN"].id, unit_number="C-302"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["DRBN"].id,
                 "unit_number": "C-302",
@@ -758,7 +765,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -780,7 +788,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["PEBA"].id, unit_number="D-101"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["PEBA"].id,
                 "unit_number": "D-101",
@@ -793,7 +801,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
@@ -804,7 +813,7 @@ def create_estates_and_units(
     if not Unit.query.filter_by(
         estate_id=estates["PEBA"].id, unit_number="D-102"
     ).first():
-        Unit.create_from_payload(
+        svc_create_unit(
             {
                 "estate_id": estates["PEBA"].id,
                 "unit_number": "D-102",
@@ -817,7 +826,8 @@ def create_estates_and_units(
                 "electricity_rate_table_id": rate_tables["Standard Residential"].id,
                 "water_rate_table_id": rate_tables["Standard Residential Water"].id,
                 "solar_rate_table_id": rate_tables["Standard Residential Solar"].id,
-            }
+            },
+            user_id=admin_user.id,
         )
         units_created += 1
 
