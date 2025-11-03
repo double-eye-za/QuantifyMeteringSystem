@@ -42,8 +42,8 @@ def upgrade():
     with op.batch_alter_table("meters", schema=None) as batch_op:
         batch_op.drop_constraint("ck_meters_type", type_="check")
         batch_op.create_check_constraint(
-            "meter_type IN ('electricity','water','solar','hot_water','bulk_electricity','bulk_water')",
             "ck_meters_type",
+            "meter_type IN ('electricity','water','solar','hot_water','bulk_electricity','bulk_water')",
         )
 
 
@@ -52,8 +52,8 @@ def downgrade():
     with op.batch_alter_table("meters", schema=None) as batch_op:
         batch_op.drop_constraint("ck_meters_type", type_="check")
         batch_op.create_check_constraint(
-            "meter_type IN ('electricity','water','solar','bulk_electricity','bulk_water')",
             "ck_meters_type",
+            "meter_type IN ('electricity','water','solar','bulk_electricity','bulk_water')",
         )
 
     # Remove hot_water_balance column from wallets table
