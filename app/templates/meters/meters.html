@@ -324,16 +324,51 @@ block breadcrumb %}
                   </select>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- LoRaWAN Device Fields -->
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">LoRaWAN Device Information (Optional)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">Device EUI</label>
+                    <input name="device_eui" placeholder="24e124136f215917" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">Device Type</label>
+                    <select name="lorawan_device_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                      <option value="">-- Select Device Type --</option>
+                      <option value="milesight_em300">Milesight EM300-DI (Pulse Counter)</option>
+                      <option value="qalcosonic_w1">Qalcosonic W1 (Water Meter)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">Manufacturer</label>
+                    <input name="manufacturer" placeholder="Milesight" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">Model</label>
+                    <input name="model" placeholder="EM300-DI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  </div>
+                  <div>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">Communication Type</label>
+                    <select name="communication_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                      <option value="cellular">LoRaWAN (Cellular)</option>
+                      <option value="plc">PLC</option>
+                      <option value="wifi">WiFi</option>
+                      <option value="manual">Manual</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label class="text-sm text-gray-700 dark:text-gray-300">Installation Date</label>
                   <input name="installation_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                 </div>
                 <div>
                   <label class="text-sm text-gray-700 dark:text-gray-300">Status</label>
-                  <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="active" selected>Active</option>
-                    <option value="inactive">Inactive</option>
+                  <select name="is_active" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="true" selected>Active</option>
+                    <option value="false">Inactive</option>
                   </select>
                 </div>
               </div>
