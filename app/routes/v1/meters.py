@@ -687,3 +687,66 @@ def export_meters_pdf():
 
     except Exception as e:
         return jsonify({"error": f"Export failed: {str(e)}"}), 500
+
+
+@api_v1.route("/meters", methods=["POST"])
+@login_required
+@requires_permission("meters.create")
+def create_meter():
+    """
+    Register a new meter (including LoRaWAN devices)
+
+    Expected JSON payload:
+    {
+        "serial_number": "24e124136f215917",
+        "meter_type": "electricity",
+        "manufacturer": "Milesight",
+        "model": "EM300-DI",
+        "device_eui": "24e124136f215917",
+        "lorawan_device_type": "milesight_em300",
+        "communication_type": "cellular",
+        "is_prepaid": true,
+        "is_active": true
+    }
+    """
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if not data.get("serial_number"):
+            return jsonify({"error": "serial_number is required"}), 400
+        if not data.get("meter_type"):
+            return jsonify({"error": "meter_type is required"}), 400
+
+        # For LoRaWAN devices, device_eui is required
+        if data.get("communication_type") == "cellular" and not data.get("device_eui"):
+            return jsonify({"error": "device_eui is required for LoRaWAN devices"}), 400
+
+        # Create the meter
+        meter = svc_create_meter(data)
+
+        # Log the action
+        log_action(
+            "meter.create",
+            entity_type="meter",
+            entity_id=meter.id,
+            new_values={
+                "serial_number": meter.serial_number,
+                "meter_type": meter.meter_type,
+                "device_eui": meter.device_eui,
+            },
+        )
+
+        return jsonify({
+            "message": "Meter registered successfully",
+            "meter": meter.to_dict()
+        }), 201
+
+    except IntegrityError as e:
+        db.session.rollback()
+        if "unique constraint" in str(e).lower():
+            return jsonify({"error": "Meter with this serial number or device EUI already exists"}), 409
+        return jsonify({"error": "Database error occurred"}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to register meter: {str(e)}"}), 500

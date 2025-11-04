@@ -28,8 +28,15 @@ def create_meter(payload: dict):
     meter = Meter(
         serial_number=payload["serial_number"],
         meter_type=payload["meter_type"],
+        manufacturer=payload.get("manufacturer"),
+        model=payload.get("model"),
         installation_date=payload.get("installation_date"),
+        communication_type=payload.get("communication_type", "cellular"),
+        is_prepaid=payload.get("is_prepaid", True),
         is_active=payload.get("is_active", True),
+        # LoRaWAN device fields
+        device_eui=payload.get("device_eui"),
+        lorawan_device_type=payload.get("lorawan_device_type"),
     )
     db.session.add(meter)
     db.session.commit()
