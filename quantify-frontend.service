@@ -8,8 +8,8 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/QuantifyMeteringSystem
-Environment="PATH=/opt/QuantifyMeteringSystem/.venv/bin"
-ExecStart=/opt/QuantifyMeteringSystem/.venv/bin/python application.py
+Environment="PATH=/opt/QuantifyMeteringSystem/venv/bin"
+ExecStart=/opt/QuantifyMeteringSystem/venv/bin/python application.py
 
 # Restart policy
 Restart=always
