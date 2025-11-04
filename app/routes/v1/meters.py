@@ -692,7 +692,7 @@ def export_meters_pdf():
 @api_v1.route("/meters", methods=["POST"])
 @login_required
 @requires_permission("meters.create")
-def create_meter():
+def register_meter():
     """
     Register a new meter (including LoRaWAN devices)
 
