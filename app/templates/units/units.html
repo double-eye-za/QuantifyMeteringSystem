@@ -403,7 +403,7 @@ block breadcrumb %}
           <h4
             class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
           >
-            Meter Assignment (4 meters required per unit)
+            Meter Assignment (optional)
           </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -412,7 +412,6 @@ block breadcrumb %}
               >
                                     <i class="fas fa-bolt text-yellow-500 mr-1"></i>
                 Electricity Meter (E460)
-                <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
               <select name="electricity_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select electricity meter</option>
@@ -427,7 +426,6 @@ block breadcrumb %}
               >
                                     <i class="fas fa-tint text-blue-500 mr-1"></i>
                 Water Meter
-                <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
               <select name="water_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select water meter</option>
@@ -442,7 +440,6 @@ block breadcrumb %}
               >
                                     <i class="fas fa-fire text-red-500 mr-1"></i>
                 Hot Water Meter
-                <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
               <select name="hot_water_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select hot water meter</option>
@@ -457,7 +454,6 @@ block breadcrumb %}
               >
                                     <i class="fas fa-solar-panel text-orange-500 mr-1"></i>
                 Solar Meter (E460)
-                <span class="text-red-600 dark:text-red-400">*</span>
                                 </label>
               <select name="solar_meter_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select solar meter</option>
@@ -555,15 +551,14 @@ block breadcrumb %}
           <h4
             class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3"
           >
-            Meter Assignment (4 meters required per unit)
+            Meter Assignment (optional)
           </h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 ><i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity
-                Meter (E460)
-                <span class="text-red-600 dark:text-red-400">*</span></label
+                Meter (E460)</label
               >
               <select id="edit_unit_emeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select electricity meter</option>
@@ -575,8 +570,7 @@ block breadcrumb %}
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                ><i class="fas fa-tint text-blue-500 mr-1"></i>Water Meter
-                <span class="text-red-600 dark:text-red-400">*</span></label
+                ><i class="fas fa-tint text-blue-500 mr-1"></i>Water Meter</label
               >
               <select id="edit_unit_wmeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select water meter</option>
@@ -588,8 +582,7 @@ block breadcrumb %}
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                ><i class="fas fa-fire text-red-500 mr-1"></i>Hot Water Meter
-                <span class="text-red-600 dark:text-red-400">*</span></label
+                ><i class="fas fa-fire text-red-500 mr-1"></i>Hot Water Meter</label
               >
               <select id="edit_unit_hwmeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select hot water meter</option>
@@ -602,8 +595,7 @@ block breadcrumb %}
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 ><i class="fas fa-solar-panel text-orange-500 mr-1"></i>Solar
-                Meter (E460)
-                <span class="text-red-600 dark:text-red-400">*</span></label
+                Meter (E460)</label
               >
               <select id="edit_unit_smeter" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="">Select solar meter</option>

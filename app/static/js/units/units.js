@@ -16,10 +16,6 @@ function saveUnit() {
       const requiredSelectors = [
         "select[name=estate_id]",
         "input[name=unit_number]",
-        "select[name=electricity_meter_id]",
-        "select[name=water_meter_id]",
-        "select[name=hot_water_meter_id]",
-        "select[name=solar_meter_id]",
       ];
       const missingLabels = [];
       requiredSelectors.forEach((sel) => {
@@ -144,10 +140,6 @@ function saveEditedUnit() {
       const requiredIds = [
         "#edit_unit_number",
         "#edit_unit_estate",
-        "#edit_unit_emeter",
-        "#edit_unit_wmeter",
-        "#edit_unit_hwmeter",
-        "#edit_unit_smeter",
       ];
       const missing = [];
       requiredIds.forEach((sel) => {
