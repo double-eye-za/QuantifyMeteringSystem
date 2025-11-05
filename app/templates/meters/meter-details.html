@@ -37,7 +37,18 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         </span>
       </div>
       <div class="flex justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">Status</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">Device Status</span>
+        <span
+          class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if device_status=='online' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}"
+        >
+          <i
+            class="fas {{ 'fa-wifi' if device_status=='online' else 'fa-unlink' }} mr-1"
+          ></i
+          >{{ 'Online' if device_status=='online' else 'Offline' }}
+        </span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Credit Status</span>
         <span
           class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if credit_status=='ok' else ('bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if credit_status=='low' else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300') }}"
         >

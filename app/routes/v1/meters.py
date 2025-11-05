@@ -285,6 +285,14 @@ def meter_details_page(meter_id: str):
             sast_time = utc_time + timedelta(hours=2)
             reading["reading_date"] = sast_time.strftime("%Y-%m-%d %H:%M:%S")
 
+    # Determine device communication status
+    # Consider device online if it communicated within last 30 minutes
+    device_status = "offline"
+    if meter.last_communication:
+        time_since_last_comm = datetime.utcnow() - meter.last_communication
+        if time_since_last_comm.total_seconds() < 1800:  # 30 minutes
+            device_status = "online"
+
     meter_dict = meter.to_dict()
     return render_template(
         "meters/meter-details.html",
@@ -302,6 +310,7 @@ def meter_details_page(meter_id: str):
         wallet=wallet.to_dict() if wallet else None,
         balance_value=balance_value,
         credit_status=credit_status,
+        device_status=device_status,
         recent_readings=recent_readings,
     )
 
