@@ -44,7 +44,17 @@ function updateRealtimeCards(data) {
   }
   if (lastReadingTime && data.latest_reading) {
     const timestamp = new Date(data.latest_reading.timestamp);
-    lastReadingTime.textContent = `Last: ${timestamp.toLocaleString()}`;
+    // Format to local timezone (SAST for South Africa)
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
+    lastReadingTime.textContent = `Last: ${timestamp.toLocaleString('en-ZA', options)}`;
   }
 
   // Card 3: Device Status
