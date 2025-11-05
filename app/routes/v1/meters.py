@@ -750,3 +750,186 @@ def register_meter():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to register meter: {str(e)}"}), 500
+
+
+@api_v1.route("/meters/<meter_id>/realtime-stats", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def meter_realtime_stats(meter_id: str):
+    """Get real-time statistics for a specific meter."""
+    from sqlalchemy import func
+    from datetime import date
+    from ...db import db
+
+    # Get meter
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if not meter:
+        return jsonify({"error": "Meter not found"}), 404
+
+    # Get latest reading
+    latest_reading = MeterReading.query.filter_by(meter_id=meter.id)\
+        .order_by(MeterReading.reading_date.desc())\
+        .first()
+
+    # Determine device capabilities based on device type
+    capabilities = {
+        "measures_power": False,
+        "measures_voltage": False,
+        "measures_flow": False,
+        "measures_temperature": True if meter.lorawan_device_type == "milesight_em300" else False,
+        "unit": "kWh" if meter.meter_type in ["electricity", "solar"] else "m³"
+    }
+
+    # Calculate today's consumption
+    today = date.today()
+    today_readings = MeterReading.query.filter(
+        MeterReading.meter_id == meter.id,
+        func.date(MeterReading.reading_date) == today
+    ).all()
+
+    today_consumption = 0.0
+    if len(today_readings) >= 2:
+        values = [r.reading_value for r in today_readings if r.reading_value is not None]
+        if values:
+            today_consumption = max(values) - min(values)
+
+    # Check for unit assignment and calculate cost
+    unit = svc_find_unit_by_meter_id(meter.id)
+    cost = None
+    cost_message = None
+
+    if not unit:
+        cost_message = "Meter not assigned to unit"
+    else:
+        # TODO: Implement cost calculation with rate tables
+        cost_message = "Rate table not configured"
+
+    # Build response
+    response = {
+        "meter_id": meter.device_eui,
+        "meter_type": meter.meter_type,
+        "device_type": meter.lorawan_device_type,
+        "capabilities": capabilities,
+        "latest_reading": {
+            "timestamp": latest_reading.reading_date.isoformat() if latest_reading else None,
+            "value": float(latest_reading.reading_value) if latest_reading and latest_reading.reading_value else 0.0,
+            "pulse_count": latest_reading.pulse_count if latest_reading else None,
+            "temperature": float(latest_reading.temperature) if latest_reading and latest_reading.temperature else None,
+            "humidity": float(latest_reading.humidity) if latest_reading and latest_reading.humidity else None,
+            "battery_level": latest_reading.battery_level if latest_reading else None,
+            "rssi": latest_reading.rssi if latest_reading else None,
+            "snr": float(latest_reading.snr) if latest_reading and latest_reading.snr else None
+        } if latest_reading else None,
+        "today": {
+            "consumption": round(today_consumption, 2),
+            "cost": cost,
+            "unit": capabilities["unit"],
+            "cost_message": cost_message
+        },
+        "communication": {
+            "last_communication": meter.last_communication.isoformat() if meter.last_communication else None,
+            "status": "online" if meter.communication_status == "online" else "offline"
+        }
+    }
+
+    return jsonify(response), 200
+
+
+@api_v1.route("/meters/<meter_id>/chart-data", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def meter_chart_data(meter_id: str):
+    """Get chart data for a specific meter."""
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+    from ...db import db
+
+    # Get meter
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if not meter:
+        return jsonify({"error": "Meter not found"}), 404
+
+    # Get period parameter
+    period = request.args.get("period", "day")
+
+    # Determine time range and grouping
+    now = datetime.now()
+    if period == "hour":
+        start_time = now - timedelta(hours=24)
+        interval = "hour"
+    elif period == "week":
+        start_time = now - timedelta(days=7)
+        interval = "day"
+    elif period == "month":
+        start_time = now - timedelta(days=30)
+        interval = "day"
+    else:  # day
+        start_time = now - timedelta(days=1)
+        interval = "hour"
+
+    # Get readings for the period
+    readings = MeterReading.query.filter(
+        MeterReading.meter_id == meter.id,
+        MeterReading.reading_date >= start_time
+    ).order_by(MeterReading.reading_date).all()
+
+    # Group by interval and calculate consumption
+    labels = []
+    data = []
+
+    if interval == "hour":
+        # Group by hour
+        hourly_data = {}
+        for reading in readings:
+            hour_key = reading.reading_date.strftime("%H:00")
+            if hour_key not in hourly_data:
+                hourly_data[hour_key] = []
+            if reading.reading_value is not None:
+                hourly_data[hour_key].append(float(reading.reading_value))
+
+        # Generate 24-hour labels
+        for i in range(24):
+            hour_label = f"{i:02d}:00"
+            labels.append(hour_label)
+
+            if hour_label in hourly_data and len(hourly_data[hour_label]) >= 2:
+                consumption = max(hourly_data[hour_label]) - min(hourly_data[hour_label])
+                data.append(round(consumption, 2))
+            else:
+                data.append(0.0)
+
+    elif interval == "day":
+        # Group by day
+        daily_data = {}
+        for reading in readings:
+            day_key = reading.reading_date.strftime("%Y-%m-%d")
+            if day_key not in daily_data:
+                daily_data[day_key] = []
+            if reading.reading_value is not None:
+                daily_data[day_key].append(float(reading.reading_value))
+
+        # Generate labels based on period
+        num_days = 7 if period == "week" else 30
+        for i in range(num_days):
+            day = now - timedelta(days=num_days - i - 1)
+            day_key = day.strftime("%Y-%m-%d")
+            day_label = day.strftime("%b %d")
+            labels.append(day_label)
+
+            if day_key in daily_data and len(daily_data[day_key]) >= 2:
+                consumption = max(daily_data[day_key]) - min(daily_data[day_key])
+                data.append(round(consumption, 2))
+            else:
+                data.append(0.0)
+
+    unit = "kWh" if meter.meter_type in ["electricity", "solar"] else "m³"
+
+    response = {
+        "labels": labels,
+        "data": data,
+        "period": period,
+        "unit": unit,
+        "meter_type": meter.meter_type
+    }
+
+    return jsonify(response), 200

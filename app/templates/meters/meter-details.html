@@ -164,46 +164,44 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   <div class="p-6">
     <!-- Live Readings -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <!-- Card 1: Today's Usage -->
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Current Load</span
-          >
-          <i class="fas fa-bolt text-yellow-500"></i>
-        </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          2.4 kW
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Updated: 14:32:45
-        </div>
-      </div>
-
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Voltage</span>
-          <i class="fas fa-plug text-green-500"></i>
-        </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          230 V
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Normal range
-        </div>
-      </div>
-
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Today's Usage</span
-          >
+          <span class="text-sm text-gray-600 dark:text-gray-400">Today's Usage</span>
           <i class="fas fa-chart-line text-primary"></i>
         </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          12.5 kWh
+        <div class="text-2xl font-bold text-gray-900 dark:text-white" id="today-usage">
+          —
         </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Cost: R 20.83
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="today-cost">
+          Loading...
+        </div>
+      </div>
+
+      <!-- Card 2: Total Consumption -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Total Consumption</span>
+          <i class="fas fa-bolt text-yellow-500"></i>
+        </div>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white" id="total-reading">
+          —
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="last-reading-time">
+          Loading...
+        </div>
+      </div>
+
+      <!-- Card 3: Device Status -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Device Status</span>
+          <i class="fas fa-battery-full text-green-500" id="battery-icon"></i>
+        </div>
+        <div class="text-sm text-gray-900 dark:text-white space-y-1">
+          <div>Battery: <span id="battery-level" class="font-bold">—</span></div>
+          <div>Temp: <span id="temperature" class="font-bold">—</span></div>
+          <div>Signal: <span id="signal-strength" class="font-bold">—</span></div>
         </div>
       </div>
     </div>
@@ -216,20 +214,26 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         </h4>
         <div class="flex space-x-2">
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="hour"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Hour
           </button>
-          <button class="px-3 py-1 text-xs bg-primary text-white rounded-lg">
+          <button
+            data-period="day"
+            class="period-btn px-3 py-1 text-xs bg-primary text-white rounded-lg active"
+          >
             Day
           </button>
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="week"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Week
           </button>
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="month"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Month
           </button>
@@ -320,5 +324,10 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
 </div>
 {% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+<script>
+  // Make meter_id and meter_type available to JavaScript
+  window.METER_ID = "{{ meter_id }}";
+  window.METER_TYPE = "{{ meter.meter_type if meter else 'unknown' }}";
+</script>
 <script src="/static/js/meters/meter-details.js"></script>
 {% endblock %}
