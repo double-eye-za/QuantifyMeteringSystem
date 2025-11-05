@@ -206,23 +206,29 @@ function collectUnitFormPayload() {
   const payload = {};
   inputs.forEach((el) => {
     const name = el.name || el.placeholder || el.id;
-    if (name) payload[name] = el.value;
+    if (name) {
+      // Convert empty strings to null for meter IDs and other optional fields
+      const value = el.value.trim();
+      payload[name] = value === "" ? null : value;
+    }
   });
   return payload;
 }
 
 function collectEditUnitFormPayload() {
   const modal = document.getElementById("editUnitModal");
+
+  // Helper to convert empty string to null
+  const valueOrNull = (value) => (value && value.trim() !== "" ? value : null);
+
   const payload = {
     unit_number: document.getElementById("edit_unit_number")?.value || "",
     floor: document.getElementById("edit_unit_floor")?.value || "",
-    estate_id: document.getElementById("edit_unit_estate")?.value || null,
-    electricity_meter_id:
-      document.getElementById("edit_unit_emeter")?.value || null,
-    water_meter_id: document.getElementById("edit_unit_wmeter")?.value || null,
-    hot_water_meter_id:
-      document.getElementById("edit_unit_hwmeter")?.value || null,
-    solar_meter_id: document.getElementById("edit_unit_smeter")?.value || null,
+    estate_id: valueOrNull(document.getElementById("edit_unit_estate")?.value),
+    electricity_meter_id: valueOrNull(document.getElementById("edit_unit_emeter")?.value),
+    water_meter_id: valueOrNull(document.getElementById("edit_unit_wmeter")?.value),
+    hot_water_meter_id: valueOrNull(document.getElementById("edit_unit_hwmeter")?.value),
+    solar_meter_id: valueOrNull(document.getElementById("edit_unit_smeter")?.value),
   };
   return payload;
 }
