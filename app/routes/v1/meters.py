@@ -223,7 +223,10 @@ def meters_page():
 @requires_permission("meters.view")
 def meter_details_page(meter_id: str):
     """Render the meter details page with enriched data for the selected meter."""
-    meter = Meter.query.filter_by(serial_number=meter_id).first()
+    from datetime import datetime, timedelta
+
+    # Try to find by device_eui first (LoRaWAN devices), then by ID
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
     if meter is None and meter_id.isdigit():
         meter = svc_get_meter_by_id(int(meter_id))
     if meter is None:
@@ -273,6 +276,14 @@ def meter_details_page(meter_id: str):
     readings_query = svc_list_for_meter_readings(meter.id)
     readings_items, _ = paginate_query(readings_query)
     recent_readings = [r.to_dict() for r in readings_items]
+
+    # Convert UTC timestamps to SAST (UTC+2) for display
+    for reading in recent_readings:
+        if reading.get("reading_date"):
+            # Parse ISO timestamp and add 2 hours for SAST
+            utc_time = datetime.fromisoformat(reading["reading_date"].replace('Z', '+00:00'))
+            sast_time = utc_time + timedelta(hours=2)
+            reading["reading_date"] = sast_time.strftime("%Y-%m-%d %H:%M:%S")
 
     meter_dict = meter.to_dict()
     return render_template(
