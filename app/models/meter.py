@@ -59,7 +59,7 @@ class Meter(db.Model):
             name="ck_meters_type",
         ),
         CheckConstraint(
-            "communication_type IN ('plc','cellular','wifi','manual')",
+            "communication_type IN ('plc','cellular','wifi','manual','lora')",
             name="ck_meters_comm_type",
         ),
         CheckConstraint(
