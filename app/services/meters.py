@@ -25,6 +25,14 @@ def get_meter_by_id(meter_id: int):
 
 
 def create_meter(payload: dict):
+    # Convert string booleans to actual booleans
+    def to_bool(value, default=True):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes')
+        return default
+
     meter = Meter(
         serial_number=payload["serial_number"],
         meter_type=payload["meter_type"],
@@ -32,8 +40,8 @@ def create_meter(payload: dict):
         model=payload.get("model"),
         installation_date=payload.get("installation_date"),
         communication_type=payload.get("communication_type", "cellular"),
-        is_prepaid=payload.get("is_prepaid", True),
-        is_active=payload.get("is_active", True),
+        is_prepaid=to_bool(payload.get("is_prepaid"), True),
+        is_active=to_bool(payload.get("is_active"), True),
         # LoRaWAN device fields
         device_eui=payload.get("device_eui"),
         lorawan_device_type=payload.get("lorawan_device_type"),
