@@ -269,10 +269,28 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
           >
             <tr>
               <th scope="col" class="px-6 py-3">Timestamp</th>
-              <th scope="col" class="px-6 py-3">Reading (kWh)</th>
+              <th scope="col" class="px-6 py-3">
+                {% if meter and meter.meter_type == 'electricity' %}
+                  Reading (kWh)
+                {% elif meter and meter.meter_type == 'water' %}
+                  Reading (L)
+                {% elif meter and meter.meter_type == 'solar' %}
+                  Reading (kWh)
+                {% else %}
+                  Reading
+                {% endif %}
+              </th>
               <th scope="col" class="px-6 py-3">Consumption</th>
-              <th scope="col" class="px-6 py-3">Load (kW)</th>
-              <th scope="col" class="px-6 py-3">Voltage</th>
+              {% if meter and meter.meter_type == 'electricity' %}
+                <th scope="col" class="px-6 py-3">Load (kW)</th>
+                <th scope="col" class="px-6 py-3">Voltage (V)</th>
+              {% elif meter and meter.meter_type == 'water' %}
+                <th scope="col" class="px-6 py-3">Flow Rate (L/h)</th>
+                <th scope="col" class="px-6 py-3">Temperature (°C)</th>
+              {% elif meter and meter.meter_type == 'solar' %}
+                <th scope="col" class="px-6 py-3">Load (kW)</th>
+                <th scope="col" class="px-6 py-3">Voltage (V)</th>
+              {% endif %}
               <th scope="col" class="px-6 py-3">Status</th>
             </tr>
           </thead>
@@ -287,14 +305,30 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
                 {{ r.reading_value if r.reading_value is not none else '-' }}
               </td>
               <td class="px-6 py-4">
-                {{ r.consumption if r.consumption is not none else '-' }}
+                {{ r.consumption_since_last if r.consumption_since_last is not none else '-' }}
               </td>
-              <td class="px-6 py-4">
-                {{ r.load_kw if r.load_kw is not none else '-' }}
-              </td>
-              <td class="px-6 py-4">
-                {{ r.voltage if r.voltage is not none else '-' }}
-              </td>
+              {% if meter and meter.meter_type == 'electricity' %}
+                <td class="px-6 py-4">
+                  {{ r.power if r.power is not none else '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  {{ r.voltage if r.voltage is not none else '-' }}
+                </td>
+              {% elif meter and meter.meter_type == 'water' %}
+                <td class="px-6 py-4">
+                  {{ r.flow_rate if r.flow_rate is not none else '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  {{ r.temperature if r.temperature is not none else '-' }}
+                </td>
+              {% elif meter and meter.meter_type == 'solar' %}
+                <td class="px-6 py-4">
+                  {{ r.power if r.power is not none else '-' }}
+                </td>
+                <td class="px-6 py-4">
+                  {{ r.voltage if r.voltage is not none else '-' }}
+                </td>
+              {% endif %}
               <td class="px-6 py-4">{{ r.status or '-' }}</td>
             </tr>
             {% endfor %}

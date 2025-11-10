@@ -28,6 +28,14 @@ class MeterReading(db.Model):
     snr: Optional[float]
     battery_level: Optional[int]
     raw_payload: Optional[str]
+    voltage: Optional[float]
+    current: Optional[float]
+    power: Optional[float]
+    power_factor: Optional[float]
+    frequency: Optional[float]
+    flow_rate: Optional[float]
+    pressure: Optional[float]
+    status: Optional[str]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"), nullable=False)
@@ -47,6 +55,19 @@ class MeterReading(db.Model):
     snr = db.Column(db.Numeric(5, 2), nullable=True)  # Signal-to-noise ratio (dB)
     battery_level = db.Column(db.Integer, nullable=True)  # Battery percentage (0-100)
     raw_payload = db.Column(db.Text, nullable=True)  # Store original hex/JSON payload
+
+    # Electrical parameters (for electricity meters)
+    voltage = db.Column(db.Numeric(6, 2), nullable=True)  # Voltage (V)
+    current = db.Column(db.Numeric(8, 3), nullable=True)  # Current (A)
+    power = db.Column(db.Numeric(10, 3), nullable=True)  # Active power (kW)
+    power_factor = db.Column(db.Numeric(4, 3), nullable=True)  # Power factor
+    frequency = db.Column(db.Numeric(5, 2), nullable=True)  # Frequency (Hz)
+
+    # Water meter parameters
+    flow_rate = db.Column(db.Numeric(10, 3), nullable=True)  # Flow rate (L/h)
+    pressure = db.Column(db.Numeric(6, 2), nullable=True)  # Pressure (bar or kPa)
+
+    status = db.Column(db.String(50), nullable=True)  # Meter status (online, offline, error, etc.)
 
     __table_args__ = (
         CheckConstraint(
@@ -77,4 +98,12 @@ class MeterReading(db.Model):
             "snr": float(self.snr) if self.snr is not None else None,
             "battery_level": self.battery_level,
             "raw_payload": self.raw_payload,
+            "voltage": float(self.voltage) if self.voltage is not None else None,
+            "current": float(self.current) if self.current is not None else None,
+            "power": float(self.power) if self.power is not None else None,
+            "power_factor": float(self.power_factor) if self.power_factor is not None else None,
+            "frequency": float(self.frequency) if self.frequency is not None else None,
+            "flow_rate": float(self.flow_rate) if self.flow_rate is not None else None,
+            "pressure": float(self.pressure) if self.pressure is not None else None,
+            "status": self.status,
         }
