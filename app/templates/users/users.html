@@ -145,7 +145,12 @@ Manage Users
                   Enable
                 </button>
                 {% endif %}
-                {# Delete action intentionally removed per requirements #}
+                {% if has_permission('users.delete') %}
+                <button data-delete-user-id="{{user.id}}" data-delete-user-data='{{user | tojson}}' class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors duration-200" title="Delete user permanently">
+                  <i class="fa-solid fa-trash mr-1"></i>
+                  Delete
+                </button>
+                {% endif %}
               </div>
             </td>
           </tr>
@@ -231,7 +236,18 @@ Manage Users
               Enable
             </button>
             {% endif %}
-            {# Delete action intentionally removed per requirements #}
+            {% if has_permission('users.delete') %}
+            <button
+              type="button"
+              class="inline-flex items-center text-red-700 dark:text-red-400 hover:underline"
+              data-delete-user-id="{{user.id}}"
+              data-delete-user-data='{{user | tojson}}'
+              title="Delete user permanently"
+            >
+              <i class="fa-solid fa-trash mr-1"></i>
+              Delete
+            </button>
+            {% endif %}
                             </div>
                         </div>
         {% endfor %}

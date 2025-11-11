@@ -25,6 +25,8 @@ from ...services.meters import (
     list_for_meter_readings as svc_list_for_meter_readings,
 )
 from ...services.units import find_unit_by_meter_id as svc_find_unit_by_meter_id
+from ...services.device_types import list_device_types as svc_list_device_types
+from ...services.communication_types import list_communication_types as svc_list_communication_types
 
 
 @api_v1.route("/meters", methods=["GET"])
@@ -196,12 +198,18 @@ def meters_page():
         {"value": "solar", "label": "Solar"},
     ]
 
+    # Get device types and communication types for dropdowns
+    device_types = svc_list_device_types(active_only=True)
+    communication_types = svc_list_communication_types(active_only=True)
+
     return render_template(
         "meters/meters.html",
         meters=meters,
         estates=estates,
         units=units_info,
         meter_types=meter_types,
+        device_types=device_types,
+        communication_types=communication_types,
         pagination=meta,
         stats={
             "total": total_meters,

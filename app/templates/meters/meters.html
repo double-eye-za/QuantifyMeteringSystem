@@ -333,11 +333,17 @@ block breadcrumb %}
                     <input name="device_eui" placeholder="24e124136f215917" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                   </div>
                   <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">Device Type</label>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">
+                      Device Type
+                      <a href="{{ url_for('api_v1.device_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Device Types">
+                        <i class="fas fa-cog"></i>
+                      </a>
+                    </label>
                     <select name="lorawan_device_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                       <option value="">-- Select Device Type --</option>
-                      <option value="milesight_em300">Milesight EM300-DI (Pulse Counter)</option>
-                      <option value="qalcosonic_w1">Qalcosonic W1 (Water Meter)</option>
+                      {% for dt in device_types %}
+                      <option value="{{ dt.code }}">{{ dt.name }}</option>
+                      {% endfor %}
                     </select>
                   </div>
                   <div>
@@ -349,12 +355,16 @@ block breadcrumb %}
                     <input name="model" placeholder="EM300-DI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                   </div>
                   <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">Communication Type</label>
+                    <label class="text-sm text-gray-700 dark:text-gray-300">
+                      Communication Type
+                      <a href="{{ url_for('api_v1.communication_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Communication Types">
+                        <i class="fas fa-cog"></i>
+                      </a>
+                    </label>
                     <select name="communication_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                      <option value="cellular">LoRaWAN (Cellular)</option>
-                      <option value="plc">PLC</option>
-                      <option value="wifi">WiFi</option>
-                      <option value="manual">Manual</option>
+                      {% for ct in communication_types %}
+                      <option value="{{ ct.code }}" {% if loop.first %}selected{% endif %}>{{ ct.name }}</option>
+                      {% endfor %}
                     </select>
                   </div>
                 </div>

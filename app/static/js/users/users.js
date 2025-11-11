@@ -91,6 +91,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  document.querySelectorAll("[data-delete-user-id]").forEach((button) => {
+    button.addEventListener("click", function () {
+      const userId = this.dataset.deleteUserId;
+      const user = JSON.parse(this.dataset.deleteUserData);
+
+      showConfirmModal(
+        "Delete User",
+        `Are you sure you want to permanently delete ${user.full_name}? This action cannot be undone.`,
+        () => deleteUser(userId)
+      );
+    });
+  });
+
   document
     .getElementById("invite-form")
     .addEventListener("submit", function (e) {
@@ -259,6 +272,29 @@ async function disableUser(userId) {
     }
   } catch (error) {
     showFlashMessage("Failed to disable user", "error", true);
+  }
+}
+
+async function deleteUser(userId) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      hideConfirmModal();
+      window.location.reload();
+      showFlashMessage("User deleted successfully", "success", true);
+    } else {
+      showFlashMessage(result.error || "Failed to delete user", "error", true);
+    }
+  } catch (error) {
+    showFlashMessage("Failed to delete user", "error", true);
   }
 }
 

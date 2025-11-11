@@ -16,6 +16,8 @@ from .audit_log import AuditLog
 from .system_setting import SystemSetting
 from .meter_alert import MeterAlert
 from .reconciliation_report import ReconciliationReport
+from .device_type import DeviceType
+from .communication_type import CommunicationType
 
 __all__ = [
     "User",
@@ -36,4 +38,6 @@ __all__ = [
     "SystemSetting",
     "MeterAlert",
     "ReconciliationReport",
+    "DeviceType",
+    "CommunicationType",
 ]

@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Device Types - Quantify Metering System{% endblock %}
+{% block page_title %}Device Type Management{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.settings_page') }}" class="hover:text-primary">Settings</a>
+<span class="mx-1">/</span>
+<span>Device Types</span>
+{% endblock %}
+
+{% block content %}
+<!-- Header Row -->
+<div class="flex justify-between items-center mb-6">
+  <div>
+    <p class="text-gray-600 dark:text-gray-400">Manage LoRaWAN device types for meter integration</p>
+  </div>
+  <button
+    onclick="showCreateDeviceType()"
+    class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+  >
+    <i class="fas fa-plus mr-2"></i>Add Device Type
+  </button>
+</div>
+
+<!-- Device Types Table -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Code</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Manufacturer</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Features</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% if device_types %}
+          {% for dt in device_types %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+          <td class="px-6 py-4 text-sm font-mono text-gray-900 dark:text-white">{{ dt.code }}</td>
+          <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ dt.name }}</td>
+          <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ dt.manufacturer or '-' }}</td>
+          <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ dt.default_model or '-' }}</td>
+          <td class="px-6 py-4 text-sm">
+            <div class="flex gap-1">
+              {% if dt.supports_temperature %}
+              <span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded" title="Temperature">
+                <i class="fas fa-thermometer-half"></i>
+              </span>
+              {% endif %}
+              {% if dt.supports_pulse %}
+              <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded" title="Pulse Counter">
+                <i class="fas fa-tachometer-alt"></i>
+              </span>
+              {% endif %}
+              {% if dt.supports_modbus %}
+              <span class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded" title="Modbus">
+                <i class="fas fa-exchange-alt"></i>
+              </span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-6 py-4 text-sm">
+            {% if dt.is_active %}
+            <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">Active</span>
+            {% else %}
+            <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400 rounded">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-sm">
+            <div class="flex gap-2">
+              <button
+                onclick="editDeviceType({{ dt.id }})"
+                class="text-primary hover:text-blue-700"
+                title="Edit"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+              {% if dt.is_active %}
+              <button
+                onclick="deactivateDeviceType({{ dt.id }}, '{{ dt.name }}')"
+                class="text-gray-600 dark:text-gray-400 hover:text-red-600"
+                title="Deactivate"
+              >
+                <i class="fas fa-ban"></i>
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+          {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+            No device types found. Click "Add Device Type" to create one.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create/Edit Device Type Modal -->
+<div id="deviceTypeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="modalTitle">Add Device Type</h3>
+    </div>
+    <form id="deviceTypeForm" class="p-6">
+      <input type="hidden" id="deviceTypeId" name="id" />
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Code <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="code"
+            name="code"
+            required
+            placeholder="e.g., milesight_em300"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Unique identifier (lowercase, underscores)</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            placeholder="e.g., Milesight EM300-DI"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Manufacturer
+          </label>
+          <input
+            type="text"
+            id="manufacturer"
+            name="manufacturer"
+            placeholder="e.g., Milesight"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Default Model
+          </label>
+          <input
+            type="text"
+            id="default_model"
+            name="default_model"
+            placeholder="e.g., EM300-DI"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Description
+        </label>
+        <textarea
+          id="description"
+          name="description"
+          rows="2"
+          placeholder="Brief description of the device type..."
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        ></textarea>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Supported Features
+        </label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label class="flex items-center">
+            <input type="checkbox" id="supports_temperature" name="supports_temperature" class="mr-2" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">Temperature Sensor</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="supports_pulse" name="supports_pulse" class="mr-2" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">Pulse Counter</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" id="supports_modbus" name="supports_modbus" class="mr-2" />
+            <span class="text-sm text-gray-700 dark:text-gray-300">Modbus Protocol</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="flex items-center">
+          <input type="checkbox" id="is_active" name="is_active" checked class="mr-2" />
+          <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          type="button"
+          onclick="hideDeviceTypeModal()"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-700"
+        >
+          Save Device Type
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/settings/device-types.js') }}"></script>
+{% endblock %}

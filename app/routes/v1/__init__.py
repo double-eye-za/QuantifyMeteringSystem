@@ -23,6 +23,8 @@ from . import profile
 from . import settings
 from . import auth
 from . import residents
+from . import device_types
+from . import communication_types
 
 
 @login_manager.unauthorized_handler
