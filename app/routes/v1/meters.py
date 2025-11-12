@@ -829,8 +829,28 @@ def meter_realtime_stats(meter_id: str):
     if not unit:
         cost_message = "Meter not assigned to unit"
     else:
-        # TODO: Implement cost calculation with rate tables
-        cost_message = "Rate table not configured"
+        # Calculate cost using rate tables
+        from app.utils.rates import calculate_consumption_charge
+
+        try:
+            # Determine utility type based on meter type
+            utility_type = meter.meter_type
+            if utility_type == "hot_water":
+                utility_type = "water"  # Use water rates for hot water
+            elif utility_type not in ("electricity", "water"):
+                utility_type = "electricity"  # Default to electricity for solar/bulk
+
+            # Calculate cost for today's consumption
+            if today_consumption > 0:
+                cost = calculate_consumption_charge(
+                    consumption=today_consumption,
+                    utility_type=utility_type
+                )
+            else:
+                cost = 0
+                cost_message = "No consumption today"
+        except Exception as e:
+            cost_message = f"Cost calculation error: {str(e)}"
 
     # Build response
     response = {
