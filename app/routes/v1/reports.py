@@ -421,7 +421,18 @@ def get_consumption_reports(
             ),
         ).filter(Unit.estate_id == estate_id)
 
-    reports["daily_consumption_trend"] = daily_trend_query.all()
+    # Convert Row objects to dictionaries for JSON serialization
+    daily_trend_results = daily_trend_query.all()
+    reports["daily_consumption_trend"] = [
+        {
+            "date": row.date.isoformat() if row.date else None,
+            "electricity": float(row.electricity) if row.electricity else 0,
+            "water": float(row.water) if row.water else 0,
+            "hot_water": float(row.hot_water) if row.hot_water else 0,
+            "solar": float(row.solar) if row.solar else 0,
+        }
+        for row in daily_trend_results
+    ]
 
     return reports
 
