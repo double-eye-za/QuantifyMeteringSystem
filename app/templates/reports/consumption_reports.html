@@ -623,27 +623,25 @@
   }
 
   // Daily Consumption Trend Chart
-  {% if unit_consumption %}
+  {% if daily_consumption_trend %}
   const dailyConsumptionCtx = document.getElementById('dailyConsumptionChart').getContext('2d');
-  
-  // Generate sample daily data for the last 30 days
+
+  // Use real data from backend
+  const trendData = {{ daily_consumption_trend | tojson }};
   const days = [];
   const electricityData = [];
   const waterData = [];
   const hotWaterData = [];
   const solarData = [];
-  
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+
+  trendData.forEach(day => {
+    const date = new Date(day.date);
     days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    
-    // Generate realistic consumption data with some variation
-    electricityData.push(Math.floor(Math.random() * 50) + 20);
-    waterData.push(Math.floor(Math.random() * 20) + 5);
-    hotWaterData.push(Math.floor(Math.random() * 15) + 3);
-    solarData.push(Math.floor(Math.random() * 30) + 10);
-  }
+    electricityData.push(parseFloat(day.electricity) || 0);
+    waterData.push(parseFloat(day.water) || 0);
+    hotWaterData.push(parseFloat(day.hot_water) || 0);
+    solarData.push(parseFloat(day.solar) || 0);
+  });
   
   const colors = getChartColors();
   

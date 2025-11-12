@@ -122,6 +122,7 @@ def get_consumption_reports(
         "top_consumers_hot_water": [],
         "top_consumers_solar": [],
         "solar_generation_vs_usage": [],
+        "daily_consumption_trend": [],
     }
 
     # Unit Consumption Summary
@@ -367,6 +368,60 @@ def get_consumption_reports(
         solar_data = solar_data.filter(Estate.id == estate_id)
 
     reports["solar_generation_vs_usage"] = solar_data.all()
+
+    # Daily Consumption Trend - last 30 days aggregated by date
+    from datetime import timedelta
+
+    # Calculate date 30 days ago
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+
+    daily_trend_query = (
+        db.session.query(
+            func.date(MeterReading.reading_date).label("date"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "electricity", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("electricity"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "water", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("water"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "hot_water", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("hot_water"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "solar", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("solar"),
+        )
+        .join(Meter, MeterReading.meter_id == Meter.id)
+        .filter(MeterReading.reading_date >= thirty_days_ago)
+        .group_by(func.date(MeterReading.reading_date))
+        .order_by(func.date(MeterReading.reading_date))
+    )
+
+    if estate_id:
+        # Join with units to filter by estate
+        daily_trend_query = daily_trend_query.join(
+            Unit,
+            or_(
+                Unit.electricity_meter_id == Meter.id,
+                Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
+                Unit.solar_meter_id == Meter.id,
+            ),
+        ).filter(Unit.estate_id == estate_id)
+
+    reports["daily_consumption_trend"] = daily_trend_query.all()
 
     return reports
 
@@ -806,9 +861,17 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
         communal_electricity = float(bulk_electricity) - float(sub_electricity)
         communal_water = float(bulk_water) - float(sub_water)
 
-        # Calculate costs (using standard rates)
-        electricity_cost = communal_electricity * 2.50
-        water_cost = communal_water * 15.00
+        # Calculate costs using rate tables
+        from app.utils.rates import calculate_consumption_charge
+
+        electricity_cost = calculate_consumption_charge(
+            consumption=communal_electricity,
+            utility_type="electricity"
+        )
+        water_cost = calculate_consumption_charge(
+            consumption=communal_water / 1000.0,  # Convert L to kL
+            utility_type="water"
+        )
         communal_usage.append(
             {
                 "estate_name": estate.name,

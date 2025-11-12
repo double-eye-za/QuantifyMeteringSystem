@@ -433,10 +433,17 @@ def dashboard():
     )
 
     # Communal Area Cost Estimate - based on tariff rates
-    # Using standard tariff rates: Electricity R2.50/kWh, Water R15.00/kL
-    communal_cost_estimate = (float(communal_electricity) * 2.5) + (
-        float(communal_water) * 15.0
+    from app.utils.rates import calculate_consumption_charge
+
+    electricity_cost = calculate_consumption_charge(
+        consumption=float(communal_electricity),
+        utility_type="electricity"
     )
+    water_cost = calculate_consumption_charge(
+        consumption=float(communal_water) / 1000.0,  # Convert L to kL
+        utility_type="water"
+    )
+    communal_cost_estimate = electricity_cost + water_cost
 
     # Calculate KPIs for new dashboard spec
     cold_water_kL = float(total_water_liters) / 1000.0  # Convert L to kL

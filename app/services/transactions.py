@@ -41,13 +41,45 @@ def create_transaction(
     payment_method: str | None = None,
     metadata: dict | None = None,
 ):
+    from datetime import datetime
+    from app.models.wallet import Wallet
+
+    # Get wallet to track balance
+    wallet = Wallet.query.get(wallet_id)
+    if not wallet:
+        raise ValueError(f"Wallet with id {wallet_id} not found")
+
+    # Determine which balance to use based on transaction type
+    if transaction_type in ("topup_electricity", "deduction_electricity", "purchase_electricity"):
+        balance_before = float(wallet.electricity_balance)
+    elif transaction_type in ("topup_water", "deduction_water", "purchase_water"):
+        balance_before = float(wallet.water_balance)
+    elif transaction_type in ("topup_solar", "deduction_solar"):
+        balance_before = float(wallet.solar_balance)
+    elif transaction_type in ("topup_hot_water", "deduction_hot_water"):
+        balance_before = float(wallet.hot_water_balance)
+    else:
+        # Default to general balance
+        balance_before = float(wallet.balance)
+
+    # Calculate balance after transaction
+    if transaction_type.startswith("topup") or transaction_type.startswith("refund"):
+        balance_after = balance_before + float(amount)
+    elif transaction_type.startswith("deduction") or transaction_type.startswith("purchase"):
+        balance_after = balance_before - float(amount)
+    else:
+        balance_after = balance_before
+
+    # Generate transaction number with timestamp
+    txn_number = f"TXN{datetime.now().strftime('%Y%m%d%H%M%S')}{wallet_id}"
+
     txn = Transaction(
-        transaction_number=f"TXN{Transaction.created_at.func.now()}",
+        transaction_number=txn_number,
         wallet_id=wallet_id,
         transaction_type=transaction_type,
         amount=amount,
-        balance_before=0,
-        balance_after=0,
+        balance_before=balance_before,
+        balance_after=balance_after,
         reference=reference,
         payment_method=payment_method,
         payment_metadata=(metadata or {}),

@@ -302,6 +302,49 @@ def wallet_statement_page(unit_id: int):
         if latest:
             meter_readings["solar"] = latest
 
+    # Calculate balance history for trend chart (last 10 days)
+    from datetime import timedelta
+
+    balance_history = []
+    ten_days_ago = datetime.now() - timedelta(days=10)
+
+    # Get transactions for last 10 days to calculate running balance
+    historical_txns = (
+        Transaction.query.filter_by(wallet_id=wallet.id)
+        .filter(Transaction.completed_at >= ten_days_ago)
+        .filter(Transaction.status == "completed")
+        .order_by(Transaction.completed_at.asc())
+        .all()
+    )
+
+    # Group by date and calculate balance at end of each day
+    from collections import defaultdict
+
+    daily_balances = defaultdict(lambda: float(wallet.electricity_balance))
+
+    if historical_txns:
+        # Calculate balance progression
+        current_balance = float(wallet.electricity_balance)
+
+        # Work backwards from current balance
+        for txn in reversed(historical_txns):
+            txn_date = txn.completed_at.date()
+            # Reverse the transaction to get previous balance
+            if txn.transaction_type.startswith("topup"):
+                current_balance -= float(txn.amount)
+            elif txn.transaction_type.startswith("deduction"):
+                current_balance += float(txn.amount)
+            daily_balances[txn_date] = current_balance
+
+    # Fill in all days for last 10 days
+    for i in range(10):
+        day = datetime.now().date() - timedelta(days=9 - i)
+        balance_history.append({
+            "day": i + 1,
+            "label": day.strftime("%b %d") if i < 9 else f"{day.strftime('%b %d')} (Today)",
+            "balance": daily_balances.get(day, float(wallet.electricity_balance))
+        })
+
     return render_template(
         "wallets/wallet-statement.html",
         unit=unit,
@@ -309,6 +352,7 @@ def wallet_statement_page(unit_id: int):
         estate=estate,
         transactions=txn_items,
         transactions_pagination=txn_meta,
+        balance_history=balance_history,
         period=period,
         start_date=start_param,
         end_date=end_param,
