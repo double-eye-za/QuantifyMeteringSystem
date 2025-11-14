@@ -197,11 +197,10 @@ def wallet_statement_page(unit_id: int):
     txn_query = txn_query.order_by(Transaction.completed_at.desc())
     txn_items, txn_meta = paginate_query(txn_query)
 
-    # Get last topup date
+    # Get last topup date (any topup type)
     last_topup = (
-        Transaction.query.filter_by(
-            wallet_id=wallet.id, transaction_type="topup", status="completed"
-        )
+        Transaction.query.filter_by(wallet_id=wallet.id, status="completed")
+        .filter(Transaction.transaction_type.like("topup%"))
         .order_by(Transaction.completed_at.desc())
         .first()
     )

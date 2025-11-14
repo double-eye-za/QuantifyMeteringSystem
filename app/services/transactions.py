@@ -77,6 +77,11 @@ def create_transaction(
     # Convert metadata dict to JSON string for storage
     metadata_json = json.dumps(metadata) if metadata else None
 
+    # Set status and completed_at based on payment method
+    is_pending = transaction_type.startswith("purchase") or payment_method in ("eft", "card", "instant_eft")
+    txn_status = "pending" if is_pending else "completed"
+    completed_at = None if is_pending else datetime.now()
+
     txn = Transaction(
         transaction_number=txn_number,
         wallet_id=wallet_id,
@@ -87,10 +92,8 @@ def create_transaction(
         reference=reference,
         payment_method=payment_method,
         payment_metadata=metadata_json,
-        status="pending"
-        if transaction_type.startswith("purchase")
-        or payment_method in ("eft", "card", "instant_eft")
-        else "completed",
+        status=txn_status,
+        completed_at=completed_at,
     )
     db.session.add(txn)
     db.session.commit()
