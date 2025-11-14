@@ -41,6 +41,7 @@ def create_transaction(
     payment_method: str | None = None,
     metadata: dict | None = None,
 ):
+    import json
     from datetime import datetime
     from app.models.wallet import Wallet
 
@@ -73,6 +74,9 @@ def create_transaction(
     # Generate transaction number with timestamp
     txn_number = f"TXN{datetime.now().strftime('%Y%m%d%H%M%S')}{wallet_id}"
 
+    # Convert metadata dict to JSON string for storage
+    metadata_json = json.dumps(metadata) if metadata else None
+
     txn = Transaction(
         transaction_number=txn_number,
         wallet_id=wallet_id,
@@ -82,7 +86,7 @@ def create_transaction(
         balance_after=balance_after,
         reference=reference,
         payment_method=payment_method,
-        payment_metadata=(metadata or {}),
+        payment_metadata=metadata_json,
         status="pending"
         if transaction_type.startswith("purchase")
         or payment_method in ("eft", "card", "instant_eft")
