@@ -271,7 +271,7 @@ def topup_wallet(wallet_id: int):
     )
 
     # Update wallet balance for the specific utility type
-    from ..db import db
+    from ...db import db
     if utility_type == "electricity":
         wallet.electricity_balance = float(wallet.electricity_balance or 0) + float(amount)
     elif utility_type == "water":
