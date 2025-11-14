@@ -228,11 +228,13 @@ def get_wallet(wallet_id: int):
 @api_v1.post("/wallets/<int:wallet_id>/topup")
 @login_required
 def topup_wallet(wallet_id: int):
+    from flask_login import current_user
+
     payload = request.get_json(force=True) or {}
     amount = payload.get("amount")
     payment_method = payload.get("payment_method")
     reference = payload.get("reference")
-    metadata = payload.get("metadata")
+    metadata = payload.get("metadata") or {}
 
     # Validate wallet exists
     wallet = svc_get_wallet_by_id(wallet_id)
@@ -250,14 +252,38 @@ def topup_wallet(wallet_id: int):
             400,
         )
 
+    # For manual admin top-ups, require super admin
+    if payment_method == "manual_admin":
+        if not getattr(current_user, "is_super_admin", False):
+            return jsonify({"error": "Unauthorized. Super admin access required.", "code": 403}), 403
+
+    # Determine transaction type based on utility type in metadata
+    utility_type = metadata.get("utility_type", "electricity")
+    transaction_type = f"topup_{utility_type}"
+
     txn = svc_create_transaction(
         wallet_id=wallet_id,
-        transaction_type="topup",
+        transaction_type=transaction_type,
         amount=amount,
         reference=reference,
         payment_method=payment_method,
         metadata=metadata,
     )
+
+    # Update wallet balance for the specific utility type
+    from ..db import db
+    if utility_type == "electricity":
+        wallet.electricity_balance = float(wallet.electricity_balance or 0) + float(amount)
+    elif utility_type == "water":
+        wallet.water_balance = float(wallet.water_balance or 0) + float(amount)
+    elif utility_type == "solar":
+        wallet.solar_balance = float(wallet.solar_balance or 0) + float(amount)
+    elif utility_type == "hot_water":
+        wallet.hot_water_balance = float(wallet.hot_water_balance or 0) + float(amount)
+
+    # Also update main balance
+    wallet.balance = float(wallet.balance or 0) + float(amount)
+    db.session.commit()
 
     log_action(
         "wallet.topup",
@@ -268,6 +294,7 @@ def topup_wallet(wallet_id: int):
             "payment_method": payment_method,
             "reference": reference,
             "transaction_id": txn.id,
+            "utility_type": utility_type,
         },
     )
 

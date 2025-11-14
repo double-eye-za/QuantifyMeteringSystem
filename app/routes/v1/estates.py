@@ -55,6 +55,18 @@ def estates_page():
 
     from ...db import db
 
+    # Calculate unit meters vs bulk meters
+    bulk_meter_count = (
+        db.session.query(func.count(Estate.id))
+        .filter(
+            (Estate.bulk_electricity_meter_id.isnot(None))
+            | (Estate.bulk_water_meter_id.isnot(None))
+        )
+        .scalar()
+        or 0
+    )
+    unit_meter_count = total_meters - bulk_meter_count
+
     elec_counts = dict(
         db.session.query(
             Unit.estate_id, func.count(Unit.electricity_meter_id.distinct())
@@ -160,6 +172,8 @@ def estates_page():
             "units": total_units,
             "meters": total_meters,
             "dc450s": active_dc450s,
+            "unit_meters": unit_meter_count,
+            "bulk_meters": bulk_meter_count,
         },
         electricity_rate_tables=electricity_rate_tables,
         water_rate_tables=water_rate_tables,

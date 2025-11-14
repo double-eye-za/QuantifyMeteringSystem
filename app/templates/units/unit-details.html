@@ -27,11 +27,14 @@
         This unit has only R {{ unit.wallet_balance | default(0) }} remaining.
       </p>
     </div>
+    {% if is_super_admin() %}
     <button
+      id="topUpBtnWarning"
       class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
     >
       <i class="fas fa-credit-card mr-2"></i>Top Up Now
     </button>
+    {% endif %}
   </div>
 </div>
 {% endif %}
@@ -200,11 +203,14 @@
           <i class="fas fa-wallet text-primary mr-2"></i>Prepaid Wallet & Solar
           Allocation
         </h3>
+        {% if is_super_admin() %}
         <button
+          id="topUpBtn"
           class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
         >
           <i class="fas fa-plus-circle mr-2"></i>Top Up Wallet
         </button>
+        {% endif %}
       </div>
 
       <!-- Wallet metrics -->
@@ -524,6 +530,230 @@
     </div>
   </div>
 </div>
+
+<!-- Top Up Modal -->
+<div id="topUpModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-plus-circle text-primary mr-2"></i>Top Up Wallet
+      </h3>
+      <button id="closeTopUpModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <form id="topUpForm">
+        <input type="hidden" id="walletId" value="{{ wallet.id if wallet else '' }}">
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Unit Information
+          </label>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Unit:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Estate:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ estate.name if estate else '—' }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Current Balance:</span>
+              <span class="font-medium text-gray-900 dark:text-white">R {{ wallet.balance | format_number(2) if wallet else '0.00' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Top Up Amount (R) <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            id="topUpAmount"
+            step="0.01"
+            min="1"
+            required
+            placeholder="Enter amount"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpUtilityType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Utility Type <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="topUpUtilityType"
+            required
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Select utility type</option>
+            <option value="electricity">Electricity</option>
+            <option value="water">Water</option>
+            <option value="solar">Solar</option>
+            <option value="hot_water">Hot Water</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpReference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Reference / Notes
+          </label>
+          <input
+            type="text"
+            id="topUpReference"
+            placeholder="Optional reference or notes"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelTopUpBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="submitTopUpBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-check mr-2"></i>Confirm Top Up
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block extra_js %}
-<script></script>
+<script>
+// Top Up Modal Functions
+function openTopUpModal() {
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeTopUpModal() {
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    // Reset form
+    document.getElementById("topUpForm").reset();
+  }
+}
+
+async function handleTopUpSubmit(event) {
+  event.preventDefault();
+
+  const walletId = document.getElementById("walletId").value;
+  const amount = parseFloat(document.getElementById("topUpAmount").value);
+  const utilityType = document.getElementById("topUpUtilityType").value;
+  const reference = document.getElementById("topUpReference").value;
+
+  if (!walletId) {
+    alert("Error: Wallet ID not found");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert("Please enter a valid amount");
+    return;
+  }
+
+  if (!utilityType) {
+    alert("Please select a utility type");
+    return;
+  }
+
+  const submitBtn = document.getElementById("submitTopUpBtn");
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+  try {
+    const response = await fetch(`/api/v1/wallets/${walletId}/topup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: amount,
+        payment_method: "manual_admin",
+        reference: reference || `Admin top-up for ${utilityType}`,
+        metadata: {
+          utility_type: utilityType,
+          added_by: "admin",
+          source: "unit_details_page"
+        }
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.data) {
+      alert(`Success! Top-up completed.\nTransaction: ${result.data.transaction_number}\nStatus: ${result.data.status}`);
+      closeTopUpModal();
+      // Reload page to show updated balance
+      window.location.reload();
+    } else {
+      alert(`Error: ${result.error || "Failed to process top-up"}`);
+    }
+  } catch (error) {
+    console.error("Top-up error:", error);
+    alert("Error: Failed to process top-up. Please try again.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", function () {
+  // Top Up Modal Event Listeners
+  const topUpBtn = document.getElementById("topUpBtn");
+  const topUpBtnWarning = document.getElementById("topUpBtnWarning");
+  const closeTopUpModalBtn = document.getElementById("closeTopUpModal");
+  const cancelTopUpBtn = document.getElementById("cancelTopUpBtn");
+  const topUpForm = document.getElementById("topUpForm");
+
+  if (topUpBtn) {
+    topUpBtn.addEventListener("click", openTopUpModal);
+  }
+
+  if (topUpBtnWarning) {
+    topUpBtnWarning.addEventListener("click", openTopUpModal);
+  }
+
+  if (closeTopUpModalBtn) {
+    closeTopUpModalBtn.addEventListener("click", closeTopUpModal);
+  }
+
+  if (cancelTopUpBtn) {
+    cancelTopUpBtn.addEventListener("click", closeTopUpModal);
+  }
+
+  if (topUpForm) {
+    topUpForm.addEventListener("submit", handleTopUpSubmit);
+  }
+
+  // Close modal when clicking outside
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) {
+        closeTopUpModal();
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

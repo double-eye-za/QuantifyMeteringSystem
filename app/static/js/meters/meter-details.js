@@ -192,6 +192,88 @@ function startAutoRefresh() {
   }, 30000); // 30 seconds
 }
 
+// Top Up Modal Functions
+function openTopUpModal() {
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeTopUpModal() {
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.classList.add("hidden");
+    // Reset form
+    document.getElementById("topUpForm").reset();
+  }
+}
+
+async function handleTopUpSubmit(event) {
+  event.preventDefault();
+
+  const walletId = document.getElementById("walletId").value;
+  const amount = parseFloat(document.getElementById("topUpAmount").value);
+  const utilityType = document.getElementById("topUpUtilityType").value;
+  const reference = document.getElementById("topUpReference").value;
+
+  if (!walletId) {
+    alert("Error: Wallet ID not found");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert("Please enter a valid amount");
+    return;
+  }
+
+  if (!utilityType) {
+    alert("Please select a utility type");
+    return;
+  }
+
+  const submitBtn = document.getElementById("submitTopUpBtn");
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+  try {
+    const response = await fetch(`/api/v1/wallets/${walletId}/topup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: amount,
+        payment_method: "manual_admin",
+        reference: reference || `Admin top-up for ${utilityType}`,
+        metadata: {
+          utility_type: utilityType,
+          added_by: "admin",
+          source: "meter_details_page"
+        }
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.data) {
+      alert(`Success! Top-up completed.\nTransaction: ${result.data.transaction_number}\nStatus: ${result.data.status}`);
+      closeTopUpModal();
+      // Reload page to show updated balance
+      window.location.reload();
+    } else {
+      alert(`Error: ${result.error || "Failed to process top-up"}`);
+    }
+  } catch (error) {
+    console.error("Top-up error:", error);
+    alert("Error: Failed to process top-up. Please try again.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
   // Initial data fetch
@@ -203,4 +285,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Start auto-refresh
   startAutoRefresh();
+
+  // Top Up Modal Event Listeners
+  const topUpBtn = document.getElementById("topUpBtn");
+  const closeTopUpModalBtn = document.getElementById("closeTopUpModal");
+  const cancelTopUpBtn = document.getElementById("cancelTopUpBtn");
+  const topUpForm = document.getElementById("topUpForm");
+
+  if (topUpBtn) {
+    topUpBtn.addEventListener("click", openTopUpModal);
+  }
+
+  if (closeTopUpModalBtn) {
+    closeTopUpModalBtn.addEventListener("click", closeTopUpModal);
+  }
+
+  if (cancelTopUpBtn) {
+    cancelTopUpBtn.addEventListener("click", closeTopUpModal);
+  }
+
+  if (topUpForm) {
+    topUpForm.addEventListener("submit", handleTopUpSubmit);
+  }
+
+  // Close modal when clicking outside
+  const modal = document.getElementById("topUpModal");
+  if (modal) {
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) {
+        closeTopUpModal();
+      }
+    });
+  }
 });
