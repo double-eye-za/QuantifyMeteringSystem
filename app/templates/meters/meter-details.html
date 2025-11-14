@@ -129,6 +129,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">&nbsp;</div>
       <div class="mt-4 space-y-2">
+        <!-- Debug: is_super_admin = {{ is_super_admin() }}, wallet = {{ 'exists' if wallet else 'none' }}, unit = {{ 'exists' if unit else 'none' }} -->
         {% if is_super_admin() %}
         <button
           id="topUpBtn"
@@ -136,6 +137,8 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         >
           <i class="fas fa-plus-circle mr-2"></i>Top Up
         </button>
+        {% else %}
+        <!-- Not super admin or missing wallet/unit -->
         {% endif %}
         <button
           class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
