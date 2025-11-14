@@ -85,7 +85,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <div class="flex justify-between">
         <span class="text-sm text-gray-600 dark:text-gray-400">Estate</span>
         <span class="text-sm font-medium text-gray-900 dark:text-white"
-          >{{ unit.estate_name if unit else '—' }}</span
+          >{{ estate.name if estate else '—' }}</span
         >
       </div>
       <div class="flex justify-between">
@@ -97,7 +97,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <div class="flex justify-between">
         <span class="text-sm text-gray-600 dark:text-gray-400">Tenant</span>
         <span class="text-sm font-medium text-gray-900 dark:text-white"
-          >{{ unit.resident_name if unit and unit.resident_name else '—'
+          >{{ (resident.first_name ~ ' ' ~ resident.last_name) if resident else '—'
           }}</span
         >
       </div>
@@ -395,6 +395,10 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
             <div class="flex justify-between mb-1">
               <span class="text-gray-600 dark:text-gray-400">Unit:</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else '—' }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Estate:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ estate.name if estate else '—' }}</span>
             </div>
             <div class="flex justify-between mb-1">
               <span class="text-gray-600 dark:text-gray-400">Current Balance:</span>

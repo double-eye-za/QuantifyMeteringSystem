@@ -306,16 +306,10 @@ def meter_details_page(meter_id: str):
         "meters/meter-details.html",
         meter_id=meter.serial_number,
         meter=meter_dict,
-        unit={
-            "unit_number": unit.unit_number,
-            "estate_name": estate.name if estate else None,
-            "resident_name": (
-                f"{resident.first_name} {resident.last_name}" if resident else None
-            ),
-        }
-        if unit
-        else None,
-        wallet=wallet.to_dict() if wallet else None,
+        unit=unit,  # Pass the full unit object, not a dictionary
+        estate=estate,
+        resident=resident,
+        wallet=wallet,  # Pass the full wallet object, not a dictionary
         balance_value=balance_value,
         credit_status=credit_status,
         device_status=device_status,
