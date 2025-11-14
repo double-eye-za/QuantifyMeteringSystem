@@ -41,7 +41,7 @@ def create_missing_wallets():
                     solar_balance=0.00,
                     hot_water_balance=0.00,
                     low_balance_threshold=50.00,
-                    is_active=True
+                    is_suspended=False
                 )
                 db.session.add(wallet)
                 created_count += 1
