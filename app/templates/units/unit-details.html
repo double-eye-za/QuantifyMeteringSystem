@@ -98,75 +98,160 @@
       </div>
     </div>
 
-    <!-- Resident Contact Details -->
+    <!-- Owners Card -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        <i class="fas fa-user text-primary mr-2"></i>Resident Details
-      </h3>
-      <div class="space-y-3">
-        <div
-          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-home text-blue-500 mr-2"></i>Owners
+        </h3>
+        {% if has_permission('units.edit') %}
+        <button
+          onclick="showAddOwnerModal()"
+          class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
         >
-          <span class="text-sm text-gray-600 dark:text-gray-400">Name</span>
-          <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >{{ (resident.first_name ~ ' ' ~ resident.last_name) if resident
-            else '-' }}</span
-          >
-        </div>
-        <div
-          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-        >
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >ID Number</span
-          >
-          <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >{{ resident.id_number if resident and resident.id_number else '-'
-            }}</span
-          >
-        </div>
-        <div
-          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-        >
-          <span class="text-sm text-gray-600 dark:text-gray-400">Mobile</span>
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ resident.phone if resident and resident.phone else '-' }} {% if
-            resident and resident.phone %}
-            <button class="ml-2 text-primary hover:text-blue-700">
-              <i class="fas fa-phone text-xs"></i>
-            </button>
-            {% endif %}
-          </span>
-        </div>
-        <div
-          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-        >
-          <span class="text-sm text-gray-600 dark:text-gray-400">Email</span>
-          <span class="text-sm font-medium text-gray-900 dark:text-white">
-            {{ resident.email if resident and resident.email else '-' }} {% if
-            resident and resident.email %}
-            <button class="ml-2 text-primary hover:text-blue-700">
-              <i class="fas fa-envelope text-xs"></i>
-            </button>
-            {% endif %}
-          </span>
-        </div>
-        <div class="flex justify-between py-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Move-in Date</span
-          >
-          <span class="text-sm font-medium text-gray-900 dark:text-white"
-            >{{ resident.move_in_date if resident and resident.move_in_date else
-            '-' }}</span
-          >
-        </div>
+          <i class="fas fa-plus mr-1"></i>Add Owner
+        </button>
+        {% endif %}
       </div>
+      {% if owners and owners|length > 0 %}
+        {% for owner in owners %}
+        <div class="{% if not loop.last %}border-b border-gray-100 dark:border-gray-700 pb-3 mb-3{% endif %}">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="flex-1">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ owner.person.full_name }}
+                  {% if owner.is_primary_owner %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Primary
+                  </span>
+                  {% endif %}
+                </span>
+              </div>
+              {% if has_permission('units.edit') %}
+              <button
+                onclick="removeOwner({{ owner.person.id }})"
+                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs ml-2"
+                title="Remove owner"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              {% endif %}
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Ownership</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.ownership_percentage }}%</span>
+            </div>
+            {% if owner.person.phone %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Phone</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.person.phone }}</span>
+            </div>
+            {% endif %}
+            {% if owner.person.email %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Email</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.person.email }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No owners assigned</p>
+      {% endif %}
+    </div>
 
-      {% if resident %}
-      <button
-        class="w-full mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-      >
-        <i class="fas fa-message mr-2"></i>Send SMS Notification
-      </button>
+    <!-- Tenants Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-user text-green-500 mr-2"></i>Tenants
+        </h3>
+        {% if has_permission('units.edit') %}
+        <button
+          onclick="showAddTenantModal()"
+          class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs transition-colors"
+        >
+          <i class="fas fa-plus mr-1"></i>Add Tenant
+        </button>
+        {% endif %}
+      </div>
+      {% if tenants and tenants|length > 0 %}
+        {% for tenant in tenants %}
+        <div class="{% if not loop.last %}border-b border-gray-100 dark:border-gray-700 pb-3 mb-3{% endif %}">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="flex-1">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ tenant.person.full_name }}
+                  {% if tenant.is_primary_tenant %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Primary
+                  </span>
+                  {% endif %}
+                </span>
+              </div>
+              {% if has_permission('units.edit') %}
+              <button
+                onclick="removeTenant({{ tenant.person.id }})"
+                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs ml-2"
+                title="Remove tenant"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              {% endif %}
+            </div>
+            {% if tenant.person.id_number %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">ID Number</span>
+              <span class="text-gray-900 dark:text-white">{{ tenant.person.id_number }}</span>
+            </div>
+            {% endif %}
+            {% if tenant.person.phone %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Phone</span>
+              <span class="text-gray-900 dark:text-white">
+                {{ tenant.person.phone }}
+                <button class="ml-1 text-primary hover:text-blue-700">
+                  <i class="fas fa-phone text-xs"></i>
+                </button>
+              </span>
+            </div>
+            {% endif %}
+            {% if tenant.person.email %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Email</span>
+              <span class="text-gray-900 dark:text-white">
+                {{ tenant.person.email }}
+                <button class="ml-1 text-primary hover:text-blue-700">
+                  <i class="fas fa-envelope text-xs"></i>
+                </button>
+              </span>
+            </div>
+            {% endif %}
+            {% if tenant.move_in_date %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Move-in Date</span>
+              <span class="text-gray-900 dark:text-white">{{ tenant.move_in_date.strftime('%b %d, %Y') if tenant.move_in_date else '-' }}</span>
+            </div>
+            {% endif %}
+            {% if tenant.monthly_rent %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Monthly Rent</span>
+              <span class="text-gray-900 dark:text-white">R {{ tenant.monthly_rent | format_number(2) }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <button
+          class="w-full mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+        >
+          <i class="fas fa-message mr-2"></i>Send SMS to All Tenants
+        </button>
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No tenants assigned</p>
       {% endif %}
     </div>
 
@@ -632,8 +717,221 @@
   </div>
 </div>
 
+<!-- Add Owner Modal -->
+<div id="addOwnerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Owner</h3>
+      <button onclick="closeAddOwnerModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="addOwnerForm" onsubmit="event.preventDefault(); submitAddOwner();">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Person <span class="text-red-500">*</span>
+          </label>
+          <select id="ownerPersonId" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select Person --</option>
+            {% for p in persons %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Ownership Percentage <span class="text-red-500">*</span>
+          </label>
+          <input id="ownerPercentage" type="number" min="0" max="100" step="0.01" value="100" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeAddOwnerModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Add Owner
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Tenant Modal -->
+<div id="addTenantModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Tenant</h3>
+      <button onclick="closeAddTenantModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="addTenantForm" onsubmit="event.preventDefault(); submitAddTenant();">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Person <span class="text-red-500">*</span>
+          </label>
+          <select id="tenantPersonId" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select Person --</option>
+            {% for p in persons %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeAddTenantModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Add Tenant
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block extra_js %}
 <script>
+const UNIT_ID = {{ unit.id }};
+
+// Owner Management
+function showAddOwnerModal() {
+  document.getElementById('addOwnerModal').classList.remove('hidden');
+}
+
+function closeAddOwnerModal() {
+  document.getElementById('addOwnerModal').classList.add('hidden');
+  document.getElementById('addOwnerForm').reset();
+}
+
+async function submitAddOwner() {
+  const personId = parseInt(document.getElementById('ownerPersonId').value);
+  const percentage = parseFloat(document.getElementById('ownerPercentage').value);
+
+  if (!personId) {
+    alert('Please select a person');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/owners`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person_id: personId,
+        ownership_percentage: percentage
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('Owner added successfully');
+      closeAddOwnerModal();
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to add owner');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to add owner');
+  }
+}
+
+async function removeOwner(personId) {
+  if (!confirm('Are you sure you want to remove this owner?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/owners/${personId}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('Owner removed successfully');
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to remove owner');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to remove owner');
+  }
+}
+
+// Tenant Management
+function showAddTenantModal() {
+  document.getElementById('addTenantModal').classList.remove('hidden');
+}
+
+function closeAddTenantModal() {
+  document.getElementById('addTenantModal').classList.add('hidden');
+  document.getElementById('addTenantForm').reset();
+}
+
+async function submitAddTenant() {
+  const personId = parseInt(document.getElementById('tenantPersonId').value);
+
+  if (!personId) {
+    alert('Please select a person');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person_id: personId,
+        status: 'active'
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('Tenant added successfully');
+      closeAddTenantModal();
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to add tenant');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to add tenant');
+  }
+}
+
+async function removeTenant(personId) {
+  if (!confirm('Are you sure you want to remove this tenant?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants/${personId}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert('Tenant removed successfully');
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to remove tenant');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to remove tenant');
+  }
+}
+
 // Top Up Modal Functions
 function openTopUpModal() {
   const modal = document.getElementById("topUpModal");

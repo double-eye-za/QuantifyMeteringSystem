@@ -705,11 +705,12 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
             ).label("status"),
         )
         .join(Estate, Unit.estate_id == Estate.id)
-        .outerjoin(Resident, Unit.resident_id == Resident.id)
         .outerjoin(Wallet, Unit.id == Wallet.unit_id)
         .filter(Unit.is_active == True)
         .filter(Wallet.balance < Wallet.low_balance_threshold)
     )
+    # Note: Removed Resident join as Unit.resident_id no longer exists
+    # Resident info now accessed through Unit.tenancies relationship if needed
 
     if estate_id:
         low_balance_alerts = low_balance_alerts.filter(Unit.estate_id == estate_id)

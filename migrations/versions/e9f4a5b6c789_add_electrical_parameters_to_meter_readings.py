@@ -1,7 +1,7 @@
 """add_electrical_parameters_to_meter_readings
 
 Revision ID: e9f4a5b6c789
-Revises: d0d0934bbfb7
+Revises: d8f3e9a4b567
 Create Date: 2025-11-10 12:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'e9f4a5b6c789'
-down_revision = 'd0d0934bbfb7'
+down_revision = 'd8f3e9a4b567'
 branch_labels = None
 depends_on = None
 

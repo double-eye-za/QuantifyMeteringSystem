@@ -1,11 +1,90 @@
 const BASE_URL = "/api/v1/units";
 
+// Track persons to be added to the unit
+let addedPersons = [];
+
 function showAddUnitModal() {
+  addedPersons = []; // Reset on open
+  renderAddedPersonsList();
   document.getElementById("addUnitModal").classList.remove("hidden");
 }
 
 function hideAddUnitModal() {
+  addedPersons = []; // Clear on close
+  renderAddedPersonsList();
   document.getElementById("addUnitModal").classList.add("hidden");
+}
+
+// Add a person to the unit with their role
+function addPersonToUnit() {
+  const personSelect = document.getElementById("addPersonSelect");
+  const roleSelect = document.getElementById("addPersonRole");
+
+  const personId = personSelect.value;
+  const personName = personSelect.options[personSelect.selectedIndex]?.text;
+  const role = roleSelect.value;
+
+  if (!personId) {
+    showFlashMessage("Please select a person", "error", true);
+    return;
+  }
+
+  // Check if person already added
+  const exists = addedPersons.find(p => p.person_id === personId);
+  if (exists) {
+    showFlashMessage("This person is already added", "warning", true);
+    return;
+  }
+
+  // Add to list
+  addedPersons.push({
+    person_id: personId,
+    person_name: personName,
+    role: role
+  });
+
+  // Reset selects
+  personSelect.value = "";
+  roleSelect.value = "tenant";
+
+  // Re-render list
+  renderAddedPersonsList();
+}
+
+// Remove a person from the list
+function removePersonFromUnit(index) {
+  addedPersons.splice(index, 1);
+  renderAddedPersonsList();
+}
+
+// Render the list of added persons
+function renderAddedPersonsList() {
+  const container = document.getElementById("addedPeopleList");
+  if (!container) return;
+
+  if (addedPersons.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No people assigned yet. Use the form below to add owners or tenants.</p>';
+    return;
+  }
+
+  container.innerHTML = addedPersons.map((person, index) => `
+    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <div class="flex items-center gap-3">
+        <i class="fas ${person.role === 'owner' ? 'fa-home text-blue-500' : 'fa-user text-green-500'}"></i>
+        <div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">${person.person_name}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">${person.role === 'owner' ? 'Owner' : 'Tenant'}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onclick="removePersonFromUnit(${index})"
+        class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `).join('');
 }
 
 function saveUnit() {
@@ -41,18 +120,31 @@ function saveUnit() {
       }
 
       const payload = collectUnitFormPayload();
+
       const resp = await fetch(`${BASE_URL}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      const data = await resp.json();
+
       if (!resp.ok) {
         showFlashMessage("Failed to create unit", "error", true);
+        return;
       }
-      await resp.json();
+
       hideAddUnitModal();
+
+      // Show warnings if any
+      if (data.warnings && data.warnings.length > 0) {
+        const warningMsg = `Unit created but with warnings:\n${data.warnings.join('\n')}`;
+        showFlashMessage(warningMsg, "warning", true);
+      } else {
+        showFlashMessage("Unit created successfully", "success", true);
+      }
+
       window.location.reload();
-      showFlashMessage("Unit created successfully", "success", true);
     } catch (e) {
       showFlashMessage("Failed to create unit", "error", true);
     }
@@ -206,12 +298,22 @@ function collectUnitFormPayload() {
   const payload = {};
   inputs.forEach((el) => {
     const name = el.name || el.placeholder || el.id;
-    if (name) {
+    // Skip person-related inputs as they're handled separately
+    if (name && name !== 'addPersonSelect' && name !== 'addPersonRole') {
       // Convert empty strings to null for meter IDs and other optional fields
       const value = el.value.trim();
       payload[name] = value === "" ? null : value;
     }
   });
+
+  // Add owners and tenants arrays
+  payload.owners = addedPersons.filter(p => p.role === 'owner').map(p => ({
+    person_id: parseInt(p.person_id, 10)
+  }));
+  payload.tenants = addedPersons.filter(p => p.role === 'tenant').map(p => ({
+    person_id: parseInt(p.person_id, 10)
+  }));
+
   return payload;
 }
 

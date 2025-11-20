@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(.venvScriptspython.exe -m flask db upgrade)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(set FLASK_APP=application.py:*)",
+      "Bash(FLASK_APP=application.py .venv/Scripts/python.exe -m flask:*)",
+      "Bash(find:*)",
+      "Bash(set FLASK_APP=application:create_app)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(flask db upgrade:*)",
+      "Bash(cmd /c \"set FLASK_APP=application:create_app && .venv\\Scripts\\python.exe -m flask db upgrade\")",
+      "Bash(python -m py_compile:*)",
+      "Bash(python -c:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

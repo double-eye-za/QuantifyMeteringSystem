@@ -66,12 +66,12 @@ def seed_device_types():
     for data in device_types_data:
         existing = DeviceType.query.filter_by(code=data["code"]).first()
         if existing:
-            print(f"  ⚠ Device type '{data['code']}' already exists, skipping")
+            print(f"  [!] Device type '{data['code']}' already exists, skipping")
             continue
 
         device_type = DeviceType(**data)
         db.session.add(device_type)
-        print(f"  ✓ Created device type: {data['name']}")
+        print(f"  [+] Created device type: {data['name']}")
 
     db.session.commit()
     print(f"Device types seeded successfully!\n")
@@ -140,12 +140,12 @@ def seed_communication_types():
     for data in communication_types_data:
         existing = CommunicationType.query.filter_by(code=data["code"]).first()
         if existing:
-            print(f"  ⚠ Communication type '{data['code']}' already exists, skipping")
+            print(f"  [!] Communication type '{data['code']}' already exists, skipping")
             continue
 
         comm_type = CommunicationType(**data)
         db.session.add(comm_type)
-        print(f"  ✓ Created communication type: {data['name']}")
+        print(f"  [+] Created communication type: {data['name']}")
 
     db.session.commit()
     print(f"Communication types seeded successfully!\n")
@@ -164,7 +164,7 @@ def main():
         seed_communication_types()
 
         print("=" * 60)
-        print("✓ All reference data seeded successfully!")
+        print("[+] All reference data seeded successfully!")
         print("=" * 60 + "\n")
 
 

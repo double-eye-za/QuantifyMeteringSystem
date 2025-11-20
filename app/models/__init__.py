@@ -2,6 +2,9 @@ from .user import User
 from .role import Role
 from .estate import Estate
 from .resident import Resident
+from .person import Person
+from .unit_ownership import UnitOwnership
+from .unit_tenancy import UnitTenancy
 from .meter import Meter
 from .unit import Unit
 from .meter_reading import MeterReading
@@ -24,6 +27,9 @@ __all__ = [
     "Role",
     "Estate",
     "Resident",
+    "Person",
+    "UnitOwnership",
+    "UnitTenancy",
     "Meter",
     "Unit",
     "MeterReading",

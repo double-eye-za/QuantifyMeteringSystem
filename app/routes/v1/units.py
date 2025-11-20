@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Unit, Estate, Resident, Meter, RateTable, SystemSetting
+from ...models import Unit, Estate, Person, Meter, RateTable, SystemSetting
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
@@ -18,10 +18,18 @@ from ...services.units import (
     delete_unit as svc_delete_unit,
 )
 from ...services.meters import list_available_by_type as svc_list_available_meters
-from ...services.residents import (
-    list_residents_for_dropdown as svc_list_residents_for_dropdown,
+from ...services.persons import (
+    list_persons_for_dropdown as svc_list_persons_for_dropdown,
 )
 from ...services.rate_tables import get_rate_table_by_id as svc_get_rate_table_by_id
+from ...services.unit_ownerships import (
+    add_owner as svc_add_owner,
+    get_unit_owners as svc_get_unit_owners,
+)
+from ...services.unit_tenancies import (
+    add_tenant as svc_add_tenant,
+    get_unit_tenants as svc_get_unit_tenants,
+)
 
 
 @api_v1.route("/units", methods=["GET"])
@@ -45,20 +53,8 @@ def units_page():
     )
     items, meta = paginate_query(query)
 
-    # Preload resident names
-    units = []
-    for u in items:
-        ud = u.to_dict()
-        if u.resident_id:
-            res = Resident.query.get(u.resident_id)
-            if res:
-                ud["resident"] = {
-                    "id": res.id,
-                    "first_name": res.first_name,
-                    "last_name": res.last_name,
-                    "phone": res.phone,
-                }
-        units.append(ud)
+    # Preload tenant/owner names (Unit.to_dict() already includes this via properties)
+    units = [u.to_dict() for u in items]
     estates = [
         {"id": e.id, "name": e.name}
         for e in Estate.query.order_by(Estate.name.asc()).all()
@@ -91,9 +87,9 @@ def units_page():
     ]
     solar_meters = [serialize_meter(m) for m in svc_list_available_meters("solar")]
 
-    residents = [
-        {"id": r.id, "name": f"{r.first_name} {r.last_name}"}
-        for r in svc_list_residents_for_dropdown()
+    persons = [
+        {"id": p.id, "name": p.full_name}
+        for p in svc_list_persons_for_dropdown()
     ]
 
     return render_template(
@@ -104,7 +100,7 @@ def units_page():
         water_meters=water_meters,
         hot_water_meters=hot_water_meters,
         solar_meters=solar_meters,
-        residents=residents,
+        persons=persons,
         pagination=meta,
         current_filters={
             "estate_id": estate_id,
@@ -426,10 +422,8 @@ def unit_visual_page(unit_id: int):
     # Wallet
     wallet = getattr(unit, "wallet", None)
 
-    # Resident data
-    resident = None
-    if unit.resident_id:
-        resident = Resident.query.get(unit.resident_id)
+    # Resident data (using backward compatibility property)
+    resident = unit.resident  # Returns primary_tenant as Person
 
     # Today's usage from transactions
     from datetime import datetime, timedelta
@@ -762,9 +756,12 @@ def unit_details_page(unit_id: int):
     if getattr(unit, "estate_id", None):
         estate = Estate.query.get(unit.estate_id)
 
-    resident = None
-    if getattr(unit, "resident_id", None):
-        resident = Resident.query.get(unit.resident_id)
+    # Get owners and tenants for this unit
+    owners = svc_get_unit_owners(unit_id)
+    tenants = svc_get_unit_tenants(unit_id, active_only=True)
+
+    # Get resident using backward compatibility property (for old code)
+    resident = getattr(unit, "resident", None)  # Returns primary_tenant as Person
 
     # Get wallet for the unit
     wallet = None
@@ -825,11 +822,20 @@ def unit_details_page(unit_id: int):
         if latest_solar:
             meter_readings["solar"] = latest_solar
 
+    # Get all persons for dropdown
+    persons = [
+        {"id": p.id, "name": p.full_name}
+        for p in svc_list_persons_for_dropdown()
+    ]
+
     return render_template(
         "units/unit-details.html",
         unit=unit,
         estate=estate,
         resident=resident,
+        owners=owners,
+        tenants=tenants,
+        persons=persons,
         wallet=wallet,
         recent_transactions=recent_transactions,
         meter_readings=meter_readings,
@@ -1005,9 +1011,77 @@ def remove_unit_overrides():
 @requires_permission("units.create")
 def create_unit():
     payload = request.get_json(force=True) or {}
+
+    # Extract owners and tenants arrays before creating unit
+    owners = payload.pop("owners", [])
+    tenants = payload.pop("tenants", [])
+
+    # Create the unit
     unit = svc_create_unit(payload, user_id=getattr(current_user, "id", None))
+
+    # Add owners
+    owner_errors = []
+    for owner_data in owners:
+        person_id = owner_data.get("person_id")
+        if person_id:
+            success, result = svc_add_owner(
+                unit_id=unit.id,
+                person_id=person_id,
+                is_primary_owner=owner_data.get("is_primary_owner", False),
+                ownership_percentage=owner_data.get("ownership_percentage", 100.0),
+            )
+            if success:
+                log_action(
+                    "unit.owner_added",
+                    entity_type="unit",
+                    entity_id=unit.id,
+                    new_values={"person_id": person_id},
+                )
+            else:
+                # Log the error but continue with other owners
+                error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
+                owner_errors.append(f"Person {person_id}: {error_msg}")
+
+    # Add tenants
+    tenant_errors = []
+    for tenant_data in tenants:
+        person_id = tenant_data.get("person_id")
+        if person_id:
+            success, result = svc_add_tenant(
+                unit_id=unit.id,
+                person_id=person_id,
+                is_primary_tenant=tenant_data.get("is_primary_tenant", False),
+                status=tenant_data.get("status", "active"),
+            )
+            if success:
+                log_action(
+                    "unit.tenant_added",
+                    entity_type="unit",
+                    entity_id=unit.id,
+                    new_values={"person_id": person_id},
+                )
+            else:
+                # Log the error but continue with other tenants
+                error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
+                tenant_errors.append(f"Person {person_id}: {error_msg}")
+
     log_action("unit.create", entity_type="unit", entity_id=unit.id, new_values=payload)
-    return jsonify({"data": unit.to_dict()}), 201
+
+    # Build response with warnings if there were errors
+    response_data = {
+        "data": unit.to_dict(),
+        "message": "Unit created successfully"
+    }
+
+    if owner_errors or tenant_errors:
+        warnings = []
+        if owner_errors:
+            warnings.append(f"Owner assignment errors: {'; '.join(owner_errors)}")
+        if tenant_errors:
+            warnings.append(f"Tenant assignment errors: {'; '.join(tenant_errors)}")
+        response_data["warnings"] = warnings
+
+    return jsonify(response_data), 201
 
 
 @api_v1.put("/units/<int:unit_id>")

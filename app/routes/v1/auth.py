@@ -648,10 +648,11 @@ def dashboard():
         for item in daily_consumption_data
     ]
 
-    # Average spend per resident
+    # Average spend per resident (now using tenants)
+    from app.models import UnitTenancy
     resident_count = (
-        db.session.query(func.count(func.distinct(Unit.resident_id)))
-        .filter(Unit.resident_id.isnot(None))
+        db.session.query(func.count(func.distinct(UnitTenancy.person_id)))
+        .filter(UnitTenancy.status == 'active')
         .scalar()
         or 1
     )

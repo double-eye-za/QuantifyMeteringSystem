@@ -252,9 +252,8 @@ def meter_details_page(meter_id: str):
         | (Unit.solar_meter_id == meter.id)
     ).first()
     estate = Estate.query.get(unit.estate_id) if unit else None
-    resident = (
-        Resident.query.get(unit.resident_id) if unit and unit.resident_id else None
-    )
+    # Use backward compatibility: unit.resident returns primary_tenant
+    resident = unit.resident if unit else None
     wallet = Wallet.query.filter_by(unit_id=unit.id).first() if unit else None
 
     def typed_balance(w: Wallet | None, m: Meter) -> float:

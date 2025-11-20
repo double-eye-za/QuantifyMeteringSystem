@@ -34,9 +34,7 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
     estate = (
         Estate.query.get(payload["estate_id"]) if payload.get("estate_id") else None
     )
-    occupancy = payload.get("occupancy_status")
-    if occupancy is None and payload.get("resident_id"):
-        occupancy = "occupied"
+    occupancy = payload.get("occupancy_status") or "vacant"
     unit = Unit(
         estate_id=payload["estate_id"],
         unit_number=payload["unit_number"],
@@ -45,8 +43,7 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
         bedrooms=payload.get("bedrooms"),
         bathrooms=payload.get("bathrooms"),
         size_sqm=payload.get("size_sqm"),
-        occupancy_status=occupancy or "vacant",
-        resident_id=payload.get("resident_id"),
+        occupancy_status=occupancy,
         electricity_meter_id=payload.get("electricity_meter_id"),
         water_meter_id=payload.get("water_meter_id"),
         solar_meter_id=payload.get("solar_meter_id"),
@@ -73,7 +70,6 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
         "bathrooms",
         "size_sqm",
         "occupancy_status",
-        "resident_id",
         "electricity_meter_id",
         "water_meter_id",
         "solar_meter_id",

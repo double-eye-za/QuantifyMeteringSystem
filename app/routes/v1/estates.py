@@ -287,7 +287,8 @@ def estate_details_page(estate_id: int):
     # Enrich units with resident, wallet balance
     enriched_units = []
     for u in units:
-        resident = Resident.query.get(u.resident_id) if u.resident_id else None
+        # Use backward compatibility property: unit.resident returns primary_tenant
+        resident = u.resident
         wallet = u.wallet
         balance = float(wallet.balance or 0) if wallet else 0
         enriched_units.append(

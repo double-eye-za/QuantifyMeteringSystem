@@ -23,6 +23,9 @@ from . import profile
 from . import settings
 from . import auth
 from . import residents
+from . import persons
+from . import unit_ownerships
+from . import unit_tenancies
 from . import device_types
 from . import communication_types
 
