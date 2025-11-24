@@ -100,8 +100,26 @@ def create_app() -> Flask:
             ReconciliationReport,
         )
 
+        # Register home page route
+        @app.route('/')
+        def home():
+            """Landing page - redirect to login or dashboard"""
+            from flask_login import current_user
+            from flask import redirect, url_for, render_template
+
+            # If user is already logged in, go to dashboard
+            if current_user.is_authenticated:
+                return redirect(url_for('api_v1.dashboard'))
+
+            # Otherwise show welcome page with login button
+            return render_template('home.html')
+
         # Register API blueprints
         app.register_blueprint(api_v1)
+
+        # Register mobile API blueprint
+        from app.routes.mobile import mobile_api
+        app.register_blueprint(mobile_api)
 
         # Configure session timeout from settings
         configure_session_timeout(app)

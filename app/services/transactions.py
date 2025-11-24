@@ -40,6 +40,7 @@ def create_transaction(
     reference: str | None = None,
     payment_method: str | None = None,
     metadata: dict | None = None,
+    meter_id: int | None = None,
 ):
     import json
     from datetime import datetime
@@ -50,14 +51,17 @@ def create_transaction(
     if not wallet:
         raise ValueError(f"Wallet with id {wallet_id} not found")
 
-    # Determine which balance to use based on transaction type
-    if transaction_type in ("topup_electricity", "deduction_electricity", "purchase_electricity"):
+    # Determine which balance to use based on metadata utility_type or transaction type
+    utility_type = metadata.get("utility_type") if metadata else None
+
+    # Check metadata first, then fall back to transaction type for backwards compatibility
+    if utility_type == "electricity" or transaction_type in ("topup_electricity", "deduction_electricity", "purchase_electricity"):
         balance_before = float(wallet.electricity_balance)
-    elif transaction_type in ("topup_water", "deduction_water", "purchase_water"):
+    elif utility_type == "water" or transaction_type in ("topup_water", "deduction_water", "purchase_water"):
         balance_before = float(wallet.water_balance)
-    elif transaction_type in ("topup_solar", "deduction_solar"):
+    elif utility_type == "solar" or transaction_type in ("topup_solar", "deduction_solar"):
         balance_before = float(wallet.solar_balance)
-    elif transaction_type in ("topup_hot_water", "deduction_hot_water"):
+    elif utility_type == "hot_water" or transaction_type in ("topup_hot_water", "deduction_hot_water"):
         balance_before = float(wallet.hot_water_balance)
     else:
         # Default to general balance
@@ -77,6 +81,11 @@ def create_transaction(
     # Convert metadata dict to JSON string for storage
     metadata_json = json.dumps(metadata) if metadata else None
 
+    # Generate description based on transaction type and utility
+    description = None
+    if transaction_type == "topup" and utility_type:
+        description = f"Top-up for {utility_type.replace('_', ' ').title()}"
+
     # Set status and completed_at based on payment method
     is_pending = transaction_type.startswith("purchase") or payment_method in ("eft", "card", "instant_eft")
     txn_status = "pending" if is_pending else "completed"
@@ -90,10 +99,12 @@ def create_transaction(
         balance_before=balance_before,
         balance_after=balance_after,
         reference=reference,
+        description=description,  # Human-readable description
         payment_method=payment_method,
         payment_metadata=metadata_json,
         status=txn_status,
         completed_at=completed_at,
+        meter_id=meter_id,  # Link transaction to specific meter
     )
     db.session.add(txn)
     db.session.commit()

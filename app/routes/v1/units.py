@@ -30,6 +30,10 @@ from ...services.unit_tenancies import (
     add_tenant as svc_add_tenant,
     get_unit_tenants as svc_get_unit_tenants,
 )
+from ...services.mobile_users import (
+    get_mobile_user_by_person_id,
+    create_mobile_user,
+)
 
 
 @api_v1.route("/units", methods=["GET"])
@@ -1021,6 +1025,8 @@ def create_unit():
 
     # Add owners
     owner_errors = []
+    mobile_users_created = []
+
     for owner_data in owners:
         person_id = owner_data.get("person_id")
         if person_id:
@@ -1037,6 +1043,21 @@ def create_unit():
                     entity_id=unit.id,
                     new_values={"person_id": person_id},
                 )
+
+                # Check if person needs mobile user account
+                existing_mobile_user = get_mobile_user_by_person_id(person_id)
+                if not existing_mobile_user:
+                    user_success, user_result = create_mobile_user(
+                        person_id=person_id,
+                        send_sms=False
+                    )
+                    if user_success:
+                        mobile_users_created.append({
+                            "person_id": person_id,
+                            "role": "owner",
+                            "phone_number": user_result["user"].phone_number,
+                            "temporary_password": user_result["temp_password"]
+                        })
             else:
                 # Log the error but continue with other owners
                 error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
@@ -1060,6 +1081,21 @@ def create_unit():
                     entity_id=unit.id,
                     new_values={"person_id": person_id},
                 )
+
+                # Check if person needs mobile user account
+                existing_mobile_user = get_mobile_user_by_person_id(person_id)
+                if not existing_mobile_user:
+                    user_success, user_result = create_mobile_user(
+                        person_id=person_id,
+                        send_sms=False
+                    )
+                    if user_success:
+                        mobile_users_created.append({
+                            "person_id": person_id,
+                            "role": "tenant",
+                            "phone_number": user_result["user"].phone_number,
+                            "temporary_password": user_result["temp_password"]
+                        })
             else:
                 # Log the error but continue with other tenants
                 error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
@@ -1080,6 +1116,11 @@ def create_unit():
         if tenant_errors:
             warnings.append(f"Tenant assignment errors: {'; '.join(tenant_errors)}")
         response_data["warnings"] = warnings
+
+    # Include mobile user creation info if any were created
+    if mobile_users_created:
+        response_data["mobile_users_created"] = mobile_users_created
+        response_data["message"] += f". {len(mobile_users_created)} mobile app account(s) created."
 
     return jsonify(response_data), 201
 

@@ -1,4 +1,5 @@
 from .user import User
+from .mobile_user import MobileUser
 from .role import Role
 from .estate import Estate
 from .resident import Resident
@@ -24,6 +25,7 @@ from .communication_type import CommunicationType
 
 __all__ = [
     "User",
+    "MobileUser",
     "Role",
     "Estate",
     "Resident",

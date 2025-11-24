@@ -31,6 +31,8 @@ def get_unit_by_id(unit_id: int):
 
 
 def create_unit(payload: dict, user_id: Optional[int] = None):
+    from ..models import Wallet
+
     estate = (
         Estate.query.get(payload["estate_id"]) if payload.get("estate_id") else None
     )
@@ -57,6 +59,21 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
     )
     db.session.add(unit)
     db.session.commit()
+
+    # Auto-create wallet for this unit
+    existing_wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+    if not existing_wallet:
+        wallet = Wallet(
+            unit_id=unit.id,
+            balance=0.0,
+            electricity_balance=0.0,
+            water_balance=0.0,
+            solar_balance=0.0,
+            hot_water_balance=0.0
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
     return unit
 
 

@@ -257,10 +257,27 @@ def topup_wallet(wallet_id: int):
         if not getattr(current_user, "is_super_admin", False):
             return jsonify({"error": "Unauthorized. Super admin access required.", "code": 403}), 403
 
-    # Determine transaction type based on utility type in metadata
+    # Determine utility type from metadata (transaction type is always "topup")
     utility_type = metadata.get("utility_type", "electricity")
-    transaction_type = f"topup_{utility_type}"
+    transaction_type = "topup"
 
+    # Get the meter_id for this utility type from the unit
+    from ...db import db
+    from ...models import Unit
+    unit = db.session.query(Unit).filter(Unit.id == wallet.unit_id).first()
+    meter_id = None
+
+    if unit:
+        if utility_type == "electricity":
+            meter_id = unit.electricity_meter_id
+        elif utility_type == "water":
+            meter_id = unit.water_meter_id
+        elif utility_type == "solar":
+            meter_id = unit.solar_meter_id
+        elif utility_type == "hot_water":
+            meter_id = unit.hot_water_meter_id
+
+    # Create transaction with meter_id link
     txn = svc_create_transaction(
         wallet_id=wallet_id,
         transaction_type=transaction_type,
@@ -268,10 +285,10 @@ def topup_wallet(wallet_id: int):
         reference=reference,
         payment_method=payment_method,
         metadata=metadata,
+        meter_id=meter_id,  # Link to specific meter
     )
 
     # Update wallet balance for the specific utility type
-    from ...db import db
     if utility_type == "electricity":
         wallet.electricity_balance = float(wallet.electricity_balance or 0) + float(amount)
     elif utility_type == "water":

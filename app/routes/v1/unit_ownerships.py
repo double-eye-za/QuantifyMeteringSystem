@@ -10,6 +10,10 @@ from ...services.unit_ownerships import (
     remove_owner,
     set_primary_owner,
 )
+from ...services.mobile_users import (
+    get_mobile_user_by_person_id,
+    create_mobile_user,
+)
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
 from . import api_v1
@@ -69,14 +73,45 @@ def add_unit_owner(unit_id: int):
         new_values={"person_id": payload["person_id"]},
     )
 
-    return jsonify({
+    # Auto-create mobile user account if person doesn't have one
+    mobile_user_info = None
+    existing_mobile_user = get_mobile_user_by_person_id(payload["person_id"])
+
+    if not existing_mobile_user:
+        # Create mobile user account (without SMS for now)
+        user_success, user_result = create_mobile_user(
+            person_id=payload["person_id"],
+            send_sms=False
+        )
+
+        if user_success:
+            mobile_user_info = {
+                "mobile_user_created": True,
+                "phone_number": user_result["user"].phone_number,
+                "temporary_password": user_result["temp_password"],
+                "password_must_change": True,
+                "message": "Mobile app account created. Please provide the temporary password to the owner."
+            }
+        else:
+            # Log but don't fail the owner addition if mobile user creation fails
+            mobile_user_info = {
+                "mobile_user_created": False,
+                "error": user_result.get("message", "Failed to create mobile user account")
+            }
+
+    response_data = {
         "message": "Owner added successfully",
         "data": {
             "id": result.id,
             "person_id": result.person_id,
             "ownership_percentage": float(result.ownership_percentage),
         }
-    }), 201
+    }
+
+    if mobile_user_info:
+        response_data["mobile_user"] = mobile_user_info
+
+    return jsonify(response_data), 201
 
 
 @api_v1.delete("/api/units/<int:unit_id>/owners/<int:person_id>")

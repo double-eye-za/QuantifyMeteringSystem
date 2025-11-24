@@ -13,7 +13,8 @@
       "Bash(flask db upgrade:*)",
       "Bash(cmd /c \"set FLASK_APP=application:create_app && .venv\\Scripts\\python.exe -m flask db upgrade\")",
       "Bash(python -m py_compile:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
