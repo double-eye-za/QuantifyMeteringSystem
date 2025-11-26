@@ -188,7 +188,7 @@ block breadcrumb %}
         class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
       >
                         <tr>
-                            <th scope="col" class="px-6 py-3">Serial Number</th>
+                            <th scope="col" class="px-6 py-3">Device EUI</th>
                             <th scope="col" class="px-6 py-3">Unit/Location</th>
                             <th scope="col" class="px-6 py-3">Type</th>
                             <th scope="col" class="px-6 py-3">Status</th>
@@ -212,7 +212,7 @@ block breadcrumb %}
           {% endif %}
         {% endif %}
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" data-meter='{{ m | tojson }}'>
-          <td class="px-6 py-4 font-mono text-xs text-gray-900 dark:text-white">{{ m.serial_number }}</td>
+          <td class="px-6 py-4 font-mono text-xs text-gray-900 dark:text-white">{{ m.device_eui or m.serial_number }}</td>
                             <td class="px-6 py-4">
             <div class="text-sm font-medium text-gray-900 dark:text-white">
               {% if unit %}
@@ -249,7 +249,7 @@ block breadcrumb %}
             <div class="text-xs {{ 'text-green-600' if m.communication_status=='online' else 'text-gray-500' }}">{{ m.communication_status|capitalize }}</div>
                             </td>
                             <td class="px-6 py-4">
-            <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.serial_number) }}"><i class="fas fa-eye"></i></a>
+            <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.device_eui or m.id) }}"><i class="fas fa-eye"></i></a>
             {% if has_permission('meters.edit') %}
             <button class="text-primary hover:text-blue-700 mr-3" title="Edit" onclick="openEditMeter(this)"><i class="fas fa-edit"></i></button>
             {% endif %}
@@ -290,8 +290,9 @@ block breadcrumb %}
             <form id="createMeterForm" onsubmit="event.preventDefault(); submitCreateMeter();" class="p-4 space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-red-600">*</span></label>
-                  <input name="serial_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Device EUI / IMEI <span class="text-red-600">*</span></label>
+                  <input name="device_eui" id="createDeviceEui" placeholder="e.g. 860123456789012" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono" required />
+                  <p class="text-xs text-gray-500 mt-1">DevEUI from ChirpStack or IMEI for 4G devices</p>
                 </div>
                 <div>
                   <label class="text-sm text-gray-700 dark:text-gray-300">Meter Type <span class="text-red-600">*</span></label>
@@ -301,6 +302,26 @@ block breadcrumb %}
                     <option value="water">Water</option>
                     <option value="hot_water">Hot Water</option>
                     <option value="solar">Solar</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-xs text-gray-400">(optional display name)</span></label>
+                  <input name="serial_number" id="createSerialNumber" placeholder="Auto-filled from Device EUI if empty" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">
+                    Device Type
+                    <a href="{{ url_for('api_v1.device_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Device Types">
+                      <i class="fas fa-cog"></i>
+                    </a>
+                  </label>
+                  <select name="lorawan_device_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select Device Type --</option>
+                    {% for dt in device_types %}
+                    <option value="{{ dt.code }}">{{ dt.name }}</option>
+                    {% endfor %}
                   </select>
                 </div>
               </div>
@@ -324,49 +345,28 @@ block breadcrumb %}
                   </select>
                 </div>
               </div>
-              <!-- LoRaWAN Device Fields -->
-              <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
-                <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">LoRaWAN Device Information (Optional)</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">Device EUI</label>
-                    <input name="device_eui" placeholder="24e124136f215917" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">
-                      Device Type
-                      <a href="{{ url_for('api_v1.device_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Device Types">
-                        <i class="fas fa-cog"></i>
-                      </a>
-                    </label>
-                    <select name="lorawan_device_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                      <option value="">-- Select Device Type --</option>
-                      {% for dt in device_types %}
-                      <option value="{{ dt.code }}">{{ dt.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">Manufacturer</label>
-                    <input name="manufacturer" placeholder="Milesight" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">Model</label>
-                    <input name="model" placeholder="EM300-DI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                  </div>
-                  <div>
-                    <label class="text-sm text-gray-700 dark:text-gray-300">
-                      Communication Type
-                      <a href="{{ url_for('api_v1.communication_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Communication Types">
-                        <i class="fas fa-cog"></i>
-                      </a>
-                    </label>
-                    <select name="communication_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                      {% for ct in communication_types %}
-                      <option value="{{ ct.code }}" {% if loop.first %}selected{% endif %}>{{ ct.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
+              <!-- Additional Device Fields -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">
+                    Communication Type
+                    <a href="{{ url_for('api_v1.communication_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Communication Types">
+                      <i class="fas fa-cog"></i>
+                    </a>
+                  </label>
+                  <select name="communication_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    {% for ct in communication_types %}
+                    <option value="{{ ct.code }}" {% if loop.first %}selected{% endif %}>{{ ct.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Manufacturer</label>
+                  <input name="manufacturer" placeholder="e.g. Milesight, Fengbo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Model</label>
+                  <input name="model" placeholder="e.g. EM300-DI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                 </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

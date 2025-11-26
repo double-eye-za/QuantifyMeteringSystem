@@ -233,8 +233,10 @@ def meter_details_page(meter_id: str):
     """Render the meter details page with enriched data for the selected meter."""
     from datetime import datetime, timedelta
 
-    # Try to find by device_eui first (LoRaWAN devices), then by ID
+    # Try to find by device_eui first, then by serial_number, then by numeric ID
     meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if meter is None:
+        meter = Meter.query.filter_by(serial_number=meter_id).first()
     if meter is None and meter_id.isdigit():
         meter = svc_get_meter_by_id(int(meter_id))
     if meter is None:
@@ -303,7 +305,7 @@ def meter_details_page(meter_id: str):
     meter_dict = meter.to_dict()
     return render_template(
         "meters/meter-details.html",
-        meter_id=meter.serial_number,
+        meter_id=meter.device_eui or meter.serial_number,
         meter=meter_dict,
         unit=unit,  # Pass the full unit object, not a dictionary
         estate=estate,
@@ -715,17 +717,17 @@ def export_meters_pdf():
 @requires_permission("meters.create")
 def register_meter():
     """
-    Register a new meter (including LoRaWAN devices)
+    Register a new meter (LoRaWAN or 4G cellular devices)
 
     Expected JSON payload:
     {
-        "serial_number": "24e124136f215917",
-        "meter_type": "electricity",
-        "manufacturer": "Milesight",
-        "model": "EM300-DI",
-        "device_eui": "24e124136f215917",
-        "lorawan_device_type": "milesight_em300",
+        "device_eui": "24e124136f215917",  # Required: DevEUI from ChirpStack or IMEI for 4G
+        "meter_type": "water",             # Required: electricity, water, solar, etc.
+        "serial_number": "METER-001",      # Optional: auto-filled from device_eui if empty
+        "lorawan_device_type": "fengbo_4g",
         "communication_type": "cellular",
+        "manufacturer": "Fengbo",
+        "model": "Ultrasonic 4G",
         "is_prepaid": true,
         "is_active": true
     }
@@ -733,15 +735,15 @@ def register_meter():
     try:
         data = request.get_json()
 
-        # Validate required fields
-        if not data.get("serial_number"):
-            return jsonify({"error": "serial_number is required"}), 400
+        # Validate required fields - device_eui is the primary identifier
+        if not data.get("device_eui"):
+            return jsonify({"error": "device_eui is required (DevEUI from ChirpStack or IMEI for 4G devices)"}), 400
         if not data.get("meter_type"):
             return jsonify({"error": "meter_type is required"}), 400
 
-        # For LoRaWAN devices, device_eui is required
-        if data.get("communication_type") == "cellular" and not data.get("device_eui"):
-            return jsonify({"error": "device_eui is required for LoRaWAN devices"}), 400
+        # Auto-fill serial_number from device_eui if not provided
+        if not data.get("serial_number"):
+            data["serial_number"] = data["device_eui"]
 
         # Create the meter
         meter = svc_create_meter(data)
