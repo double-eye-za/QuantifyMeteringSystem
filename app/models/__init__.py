@@ -2,7 +2,6 @@ from .user import User
 from .mobile_user import MobileUser
 from .role import Role
 from .estate import Estate
-from .resident import Resident
 from .person import Person
 from .unit_ownership import UnitOwnership
 from .unit_tenancy import UnitTenancy
@@ -28,7 +27,6 @@ __all__ = [
     "MobileUser",
     "Role",
     "Estate",
-    "Resident",
     "Person",
     "UnitOwnership",
     "UnitTenancy",

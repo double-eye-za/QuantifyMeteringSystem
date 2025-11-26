@@ -80,7 +80,6 @@ def create_app() -> Flask:
             User,
             Role,
             Estate,
-            Resident,
             Person,
             UnitOwnership,
             UnitTenancy,

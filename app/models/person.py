@@ -25,8 +25,6 @@ class Person(db.Model):
     id_number: Optional[str]
     emergency_contact_name: Optional[str]
     emergency_contact_phone: Optional[str]
-    app_user_id: Optional[str]
-    password_hash: Optional[str]
     is_active: Optional[bool]
     profile_photo_url: Optional[str]
     created_by: Optional[int]
@@ -43,8 +41,6 @@ class Person(db.Model):
     id_number = db.Column(db.String(20), unique=True, index=True)
     emergency_contact_name = db.Column(db.String(200))
     emergency_contact_phone = db.Column(db.String(20))
-    app_user_id = db.Column(db.String(36), unique=True, index=True)  # UUID for mobile auth
-    password_hash = db.Column(db.String(255))  # For mobile app login
     is_active = db.Column(db.Boolean, default=True)
     profile_photo_url = db.Column(db.String(512))
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -103,7 +99,7 @@ class Person(db.Model):
     @property
     def has_app_access(self) -> bool:
         """Check if person has mobile app access"""
-        return self.app_user_id is not None and self.password_hash is not None
+        return hasattr(self, 'mobile_user') and self.mobile_user is not None and self.mobile_user.is_active
 
     def to_dict(self):
         return {
@@ -117,7 +113,6 @@ class Person(db.Model):
             "id_number": self.id_number,
             "emergency_contact_name": self.emergency_contact_name,
             "emergency_contact_phone": self.emergency_contact_phone,
-            "app_user_id": self.app_user_id,
             "is_active": self.is_active,
             "profile_photo_url": self.profile_photo_url,
             "has_app_access": self.has_app_access,

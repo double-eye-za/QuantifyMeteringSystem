@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 
 from ...models import Person, Unit, Estate, UnitOwnership, UnitTenancy
 from ...services.persons import (
@@ -175,11 +176,33 @@ def create_person():
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
-    person = svc_create_person(payload, user_id=getattr(current_user, "id", None))
-    log_action(
-        "person.create", entity_type="person", entity_id=person.id, new_values=payload
-    )
-    return jsonify({"data": person.to_dict()}), 201
+    try:
+        person = svc_create_person(payload, user_id=getattr(current_user, "id", None))
+        log_action(
+            "person.create", entity_type="person", entity_id=person.id, new_values=payload
+        )
+        return jsonify({"success": True, "id": person.id, "data": person.to_dict()}), 201
+
+    except IntegrityError as e:
+        # Handle database constraint violations with user-friendly messages
+        error_msg = str(e.orig).lower() if hasattr(e, 'orig') else str(e).lower()
+
+        if 'persons_email_key' in error_msg or ('duplicate' in error_msg and 'email' in error_msg):
+            return jsonify({"error": "This email address is already registered. Please use a different email."}), 400
+        elif 'persons_phone_key' in error_msg or ('duplicate' in error_msg and 'phone' in error_msg):
+            return jsonify({"error": "This phone number is already registered. Please use a different phone number."}), 400
+        elif 'persons_id_number_key' in error_msg or ('duplicate' in error_msg and 'id_number' in error_msg):
+            return jsonify({"error": "This ID number is already registered. Please use a different ID number."}), 400
+        else:
+            return jsonify({"error": "A person with this information already exists. Please check your input."}), 400
+
+    except ValueError as e:
+        # Handle validation errors
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.get("/persons/<int:person_id>")
@@ -200,18 +223,42 @@ def update_person(person_id: int):
     """API endpoint to update a person"""
     person = get_person_by_id(person_id)
     if not person:
-        return jsonify({"error": "Not Found", "code": 404}), 404
+        return jsonify({"error": "Person not found"}), 404
+
     payload = request.get_json(force=True) or {}
     before = person.to_dict()
-    svc_update_person(person, payload, user_id=getattr(current_user, "id", None))
-    log_action(
-        "person.update",
-        entity_type="person",
-        entity_id=person_id,
-        old_values=before,
-        new_values=payload,
-    )
-    return jsonify({"data": person.to_dict()})
+
+    try:
+        svc_update_person(person, payload, user_id=getattr(current_user, "id", None))
+        log_action(
+            "person.update",
+            entity_type="person",
+            entity_id=person_id,
+            old_values=before,
+            new_values=payload,
+        )
+        return jsonify({"success": True, "data": person.to_dict()})
+
+    except IntegrityError as e:
+        # Handle database constraint violations with user-friendly messages
+        error_msg = str(e.orig).lower() if hasattr(e, 'orig') else str(e).lower()
+
+        if 'persons_email_key' in error_msg or ('duplicate' in error_msg and 'email' in error_msg):
+            return jsonify({"error": "This email address is already registered. Please use a different email."}), 400
+        elif 'persons_phone_key' in error_msg or ('duplicate' in error_msg and 'phone' in error_msg):
+            return jsonify({"error": "This phone number is already registered. Please use a different phone number."}), 400
+        elif 'persons_id_number_key' in error_msg or ('duplicate' in error_msg and 'id_number' in error_msg):
+            return jsonify({"error": "This ID number is already registered. Please use a different ID number."}), 400
+        else:
+            return jsonify({"error": "A person with this information already exists. Please check your input."}), 400
+
+    except ValueError as e:
+        # Handle validation errors
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.delete("/persons/<int:person_id>")
@@ -221,28 +268,33 @@ def delete_person(person_id: int):
     """API endpoint to delete a person"""
     person = get_person_by_id(person_id)
     if not person:
-        return jsonify({"error": "Not Found", "code": 404}), 404
+        return jsonify({"error": "Person not found"}), 404
 
-    # Check if person can be deleted
-    can_delete, reason = can_person_be_deleted(person)
-    if not can_delete:
-        return (
-            jsonify(
-                {
-                    "error": "Conflict",
-                    "message": f"Cannot delete person: {reason}",
-                    "code": 409,
-                }
-            ),
-            409,
-        )
+    try:
+        # Check if person can be deleted
+        can_delete, reason = can_person_be_deleted(person)
+        if not can_delete:
+            return jsonify({"error": f"Cannot delete person: {reason}"}), 409
 
-    ok, err = svc_delete_person(person)
-    if not ok:
-        return jsonify({"error": "Conflict", **err}), err.get("code", 409)
+        ok, err = svc_delete_person(person)
+        if not ok:
+            error_msg = err.get("message") or err.get("error") or "Failed to delete person"
+            return jsonify({"error": error_msg}), 409
 
-    log_action("person.delete", entity_type="person", entity_id=person_id)
-    return jsonify({"message": "Deleted"})
+        log_action("person.delete", entity_type="person", entity_id=person_id)
+        return jsonify({"success": True, "message": "Person deleted successfully"})
+
+    except IntegrityError as e:
+        # Handle foreign key constraint violations
+        return jsonify({"error": "Cannot delete this person because they are associated with units, wallets, or other records. Please remove these associations first."}), 400
+
+    except ValueError as e:
+        # Handle validation errors
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.get("/api/persons/dropdown")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flask import render_template, request, jsonify
 from flask_login import login_required
+from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.models.role import Role
 from app.utils.decorators import requires_permission
@@ -122,8 +123,26 @@ def create_user():
             }
         ), 201
 
-    except Exception as e:
+    except IntegrityError as e:
+        # Handle database constraint violations with user-friendly messages
+        error_msg = str(e.orig).lower() if hasattr(e, 'orig') else str(e).lower()
+
+        if 'users_email_key' in error_msg or 'duplicate' in error_msg and 'email' in error_msg:
+            return jsonify({"error": "This email address is already in use. Please use a different email."}), 400
+        elif 'users_username_key' in error_msg or 'duplicate' in error_msg and 'username' in error_msg:
+            return jsonify({"error": "This username is already taken. Please choose a different username."}), 400
+        elif 'users_phone_key' in error_msg or 'duplicate' in error_msg and 'phone' in error_msg:
+            return jsonify({"error": "This phone number is already registered. Please use a different phone number."}), 400
+        else:
+            return jsonify({"error": "A user with this information already exists. Please check your input."}), 400
+
+    except ValueError as e:
+        # Handle validation errors
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.route("/api/users/<int:user_id>", methods=["PUT"])
@@ -134,6 +153,9 @@ def update_user(user_id):
 
     try:
         before = svc_get_user_by_id(user_id)
+        if not before:
+            return jsonify({"error": "User not found"}), 404
+
         before_dict = before.to_dict() if hasattr(before, "to_dict") and before else {}
         svc_update_user(user_id, data)
         log_action(
@@ -145,8 +167,26 @@ def update_user(user_id):
         )
         return jsonify({"success": True, "message": "User updated successfully"}), 200
 
-    except Exception as e:
+    except IntegrityError as e:
+        # Handle database constraint violations with user-friendly messages
+        error_msg = str(e.orig).lower() if hasattr(e, 'orig') else str(e).lower()
+
+        if 'users_email_key' in error_msg or 'duplicate' in error_msg and 'email' in error_msg:
+            return jsonify({"error": "This email address is already in use. Please use a different email."}), 400
+        elif 'users_username_key' in error_msg or 'duplicate' in error_msg and 'username' in error_msg:
+            return jsonify({"error": "This username is already taken. Please choose a different username."}), 400
+        elif 'users_phone_key' in error_msg or 'duplicate' in error_msg and 'phone' in error_msg:
+            return jsonify({"error": "This phone number is already registered. Please use a different phone number."}), 400
+        else:
+            return jsonify({"error": "A user with this information already exists. Please check your input."}), 400
+
+    except ValueError as e:
+        # Handle validation errors
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.route("/api/users/<int:user_id>", methods=["DELETE"])
@@ -158,8 +198,17 @@ def delete_user(user_id):
         log_action("user.delete", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User deleted successfully"}), 200
 
-    except Exception as e:
+    except IntegrityError as e:
+        # Handle foreign key constraint violations
+        return jsonify({"error": "Cannot delete this user because they have associated records. Please remove or reassign their data first."}), 400
+
+    except ValueError as e:
+        # Handle validation errors (e.g., cannot delete super admin)
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.route("/api/users/<int:user_id>/enable", methods=["PUT"])
@@ -171,8 +220,11 @@ def enable_user(user_id):
         log_action("user.enable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User enabled successfully"}), 200
 
-    except Exception as e:
+    except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500
 
 
 @api_v1.route("/api/users/<int:user_id>/disable", methods=["PUT"])
@@ -184,5 +236,8 @@ def disable_user(user_id):
         log_action("user.disable", entity_type="user", entity_id=user_id)
         return jsonify({"success": True, "message": "User disabled successfully"}), 200
 
-    except Exception as e:
+    except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred. Please try again or contact support."}), 500

@@ -16,6 +16,7 @@ async function saveEstateAssignment(estateId) {
       document.getElementById(`solar_free_${estateId}`).value || "0"
     ),
   };
+
   try {
     const res = await fetch(
       `${BASE_URL}/api/estates/${estateId}/rate-assignment`,
@@ -25,14 +26,21 @@ async function saveEstateAssignment(estateId) {
         body: JSON.stringify(body),
       }
     );
+
     const result = await res.json();
-    if (res.ok) {
-      showFlashMessage("Estate rate assignment saved", "success");
+
+    if (res.ok && result.success) {
+      // Success - show message without reload
+      showFlashMessage("Estate rate assignment saved", "success", false);
     } else {
-      showFlashMessage(result.error || "Failed to save assignment", "error");
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to save assignment. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (e) {
-    showFlashMessage("Network error while saving assignment", "error");
+    // Network or parsing error
+    console.error("Error saving estate assignment:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -211,6 +219,7 @@ document
   ?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const id = document.getElementById("editRateId").value;
+
     try {
       const payload = {
         name: document.getElementById("editRateName").value,
@@ -222,19 +231,29 @@ document
           document.getElementById("editRateTiers").value || "{}"
         ),
       };
+
       const resp = await fetch(`${BASE_URL}/api/rate-tables/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const out = await resp.json();
-      if (!resp.ok) throw new Error(out.error || "Save failed");
-      showFlashMessage("Rate table saved", "success");
-      hideEditRateModal();
-      location.reload();
+
+      const result = await resp.json();
+
+      if (resp.ok && result.success) {
+        // Success - hide modal and reload with success message
+        hideEditRateModal();
+        showFlashMessage("Rate table saved successfully", "success", true);
+        location.reload();
+      } else {
+        // Error - show message immediately WITHOUT reload
+        const errorMessage = result.error || result.message || "Failed to save rate table. Please try again.";
+        showFlashMessage(errorMessage, "error", false);
+      }
     } catch (e) {
+      // Network or parsing error
       console.error("Error saving rate table:", e);
-      showFlashMessage(e.message || "Failed to save rate table", "error");
+      showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
     }
   });
 
@@ -265,18 +284,30 @@ document
     const modal = document.getElementById("deleteRateModal");
     const id = modal.dataset.id;
     if (!id) return;
+
     try {
       const resp = await fetch(`${BASE_URL}/api/rate-tables/${id}`, {
         method: "DELETE",
       });
-      const out = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(out.error || "Delete failed");
-      showFlashMessage("Rate table deleted", "success");
-      hideDeleteRateTable();
-      location.reload();
+
+      const result = await resp.json().catch(() => ({}));
+
+      if (resp.ok && result.success) {
+        // Success - hide modal and reload with success message
+        hideDeleteRateTable();
+        showFlashMessage("Rate table deleted successfully", "success", true);
+        location.reload();
+      } else {
+        // Error - show message immediately WITHOUT reload
+        hideDeleteRateTable();
+        const errorMessage = result.error || result.message || "Failed to delete rate table. It may be in use by estates.";
+        showFlashMessage(errorMessage, "error", false);
+      }
     } catch (e) {
+      // Network or parsing error
+      hideDeleteRateTable();
       console.error("Error deleting rate table:", e);
-      showFlashMessage(e.message || "Failed to delete rate table", "error");
+      showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
     }
   });
 

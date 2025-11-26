@@ -129,24 +129,28 @@ function saveUnit() {
 
       const data = await resp.json();
 
-      if (!resp.ok) {
-        showFlashMessage("Failed to create unit", "error", true);
-        return;
-      }
+      if (resp.ok && (data.success || data.id)) {
+        // Success - hide modal and reload with success message
+        hideAddUnitModal();
 
-      hideAddUnitModal();
+        // Show warnings if any
+        if (data.warnings && data.warnings.length > 0) {
+          const warningMsg = `Unit created but with warnings:\n${data.warnings.join('\n')}`;
+          showFlashMessage(warningMsg, "warning", true);
+        } else {
+          showFlashMessage("Unit created successfully", "success", true);
+        }
 
-      // Show warnings if any
-      if (data.warnings && data.warnings.length > 0) {
-        const warningMsg = `Unit created but with warnings:\n${data.warnings.join('\n')}`;
-        showFlashMessage(warningMsg, "warning", true);
+        window.location.reload();
       } else {
-        showFlashMessage("Unit created successfully", "success", true);
+        // Error - show message immediately WITHOUT reload
+        const errorMessage = data.error || data.message || "Failed to create unit. Please check the form and try again.";
+        showFlashMessage(errorMessage, "error", false);
       }
-
-      window.location.reload();
     } catch (e) {
-      showFlashMessage("Failed to create unit", "error", true);
+      // Network or parsing error
+      console.error("Error creating unit:", e);
+      showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
     }
   })();
 }
@@ -279,15 +283,23 @@ function saveEditedUnit() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!resp.ok) {
-        showFlashMessage("Failed to update unit", "error", true);
+
+      const result = await resp.json();
+
+      if (resp.ok && result.success) {
+        // Success - hide modal and reload with success message
+        hideEditUnitModal();
+        showFlashMessage("Unit updated successfully", "success", true);
+        window.location.reload();
+      } else {
+        // Error - show message immediately WITHOUT reload
+        const errorMessage = result.error || result.message || "Failed to update unit. Please try again.";
+        showFlashMessage(errorMessage, "error", false);
       }
-      await resp.json();
-      hideEditUnitModal();
-      window.location.reload();
-      showFlashMessage("Unit updated successfully", "success", true);
     } catch (e) {
-      showFlashMessage("Failed to update unit", "error", true);
+      // Network or parsing error
+      console.error("Error updating unit:", e);
+      showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
     }
   })();
 }
@@ -366,18 +378,29 @@ window.hideDeleteUnitModal = function () {
 window.performDeleteUnit = async function () {
   try {
     if (!deleteUnitId) return;
+
     const resp = await fetch(`${BASE_URL}/${deleteUnitId}`, {
       method: "DELETE",
     });
-    if (!resp.ok) {
-      showFlashMessage("Failed to delete unit", "error", true);
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - hide modal and reload with success message
+      window.hideDeleteUnitModal();
+      showFlashMessage("Unit deleted successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      window.hideDeleteUnitModal();
+      const errorMessage = result.error || result.message || "Failed to delete unit. It may be associated with meters or other data.";
+      showFlashMessage(errorMessage, "error", false);
     }
-    window.hideDeleteUnitModal();
-    window.location.reload();
-    showFlashMessage("Unit deleted successfully.", "success", true);
   } catch (e) {
-    console.error(e);
-    showFlashMessage("Error deleting unit. Try again later.", "error", true);
+    // Network or parsing error
+    window.hideDeleteUnitModal();
+    console.error("Error deleting unit:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 };
 

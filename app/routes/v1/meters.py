@@ -11,7 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Resident
+from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert
 from ...utils.pagination import paginate_query, parse_pagination_params
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission

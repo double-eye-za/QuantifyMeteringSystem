@@ -184,15 +184,21 @@ async function createUser() {
 
     const result = await response.json();
 
-    if (result.success) {
+    // Check response status first
+    if (response.ok && result.success) {
+      // Success - hide modal and reload with success message
       hideCreateModal();
-      window.location.reload();
       showFlashMessage("User created successfully", "success", true);
+      window.location.reload();
     } else {
-      showFlashMessage(result.error || "Failed to create user", "error", true);
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to create user. Please check the form and try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to create user", "error", true);
+    // Network or parsing error - show immediately
+    console.error("Error creating user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -217,15 +223,17 @@ async function updateUser() {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideEditModal();
-      window.location.reload();
       showFlashMessage("User updated successfully", "success", true);
+      window.location.reload();
     } else {
-      showFlashMessage(result.error || "Failed to update user", "error", true);
+      const errorMessage = result.error || result.message || "Failed to update user. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to update user", "error", true);
+    console.error("Error updating user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -240,15 +248,19 @@ async function enableUser(userId) {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideConfirmModal();
-      window.location.reload();
       showFlashMessage("User enabled successfully", "success", true);
+      window.location.reload();
     } else {
-      showFlashMessage(result.error || "Failed to enable user", "error", true);
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to enable user.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to enable user", "error", true);
+    hideConfirmModal();
+    console.error("Error enabling user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -263,15 +275,19 @@ async function disableUser(userId) {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideConfirmModal();
-      window.location.reload();
       showFlashMessage("User disabled successfully", "success", true);
+      window.location.reload();
     } else {
-      showFlashMessage(result.error || "Failed to disable user", "error", true);
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to disable user.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to disable user", "error", true);
+    hideConfirmModal();
+    console.error("Error disabling user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -286,15 +302,19 @@ async function deleteUser(userId) {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideConfirmModal();
-      window.location.reload();
       showFlashMessage("User deleted successfully", "success", true);
+      window.location.reload();
     } else {
-      showFlashMessage(result.error || "Failed to delete user", "error", true);
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to delete user.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to delete user", "error", true);
+    hideConfirmModal();
+    console.error("Error deleting user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 

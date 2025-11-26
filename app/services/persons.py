@@ -88,11 +88,6 @@ def get_person_by_email(email: str) -> Optional[Person]:
     return Person.query.filter_by(email=email).first()
 
 
-def get_person_by_app_user_id(app_user_id: str) -> Optional[Person]:
-    """Get a person by app_user_id (for mobile authentication)"""
-    return Person.query.filter_by(app_user_id=app_user_id).first()
-
-
 def create_person(payload: dict, user_id: Optional[int] = None) -> Person:
     """
     Create a new person.
@@ -114,8 +109,6 @@ def create_person(payload: dict, user_id: Optional[int] = None) -> Person:
         emergency_contact_name=payload.get("emergency_contact_name"),
         emergency_contact_phone=payload.get("emergency_contact_phone"),
         is_active=payload.get("is_active", True),
-        app_user_id=payload.get("app_user_id"),
-        password_hash=payload.get("password_hash"),  # For mobile authentication
         profile_photo_url=payload.get("profile_photo_url"),
         created_by=user_id,
     )
@@ -148,8 +141,6 @@ def update_person(
         "emergency_contact_name",
         "emergency_contact_phone",
         "is_active",
-        "app_user_id",
-        "password_hash",
         "profile_photo_url",
     )
 

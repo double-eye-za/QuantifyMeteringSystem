@@ -27,7 +27,7 @@ from app.models import (
     TimeOfUseRate,
     MeterReading,
     MeterAlert,
-    Resident,
+    # Resident,  # DEPRECATED - Use Person model instead
     Transaction,
 )
 from sqlalchemy import text

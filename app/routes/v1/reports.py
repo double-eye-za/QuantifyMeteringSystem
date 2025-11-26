@@ -22,7 +22,6 @@ from app.models import (
     Meter,
     Unit,
     Wallet,
-    Resident,
     Notification,
     MeterAlert,
 )

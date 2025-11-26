@@ -22,7 +22,7 @@ from . import audit_logs
 from . import profile
 from . import settings
 from . import auth
-from . import residents
+# from . import residents  # DEPRECATED - Removed in favor of Person model
 from . import persons
 from . import unit_ownerships
 from . import unit_tenancies

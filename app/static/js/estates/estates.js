@@ -27,20 +27,30 @@ async function performDeleteEstate() {
   const modal = document.getElementById("deleteEstateModal");
   const estateId = modal.getAttribute("data-estate-id");
   if (!estateId) return;
+
   try {
     const res = await fetch(`${BASE_URL}/estates/${estateId}`, {
       method: "DELETE",
     });
-    if (!res.ok) {
-      showFlashMessage("Failed to delete estate", "error", true);
-      return;
+
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      // Success - hide modal and reload with success message
+      hideDeleteEstate();
+      showFlashMessage("Estate deleted successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      hideDeleteEstate();
+      const errorMessage = result.error || result.message || "Failed to delete estate. It may be associated with units or other data.";
+      showFlashMessage(errorMessage, "error", false);
     }
-    hideDeleteEstate();
-    window.location.reload();
-    showFlashMessage("Estate deleted successfully", "success", true);
   } catch (e) {
+    // Network or parsing error
+    hideDeleteEstate();
     console.error("Error deleting estate:", e);
-    showFlashMessage("Failed to delete estate", "error", true);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -48,6 +58,7 @@ async function saveNewEstate(event) {
   event.preventDefault();
   const formData = new FormData(event.target);
   const d = Object.fromEntries(formData);
+
   try {
     const res = await fetch(`${BASE_URL}/estates`, {
       method: "POST",
@@ -69,16 +80,23 @@ async function saveNewEstate(event) {
         water_rate_table_id: d.water_rate_table || null,
       }),
     });
-    if (!res.ok) {
-      showFlashMessage("Failed to create estate", "error", true);
-      return;
+
+    const result = await res.json();
+
+    if (res.ok && (result.success || result.id)) {
+      // Success - close modal and reload with success message
+      closeAddEstateModal();
+      showFlashMessage("Estate created successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to create estate. Please check the form and try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
-    await res.json();
-    window.location.reload();
-    showFlashMessage("Estate created successfully", "success", true);
   } catch (e) {
+    // Network or parsing error
     console.error("Error creating estate:", e);
-    showFlashMessage("Failed to create estate", "error", true);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -171,15 +189,23 @@ async function saveEditedEstate(event) {
         water_rate_table_id: updatedData.water_rate_table || null,
       }),
     });
-    if (!res.ok) {
-      showFlashMessage("Failed to update estate", "error", true);
+
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      // Success - close modal and reload with success message
+      closeEditEstateModal();
+      showFlashMessage("Estate updated successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to update estate. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
-    await res.json();
-    window.location.reload();
-    showFlashMessage("Estate updated successfully", "success", true);
   } catch (e) {
+    // Network or parsing error
     console.error("Error updating estate:", e);
-    showFlashMessage("Failed to update estate", "error", true);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 

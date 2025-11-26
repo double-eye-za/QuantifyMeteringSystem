@@ -91,23 +91,32 @@ async function submitCreateMeter() {
   const form = document.getElementById("createMeterForm");
   const payload = Object.fromEntries(new FormData(form).entries());
   if (payload.installation_date === "") delete payload.installation_date;
-  const resp = await fetch(`${BASE_URL}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  let msg = "";
+
   try {
-    const data = await resp.json();
-    msg = data && data.message ? data.message : msg;
-  } catch (_) {}
-  if (!resp.ok) {
-    showFlashMessage(msg || "Failed to create meter", "error", false);
-    return;
+    const resp = await fetch(`${BASE_URL}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await resp.json();
+
+    if (resp.ok && (result.success || result.id)) {
+      // Success - hide modal and reload with success message
+      hideCreateMeter();
+      const successMessage = result.message || "Meter created successfully";
+      showFlashMessage(successMessage, "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to create meter. Please check the form and try again.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (e) {
+    // Network or parsing error
+    console.error("Error creating meter:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
-  hideCreateMeter();
-  showFlashMessage(msg || "Meter created successfully", "success", true);
-  window.location.reload();
 }
 
 async function submitEditMeter() {
@@ -116,33 +125,60 @@ async function submitEditMeter() {
   const id = payload.id;
   delete payload.id;
   if (payload.installation_date === "") delete payload.installation_date;
-  const resp = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await resp.json();
-  const msg = data && data.message ? data.message : "";
-  if (!resp.ok) {
-    showFlashMessage(msg || "Failed to update meter details", "error", false);
-    return;
+
+  try {
+    const resp = await fetch(`${BASE_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - hide modal and reload with success message
+      hideEditMeter();
+      const successMessage = result.message || "Meter updated successfully";
+      showFlashMessage(successMessage, "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to update meter. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (e) {
+    // Network or parsing error
+    console.error("Error updating meter:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
-  hideEditMeter();
-  window.location.reload();
-  showFlashMessage("Meter updated successfully", "success", true);
 }
 
 async function performDeleteMeter() {
   const id = window._deleteMeterId;
   if (!id) return;
-  const resp = await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
-  if (!resp.ok) {
-    showFlashMessaged("Failed to delete meter", "error", true);
-    return;
+
+  try {
+    const resp = await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - hide modal and reload with success message
+      hideDeleteMeter();
+      showFlashMessage("Meter deleted successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      hideDeleteMeter();
+      const errorMessage = result.error || result.message || "Failed to delete meter. It may be associated with units or readings.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (e) {
+    // Network or parsing error
+    hideDeleteMeter();
+    console.error("Error deleting meter:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
-  hideDeleteMeter();
-  window.location.reload();
-  showFlashMessage("Meter deleted successfully", "success", true);
 }
 
 function applyFilters() {

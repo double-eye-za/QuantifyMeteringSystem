@@ -54,27 +54,34 @@ async function submitPerson() {
   const successMessage = hasId
     ? "Person updated successfully"
     : "Person created successfully";
-  const errorMessage = hasId
-    ? "Failed to update person"
-    : "Failed to create person";
   const url = hasId ? `${BASE_URL}/${payload.id}` : `${BASE_URL}`;
   const method = hasId ? "PUT" : "POST";
   delete payload.id;
 
-  const resp = await fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const resp = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  if (!resp.ok) {
-    showFlashMessage(errorMessage, "error", true);
-    return;
+    const result = await resp.json();
+
+    if (resp.ok && (result.success || result.id)) {
+      // Success - hide modal and reload with success message
+      hidePersonModal();
+      showFlashMessage(successMessage, "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to save person. Please check the form and try again.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (error) {
+    // Network or parsing error
+    console.error("Error submitting person:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
-
-  hidePersonModal();
-  window.location.reload();
-  showFlashMessage(successMessage, "success", true);
 }
 
 function confirmDeletePerson(btn) {
@@ -94,21 +101,31 @@ function hidePersonDelete() {
 
 async function performPersonDelete() {
   if (!deletePersonId) return;
-  const resp = await fetch(`${BASE_URL}/${deletePersonId}`, {
-    method: "DELETE",
-  });
 
-  if (!resp.ok) {
-    const errorData = await resp.json();
-    const message = errorData.message || "Failed to delete person";
-    showFlashMessage(message, "error", true);
+  try {
+    const resp = await fetch(`${BASE_URL}/${deletePersonId}`, {
+      method: "DELETE",
+    });
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - hide modal and reload with success message
+      hidePersonDelete();
+      showFlashMessage("Person deleted successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      hidePersonDelete();
+      const errorMessage = result.error || result.message || "Failed to delete person. They may be associated with units.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (error) {
+    // Network or parsing error
     hidePersonDelete();
-    return;
+    console.error("Error deleting person:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
-
-  hidePersonDelete();
-  window.location.reload();
-  showFlashMessage("Person deleted successfully", "success", true);
 }
 
 function applyFilters() {

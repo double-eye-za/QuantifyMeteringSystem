@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Estate, Resident, Unit, Meter, RateTable
+from ...models import Estate, Unit, Meter, RateTable
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
 from ...utils.decorators import requires_permission

@@ -751,14 +751,7 @@ breadcrumb %}
           {{ resident.email or '-' }}
         </p>
       </div>
-      {% if resident.lease_start_date %}
-      <div>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Lease Start</p>
-        <p class="text-sm text-gray-900 dark:text-white">
-          {{ resident.lease_start_date.strftime('%d %B %Y') }}
-        </p>
-      </div>
-      {% endif %} {% else %}
+      {% else %}
       <p class="text-sm text-gray-500 dark:text-gray-400">
         No resident assigned
       </p>
