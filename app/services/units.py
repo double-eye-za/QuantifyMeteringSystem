@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy import or_
 
 from app.db import db
-from app.models import Unit, Estate
+from app.models import Unit, Estate, Person, UnitTenancy
 
 
 def list_units(
@@ -20,8 +20,22 @@ def list_units(
         query = query.filter(Unit.occupancy_status == occupancy_status)
     if search:
         like = f"%{search}%"
-        query = query.filter(
-            or_(Unit.unit_number.ilike(like), Unit.building.ilike(like))
+        # Search across unit_number, building, estate name, and tenant name
+        # Use outerjoin to include units without tenants
+        query = (
+            query.outerjoin(Estate, Unit.estate_id == Estate.id)
+            .outerjoin(UnitTenancy, Unit.id == UnitTenancy.unit_id)
+            .outerjoin(Person, UnitTenancy.person_id == Person.id)
+            .filter(
+                or_(
+                    Unit.unit_number.ilike(like),
+                    Unit.building.ilike(like),
+                    Estate.name.ilike(like),
+                    Person.first_name.ilike(like),
+                    Person.last_name.ilike(like),
+                )
+            )
+            .distinct()
         )
     return query
 

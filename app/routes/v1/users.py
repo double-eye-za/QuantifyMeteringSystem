@@ -93,6 +93,69 @@ def users_page():
     )
 
 
+@api_v1.route("/api/users", methods=["GET"])
+@login_required
+@requires_permission("users.view")
+def list_users_api():
+    """JSON API endpoint to list users with filtering and pagination."""
+    search = request.args.get("search", "").strip()
+    status = request.args.get("status", "").strip().lower()
+    role_id = request.args.get("role_id", "").strip()
+
+    is_active = None
+    if status == "active":
+        is_active = True
+    elif status == "disabled":
+        is_active = False
+
+    role_id_int = None
+    if role_id:
+        try:
+            role_id_int = int(role_id)
+        except ValueError:
+            pass
+
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 25))
+
+    users, total = svc_list_users(
+        search=search if search else None,
+        is_active=is_active,
+        role_id=role_id_int,
+        page=page,
+        per_page=per_page,
+    )
+
+    users_data = []
+    for user in users:
+        users_data.append(
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "full_name": f"{user.first_name} {user.last_name}",
+                "phone": user.phone,
+                "is_active": user.is_active,
+                "is_super_admin": user.is_super_admin,
+                "role_id": user.role_id,
+                "role_name": user.role.name if user.role else None,
+                "created_at": user.created_at.strftime("%Y-%m-%d %H:%M")
+                if user.created_at
+                else None,
+            }
+        )
+
+    return jsonify({
+        "data": users_data,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "total_pages": (total + per_page - 1) // per_page,
+    })
+
+
 @api_v1.route("/api/users", methods=["POST"])
 @login_required
 @requires_permission("users.create")

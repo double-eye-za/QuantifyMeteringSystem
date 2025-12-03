@@ -22,7 +22,7 @@
 
   <!-- Filters Bar -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-    <form id="filters" method="get" action="{{ url_for('api_v1.persons_page') }}">
+    <div id="filters">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <!-- Left side - Search -->
         <div class="flex-1 max-w-md">
@@ -88,25 +88,17 @@
             <option value="false" {% if current_filters.is_active=='false' %}selected{% endif %}>Inactive</option>
           </select>
 
-          <!-- Action Buttons -->
+          <!-- Clear Filters Button -->
           <button
             type="button"
-            onclick="applyFilters()"
-            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-          >
-            <i class="fas fa-filter mr-2"></i> Apply
-          </button>
-
-          <button
-            type="button"
-            onclick="clearFilters()"
+            id="clearFiltersBtn"
             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
           >
             <i class="fas fa-times mr-2"></i> Clear
           </button>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 
   <!-- Persons Table -->
@@ -123,7 +115,7 @@
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody id="personsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
           {% for p in persons %}
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-person='{{ p | tojson }}'>
             <td class="px-4 py-3">
@@ -295,6 +287,14 @@
   </div>
 {% endblock %}
 {% block extra_js %}
-<script src="../../static/js/flash.js" ></script>
-<script src="../../static/js/persons/persons.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/table-filters.js') }}"></script>
+<script>
+  // Pass permissions to JavaScript for dynamic row rendering
+  window.PERSON_PERMISSIONS = {
+    canEdit: {{ 'true' if has_permission('persons.edit') else 'false' }},
+    canDelete: {{ 'true' if has_permission('persons.delete') else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/persons/persons.js') }}"></script>
 {% endblock %}

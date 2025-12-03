@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Celery instance (will be initialized with app context)
+celery = None
+
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder="app/templates", static_folder="app/static")
@@ -125,6 +128,11 @@ def create_app() -> Flask:
 
         # Register error handlers
         register_error_handlers(app)
+
+        # Initialize Celery with Flask app context
+        global celery
+        from celery_app import init_celery
+        celery = init_celery(app)
 
     return app
 

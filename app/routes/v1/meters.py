@@ -19,6 +19,7 @@ from . import api_v1
 
 from ...services.meters import (
     list_meters as svc_list_meters,
+    list_meters_paginated as svc_list_meters_paginated,
     get_meter_by_id as svc_get_meter_by_id,
     create_meter as svc_create_meter,
     list_available_by_type as svc_list_available_by_type,
@@ -34,136 +35,72 @@ from ...services.communication_types import list_communication_types as svc_list
 @requires_permission("meters.view")
 def meters_page():
     """Render the meters page with meters, unit assignments, balances, filters and stats."""
+    search = request.args.get("search", "").strip() or None
     meter_type = request.args.get("meter_type") or None
     comm_status = request.args.get("communication_status") or None
     estate_id = request.args.get("estate_id", type=int) or None
     credit_status = request.args.get("credit_status") or None
 
-    base_query = svc_list_meters(
-        meter_type=meter_type, communication_status=comm_status
-    )
-    all_meters = base_query.all()
-
-    def meter_wallet_balance_for_type(w: Wallet | None, m: Meter) -> float:
-        if not w:
-            return 0.0
-        if m.meter_type == "electricity":
-            return float(w.electricity_balance)
-        if m.meter_type == "water":
-            return float(w.water_balance)
-        if m.meter_type == "solar":
-            return float(w.solar_balance)
-        return float(w.balance or 0)
-
-    meters_full = []
-    for m in all_meters:
-        # Find assigned unit
-        unit = Unit.query.filter(
-            (Unit.electricity_meter_id == m.id)
-            | (Unit.water_meter_id == m.id)
-            | (Unit.solar_meter_id == m.id)
-        ).first()
-        # For bulk meters, resolve estate assignment directly on estate
-        assigned_estate = None
-        if not unit and m.meter_type in ("bulk_electricity", "bulk_water"):
-            if m.meter_type == "bulk_electricity":
-                assigned_estate = Estate.query.filter_by(
-                    bulk_electricity_meter_id=m.id
-                ).first()
-            elif m.meter_type == "bulk_water":
-                assigned_estate = Estate.query.filter_by(
-                    bulk_water_meter_id=m.id
-                ).first()
-        # Estate filter via unit or assigned estate (for bulk meters) if requested
-        if estate_id:
-            unit_estate_id = unit.estate_id if unit else None
-            bulk_estate_id = assigned_estate.id if assigned_estate else None
-            if unit_estate_id != estate_id and bulk_estate_id != estate_id:
-                continue
-
-        wallet = Wallet.query.filter_by(unit_id=unit.id).first() if unit else None
-        bal = meter_wallet_balance_for_type(wallet, m)
-        threshold = (
-            float(wallet.low_balance_threshold)
-            if wallet and wallet.low_balance_threshold is not None
-            else 50.0
-        )
-        derived_credit = (
-            "disconnected" if bal <= 0 else ("low" if bal < threshold else "ok")
-        )
-
-        # Apply derived credit filter
-        if credit_status and derived_credit != credit_status:
-            continue
-
-        meters_full.append(
-            {
-                **m.to_dict(),
-                "unit": {
-                    "id": unit.id,
-                    "estate_id": unit.estate_id,
-                    "estate_name": (
-                        Estate.query.get(unit.estate_id).name
-                        if unit.estate_id
-                        else None
-                    ),
-                    "unit_number": unit.unit_number,
-                    "occupancy_status": unit.occupancy_status,
-                }
-                if unit
-                else None,
-                "assigned_estate": {
-                    "id": assigned_estate.id,
-                    "name": assigned_estate.name,
-                }
-                if assigned_estate
-                else None,
-                "wallet": wallet.to_dict() if wallet else None,
-                "credit_status": derived_credit,
-            }
-        )
-
+    # Get pagination params
     page, per_page = parse_pagination_params()
-    total = len(meters_full)
-    start = (page - 1) * per_page
-    end = start + per_page
-    meters = meters_full[start:end]
-    pages = (total + per_page - 1) // per_page if per_page else 1
-    next_page = page + 1 if page < pages else None
-    prev_page = page - 1 if page > 1 else None
-    meta = {
-        "page": page,
-        "per_page": per_page,
-        "total": total,
-        "pages": pages,
-        "next_page": next_page,
-        "prev_page": prev_page,
-    }
 
-    # Stats
+    # Use efficient server-side pagination
+    meters, meta = svc_list_meters_paginated(
+        search=search,
+        meter_type=meter_type,
+        communication_status=comm_status,
+        estate_id=estate_id,
+        credit_status=credit_status,
+        page=page,
+        per_page=per_page,
+    )
+
+    # Stats - use efficient queries
     total_meters = Meter.query.count()
     total_active = Meter.query.filter(Meter.is_active == True).count()
-    # Low credit meters evaluated via associated wallets
-    low_credit_count = 0
-    for m in Meter.query.all():
-        unit = Unit.query.filter(
-            (Unit.electricity_meter_id == m.id)
-            | (Unit.water_meter_id == m.id)
-            | (Unit.solar_meter_id == m.id)
-        ).first()
-        if not unit:
-            continue
-        wallet = Wallet.query.filter_by(unit_id=unit.id).first()
-        if not wallet:
-            continue
-        bal = meter_wallet_balance_for_type(wallet, m)
-        threshold = (
-            float(wallet.low_balance_threshold)
-            if wallet.low_balance_threshold is not None
-            else 50.0
+
+    # Low credit count - use efficient subquery
+    from sqlalchemy import or_, and_, case
+    from ...db import db
+
+    low_credit_subquery = (
+        db.session.query(Meter.id)
+        .outerjoin(
+            Unit,
+            or_(
+                Unit.electricity_meter_id == Meter.id,
+                Unit.water_meter_id == Meter.id,
+                Unit.solar_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
+            ),
         )
-        if 0 < bal < threshold:
-            low_credit_count += 1
+        .outerjoin(Wallet, Wallet.unit_id == Unit.id)
+        .filter(
+            and_(
+                Wallet.id.isnot(None),
+                case(
+                    (Meter.meter_type == "electricity", Wallet.electricity_balance),
+                    (Meter.meter_type == "water", Wallet.water_balance),
+                    (Meter.meter_type == "solar", Wallet.solar_balance),
+                    (Meter.meter_type == "hot_water", Wallet.hot_water_balance),
+                    else_=Wallet.balance,
+                ) > 0,
+                case(
+                    (Meter.meter_type == "electricity", Wallet.electricity_balance),
+                    (Meter.meter_type == "water", Wallet.water_balance),
+                    (Meter.meter_type == "solar", Wallet.solar_balance),
+                    (Meter.meter_type == "hot_water", Wallet.hot_water_balance),
+                    else_=Wallet.balance,
+                ) < case(
+                    (Wallet.low_balance_threshold.isnot(None), Wallet.low_balance_threshold),
+                    else_=50.0,
+                ),
+            )
+        )
+        .count()
+    )
+    low_credit_count = low_credit_subquery
+
     total_alerts = (
         MeterAlert.query.filter_by(is_resolved=False).count()
         if hasattr(MeterAlert, "is_resolved")
@@ -218,12 +155,47 @@ def meters_page():
             "alerts": total_alerts,
         },
         current_filters={
+            "search": search,
             "estate_id": estate_id,
             "meter_type": meter_type,
             "communication_status": comm_status,
             "credit_status": credit_status,
         },
     )
+
+
+@api_v1.route("/api/meters", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def list_meters_api():
+    """JSON API endpoint for meters list with filters, search, and pagination."""
+    search = request.args.get("search", "").strip() or None
+    meter_type = request.args.get("meter_type") or None
+    comm_status = request.args.get("communication_status") or None
+    estate_id = request.args.get("estate_id", type=int) or None
+    credit_status = request.args.get("credit_status") or None
+
+    # Get pagination params
+    page, per_page = parse_pagination_params()
+
+    # Use efficient server-side pagination
+    meters, meta = svc_list_meters_paginated(
+        search=search,
+        meter_type=meter_type,
+        communication_status=comm_status,
+        estate_id=estate_id,
+        credit_status=credit_status,
+        page=page,
+        per_page=per_page,
+    )
+
+    return jsonify({
+        "data": meters,
+        "page": meta["page"],
+        "per_page": meta["per_page"],
+        "total": meta["total"],
+        "total_pages": meta["pages"],
+    })
 
 
 @api_v1.route("/meters/<meter_id>/details", methods=["GET"])

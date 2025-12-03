@@ -15,3 +15,9 @@ class Config:
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+
+    # Celery configuration
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+    CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "Africa/Johannesburg")
+    CELERY_ENABLE_UTC = True

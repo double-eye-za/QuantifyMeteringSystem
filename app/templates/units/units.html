@@ -26,29 +26,29 @@ block breadcrumb %}
 <div
   class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6"
 >
-  <form id="unitFilters" method="get" action="{{ url_for('api_v1.units_page') }}">
+  <div id="unitFilters">
                     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-      
+
       <div class="flex-1 max-w-md">
                             <div class="relative">
-          <input 
+          <input
             id="searchInput"
-            name="q" 
-            value="{{ current_filters.q or '' }}" 
-            type="text" 
-            placeholder="Search unit number..." 
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" 
+            name="q"
+            value="{{ current_filters.q or '' }}"
+            type="text"
+            placeholder="Search unit, estate, tenant..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
           />
                                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
                             </div>
       </div>
 
-      
+
       <div class="flex items-center gap-3">
-        
-        <select 
+
+        <select
           id="estateFilter"
-          name="estate_id" 
+          name="estate_id"
           class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
         >
           <option value="">All Estates</option>
@@ -58,9 +58,9 @@ block breadcrumb %}
         </select>
 
                             <!-- Status Filter -->
-        <select 
+        <select
           id="statusFilter"
-          name="occupancy_status" 
+          name="occupancy_status"
           class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
         >
           <option value="">All Status</option>
@@ -68,25 +68,16 @@ block breadcrumb %}
           <option value="vacant" {% if current_filters.occupancy_status=='vacant' %}selected{% endif %}>Vacant</option>
                             </select>
 
-        
         <button
           type="button"
-          onclick="applyFilters()"
-          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-        >
-          <i class="fas fa-filter mr-2"></i> Apply Filters
-        </button>
-        
-        <button
-          type="button"
-          onclick="clearFilters()"
+          id="clearFiltersBtn"
           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
         >
-          <i class="fas fa-times mr-2"></i> Clear Filters
+          <i class="fas fa-times mr-2"></i> Clear
                             </button>
                         </div>
                     </div>
-  </form>
+  </div>
                 </div>
 
                 <!-- Units Table -->
@@ -152,7 +143,7 @@ block breadcrumb %}
           </th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody id="unitsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
        {% for u in units %}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-unit='{{ u | tojson }}'>
           <td class="px-4 py-3"><input type="checkbox" class="rounded border-gray-300 dark:border-gray-600"/></td>
@@ -685,7 +676,18 @@ block breadcrumb %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
-<script src="../../static/js/flash.js"></script>
-    <script src="../../static/js/units/units.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/table-filters.js') }}"></script>
+<script>
+  // Pass permissions and estates to JavaScript for dynamic row rendering
+  window.UNIT_PERMISSIONS = {
+    canEdit: {{ 'true' if has_permission('units.edit') else 'false' }},
+    canDelete: {{ 'true' if has_permission('units.delete') else 'false' }}
+  };
+  window.ESTATES_MAP = {
+    {% for e in estates %}{{ e.id }}: "{{ e.name }}"{% if not loop.last %},{% endif %}{% endfor %}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/units/units.js') }}"></script>
 {% endblock %}
 

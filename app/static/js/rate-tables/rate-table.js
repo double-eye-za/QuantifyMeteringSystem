@@ -29,7 +29,7 @@ async function saveEstateAssignment(estateId) {
 
     const result = await res.json();
 
-    if (res.ok && result.success) {
+    if (res.ok && result.data) {
       // Success - show message without reload
       showFlashMessage("Estate rate assignment saved", "success", false);
     } else {
@@ -240,7 +240,7 @@ document
 
       const result = await resp.json();
 
-      if (resp.ok && result.success) {
+      if (resp.ok && result.data) {
         // Success - hide modal and reload with success message
         hideEditRateModal();
         showFlashMessage("Rate table saved successfully", "success", true);
@@ -292,7 +292,7 @@ document
 
       const result = await resp.json().catch(() => ({}));
 
-      if (resp.ok && result.success) {
+      if (resp.ok && (result.message || result.data)) {
         // Success - hide modal and reload with success message
         hideDeleteRateTable();
         showFlashMessage("Rate table deleted successfully", "success", true);
@@ -300,7 +300,7 @@ document
       } else {
         // Error - show message immediately WITHOUT reload
         hideDeleteRateTable();
-        const errorMessage = result.error || result.message || "Failed to delete rate table. It may be in use by estates.";
+        const errorMessage = result.error || "Failed to delete rate table. It may be in use by estates.";
         showFlashMessage(errorMessage, "error", false);
       }
     } catch (e) {

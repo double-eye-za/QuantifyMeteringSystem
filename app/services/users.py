@@ -23,6 +23,7 @@ def list_users(
                 User.email.ilike(like),
                 User.first_name.ilike(like),
                 User.last_name.ilike(like),
+                User.phone.ilike(like),
             )
         )
     if is_active is not None:

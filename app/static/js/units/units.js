@@ -1,7 +1,187 @@
 const BASE_URL = "/api/v1/units";
+const API_URL = "/api/v1/api/units";
+
+// Global table filter instance
+let unitsTableFilter = null;
 
 // Track persons to be added to the unit
 let addedPersons = [];
+
+// Helper to format numbers
+function formatNumber(num, decimals = 2) {
+  if (num === null || num === undefined) return '0.00';
+  return parseFloat(num).toFixed(decimals);
+}
+
+// Render meter cell with balance and status
+function renderMeterCell(meterId, balance, isVacant) {
+  const meterIdDisplay = meterId || '—';
+
+  if (isVacant) {
+    return `
+      <div class="flex flex-col items-center">
+        <span class="text-xs font-mono text-gray-600 dark:text-gray-400">${meterIdDisplay}</span>
+        <span class="text-xs font-semibold text-gray-500">-</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 mt-1">
+          <i class="fas fa-pause-circle mr-1" style="font-size: 8px"></i>
+          Inactive
+        </span>
+      </div>
+    `;
+  }
+
+  const balanceNum = parseFloat(balance) || 0;
+  let colorClass, statusClass, statusText, icon;
+
+  if (balanceNum <= 0) {
+    colorClass = 'text-red-600 dark:text-red-400';
+    statusClass = 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400';
+    statusText = 'Disconnected';
+    icon = 'fa-times-circle';
+  } else if (balanceNum < 50) {
+    colorClass = 'text-yellow-600 dark:text-yellow-400';
+    statusClass = 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400';
+    statusText = 'Low';
+    icon = 'fa-exclamation-triangle';
+  } else {
+    colorClass = 'text-gray-900 dark:text-white';
+    statusClass = 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400';
+    statusText = 'Active';
+    icon = 'fa-circle';
+  }
+
+  return `
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-mono text-gray-600 dark:text-gray-400">${meterIdDisplay}</span>
+      <span class="text-xs font-semibold ${colorClass}">R ${formatNumber(balanceNum)}</span>
+      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 ${statusClass}">
+        <i class="fas ${icon} mr-1" style="font-size: 8px"></i>
+        ${statusText}
+      </span>
+    </div>
+  `;
+}
+
+// Render a single unit row for the table
+function renderUnitRow(u) {
+  const permissions = window.UNIT_PERMISSIONS || {};
+  const estatesMap = window.ESTATES_MAP || {};
+  const unitJson = JSON.stringify(u).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+
+  const estateName = estatesMap[u.estate_id] || '';
+  const isVacant = u.occupancy_status === 'vacant';
+
+  // Wallet data
+  const wallet = u.wallet || {};
+  const electricityBalance = wallet.electricity_balance || 0;
+  const waterBalance = wallet.water_balance || 0;
+  const hotWaterBalance = wallet.hot_water_balance || 0;
+  const solarBalance = wallet.solar_balance || 0;
+
+  // Build tenants HTML
+  let tenantsHtml = '';
+  if (u.tenants && u.tenants.length > 0) {
+    tenantsHtml = u.tenants.map((tenant, idx) => {
+      const separator = idx < u.tenants.length - 1 ? '<div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>' : '';
+      return `
+        <p class="text-sm text-gray-900 dark:text-white">${tenant.first_name || ''} ${tenant.last_name || ''}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">${tenant.phone || ''}</p>
+        ${separator}
+      `;
+    }).join('');
+  } else if (!isVacant) {
+    tenantsHtml = '<p class="text-sm text-gray-500 dark:text-gray-400">No tenant assigned</p>';
+  } else {
+    tenantsHtml = '<p class="text-sm text-gray-500 dark:text-gray-400">Vacant</p>';
+  }
+
+  // Build status badge
+  const statusClass = u.occupancy_status === 'occupied'
+    ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
+    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+  const statusText = u.occupancy_status ? u.occupancy_status.charAt(0).toUpperCase() + u.occupancy_status.slice(1) : '';
+
+  // Build actions HTML
+  let actionsHtml = '<div class="flex items-center gap-2">';
+  actionsHtml += `<a href="/api/v1/units/${u.id}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>`;
+
+  if (isVacant) {
+    actionsHtml += `<button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>`;
+  } else if (permissions.canEdit) {
+    actionsHtml += `<button type="button" class="edit-unit-btn text-gray-600 dark:text-gray-400 hover:text-primary text-sm" data-unit="${unitJson}"><i class="fas fa-edit mr-1"></i>Edit</button>`;
+  }
+
+  if (permissions.canDelete) {
+    actionsHtml += `<button type="button" onclick="confirmDeleteUnit(${u.id})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>`;
+  }
+  actionsHtml += '</div>';
+
+  return `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-unit="${unitJson}">
+      <td class="px-4 py-3"><input type="checkbox" class="rounded border-gray-300 dark:border-gray-600"/></td>
+      <td class="px-4 py-3">
+        <div>
+          <a href="/api/v1/units/${u.id}" class="text-sm font-medium text-primary hover:text-blue-700 hover:underline cursor-pointer">Unit ${u.unit_number || ''}</a>
+          <p class="text-xs text-gray-500 dark:text-gray-400">${u.floor || ''}</p>
+        </div>
+      </td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">${estateName}</td>
+      <td class="px-4 py-3">
+        <div>${tenantsHtml}</div>
+      </td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.electricity_meter_id, electricityBalance, isVacant)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.water_meter_id, waterBalance, isVacant)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, hotWaterBalance, isVacant)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, solarBalance, isVacant)}</td>
+      <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
+      <td class="px-4 py-3">${actionsHtml}</td>
+    </tr>
+  `;
+}
+
+// Attach event listeners to dynamically rendered action buttons
+function attachUnitRowEventListeners() {
+  // Edit buttons
+  document.querySelectorAll(".edit-unit-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const data = JSON.parse(this.dataset.unit);
+      editUnitFromData(data);
+    });
+  });
+}
+
+// Edit unit from data object (instead of DOM traversal)
+function editUnitFromData(data) {
+  const modal = document.getElementById("editUnitModal");
+  if (modal && data && data.id) modal.dataset.unitId = data.id;
+
+  const editUnitNumber = document.getElementById("edit_unit_number");
+  const editUnitFloor = document.getElementById("edit_unit_floor");
+  const editUnitEstate = document.getElementById("edit_unit_estate");
+  const editEmeter = document.getElementById("edit_unit_emeter");
+  const editWmeter = document.getElementById("edit_unit_wmeter");
+  const editHwmeter = document.getElementById("edit_unit_hwmeter");
+  const editSmeter = document.getElementById("edit_unit_smeter");
+
+  if (editUnitNumber) editUnitNumber.value = data.unit_number || "";
+  if (editUnitFloor) editUnitFloor.value = data.floor || "";
+  if (editUnitEstate) editUnitEstate.value = data.estate_id || "";
+  if (editEmeter) editEmeter.value = data.electricity_meter_id || "";
+  if (editWmeter) editWmeter.value = data.water_meter_id || "";
+  if (editHwmeter) editHwmeter.value = data.hot_water_meter_id || "";
+  if (editSmeter) editSmeter.value = data.solar_meter_id || "";
+
+  showEditUnitModal();
+}
+
+// Refresh the table after CRUD operations
+function refreshUnitsTable() {
+  if (unitsTableFilter) {
+    unitsTableFilter.refresh();
+  } else {
+    window.location.reload();
+  }
+}
 
 function showAddUnitModal() {
   addedPersons = []; // Reset on open
@@ -130,18 +310,18 @@ function saveUnit() {
       const data = await resp.json();
 
       if (resp.ok && (data.success || data.id)) {
-        // Success - hide modal and reload with success message
+        // Success - hide modal and refresh table
         hideAddUnitModal();
 
         // Show warnings if any
         if (data.warnings && data.warnings.length > 0) {
           const warningMsg = `Unit created but with warnings:\n${data.warnings.join('\n')}`;
-          showFlashMessage(warningMsg, "warning", true);
+          showFlashMessage(warningMsg, "warning", false);
         } else {
-          showFlashMessage("Unit created successfully", "success", true);
+          showFlashMessage("Unit created successfully", "success", false);
         }
 
-        window.location.reload();
+        refreshUnitsTable();
       } else {
         // Error - show message immediately WITHOUT reload
         const errorMessage = data.error || data.message || "Failed to create unit. Please check the form and try again.";
@@ -287,10 +467,10 @@ function saveEditedUnit() {
       const result = await resp.json();
 
       if (resp.ok && result.success) {
-        // Success - hide modal and reload with success message
+        // Success - hide modal and refresh table
         hideEditUnitModal();
-        showFlashMessage("Unit updated successfully", "success", true);
-        window.location.reload();
+        showFlashMessage("Unit updated successfully", "success", false);
+        refreshUnitsTable();
       } else {
         // Error - show message immediately WITHOUT reload
         const errorMessage = result.error || result.message || "Failed to update unit. Please try again.";
@@ -386,10 +566,10 @@ window.performDeleteUnit = async function () {
     const result = await resp.json();
 
     if (resp.ok && result.success) {
-      // Success - hide modal and reload with success message
+      // Success - hide modal and refresh table
       window.hideDeleteUnitModal();
-      showFlashMessage("Unit deleted successfully", "success", true);
-      window.location.reload();
+      showFlashMessage("Unit deleted successfully", "success", false);
+      refreshUnitsTable();
     } else {
       // Error - show message immediately WITHOUT reload
       window.hideDeleteUnitModal();
@@ -404,27 +584,36 @@ window.performDeleteUnit = async function () {
   }
 };
 
-function applyFilters() {
-  const form = document.getElementById("unitFilters");
-  form.submit();
-}
-
-function clearFilters() {
-  document.getElementById("searchInput").value = "";
-  document.getElementById("estateFilter").value = "";
-  document.getElementById("statusFilter").value = "";
-  const form = document.getElementById("unitFilters");
-  form.submit();
-}
-
 document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        applyFilters();
-      }
+  // Initialize TableFilter for AJAX-based filtering
+  unitsTableFilter = new TableFilter({
+    tableBodyId: 'unitsTableBody',
+    apiEndpoint: API_URL,
+    filters: {
+      search: { element: '#searchInput', param: 'q', debounce: true },
+      estate: { element: '#estateFilter', param: 'estate_id' },
+      status: { element: '#statusFilter', param: 'occupancy_status' }
+    },
+    renderRow: renderUnitRow,
+    colSpan: 10,
+    onError: (error) => showFlashMessage(error, 'error', false),
+    onAfterFetch: () => {
+      // Re-attach event listeners after table is re-rendered
+      attachUnitRowEventListeners();
+    }
+  });
+
+  // Override attachRowEventListeners in the filter instance
+  unitsTableFilter.attachRowEventListeners = attachUnitRowEventListeners;
+
+  // Clear filters button
+  const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", function () {
+      unitsTableFilter.clearFilters();
     });
   }
+
+  // Attach initial event listeners for server-rendered rows
+  attachUnitRowEventListeners();
 });

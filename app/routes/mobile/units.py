@@ -436,3 +436,80 @@ def get_unit_transactions(unit_id: int, mobile_user: MobileUser):
             for t in transactions
         ]
     }), 200
+
+
+@mobile_api.put("/units/<int:unit_id>/wallet/threshold")
+@require_mobile_auth
+def update_wallet_threshold(unit_id: int, mobile_user: MobileUser):
+    """
+    Update wallet alert threshold settings for a specific unit.
+
+    Requires authentication and unit access authorization.
+
+    Request body:
+        {
+            "low_balance_threshold": 100.00,
+            "low_balance_alert_type": "fixed",  // "fixed" or "days"
+            "low_balance_days_threshold": 3
+        }
+
+    Response:
+        {
+            "success": true,
+            "message": "Threshold updated successfully",
+            "data": {
+                "low_balance_threshold": 100.00,
+                "low_balance_alert_type": "fixed",
+                "low_balance_days_threshold": 3
+            }
+        }
+    """
+    from ...db import db
+
+    # Check if user has access to this unit
+    if not can_access_unit(mobile_user.person_id, unit_id):
+        return jsonify({
+            'success': False,
+            'error': 'Access denied',
+            'message': 'You do not have access to this unit'
+        }), 403
+
+    # Get wallet
+    wallet = Wallet.query.filter_by(unit_id=unit_id).first()
+    if not wallet:
+        return jsonify({
+            'success': False,
+            'error': 'Wallet not found',
+            'message': 'No wallet found for this unit'
+        }), 404
+
+    # Get request data
+    data = request.get_json() or {}
+
+    # Update threshold settings
+    if 'low_balance_threshold' in data:
+        threshold = data['low_balance_threshold']
+        if threshold is not None and threshold >= 0:
+            wallet.low_balance_threshold = float(threshold)
+
+    if 'low_balance_alert_type' in data:
+        alert_type = data['low_balance_alert_type']
+        if alert_type in ['fixed', 'days']:
+            wallet.low_balance_alert_type = alert_type
+
+    if 'low_balance_days_threshold' in data:
+        days = data['low_balance_days_threshold']
+        if days is not None and days >= 0:
+            wallet.low_balance_days_threshold = int(days)
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Threshold updated successfully',
+        'data': {
+            'low_balance_threshold': float(wallet.low_balance_threshold) if wallet.low_balance_threshold else 50.0,
+            'low_balance_alert_type': wallet.low_balance_alert_type or 'fixed',
+            'low_balance_days_threshold': wallet.low_balance_days_threshold or 3,
+        }
+    }), 200

@@ -315,6 +315,20 @@ def topup_wallet(wallet_id: int):
         },
     )
 
+    # Send real-time notification (async via Celery)
+    try:
+        from ...tasks.notification_tasks import send_topup_notification
+        send_topup_notification.delay(
+            wallet_id=wallet_id,
+            amount=float(amount),
+            payment_method=payment_method,
+            utility_type=utility_type
+        )
+    except Exception as e:
+        # Don't fail the transaction if notification fails
+        import logging
+        logging.warning(f"Failed to queue top-up notification: {e}")
+
     return jsonify(
         {
             "data": {

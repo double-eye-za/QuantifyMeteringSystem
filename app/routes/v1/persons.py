@@ -144,25 +144,75 @@ def persons_page():
 @login_required
 @requires_permission("persons.view")
 def list_persons():
-    """API endpoint to list persons"""
+    """API endpoint to list persons with unit associations"""
     search = request.args.get("q") or None
     is_active = request.args.get("is_active")
     is_owner = request.args.get("is_owner")
     is_tenant = request.args.get("is_tenant")
+    unit_id = request.args.get("unit_id", type=int)
 
     # Parse boolean filters
     is_active_val = True if is_active == "true" else False if is_active == "false" else None
     is_owner_val = True if is_owner == "true" else False if is_owner == "false" else None
     is_tenant_val = True if is_tenant == "true" else False if is_tenant == "false" else None
 
+    if not unit_id:
+        unit_id = None
+
     query = svc_list_persons(
         search=search,
         is_active=is_active_val,
+        unit_id=unit_id,
         is_owner=is_owner_val,
         is_tenant=is_tenant_val,
     )
     items, meta = paginate_query(query)
-    return jsonify({"data": [p.to_dict() for p in items], **meta})
+
+    # Build persons data with unit associations (same as page view)
+    persons = []
+    for person in items:
+        person_data = person.to_dict()
+
+        # Get all units this person owns
+        ownerships = UnitOwnership.query.filter_by(person_id=person.id).all()
+        owned_units = []
+        for ownership in ownerships:
+            unit = Unit.query.get(ownership.unit_id)
+            if unit:
+                estate = Estate.query.get(unit.estate_id)
+                owned_units.append(
+                    {
+                        "id": unit.id,
+                        "unit_number": unit.unit_number,
+                        "estate_name": estate.name if estate else None,
+                        "ownership_percentage": float(ownership.ownership_percentage),
+                        "is_primary": ownership.is_primary_owner,
+                    }
+                )
+
+        # Get all units this person rents
+        tenancies = UnitTenancy.query.filter_by(person_id=person.id, status="active").all()
+        rented_units = []
+        for tenancy in tenancies:
+            if tenancy.move_out_date:
+                continue  # Skip moved-out tenancies
+            unit = Unit.query.get(tenancy.unit_id)
+            if unit:
+                estate = Estate.query.get(unit.estate_id)
+                rented_units.append(
+                    {
+                        "id": unit.id,
+                        "unit_number": unit.unit_number,
+                        "estate_name": estate.name if estate else None,
+                        "is_primary": tenancy.is_primary_tenant,
+                    }
+                )
+
+        person_data["owned_units"] = owned_units
+        person_data["rented_units"] = rented_units
+        persons.append(person_data)
+
+    return jsonify({"data": persons, **meta})
 
 
 @api_v1.post("/persons")
