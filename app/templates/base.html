@@ -190,6 +190,15 @@
             <span class="text-sm font-medium">Rate Tables</span>
           </a>
           {% endif %}
+          {% if has_permission('tickets.view') %}
+          <a
+            href="{{ url_for('api_v1.tickets_page') }}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if request.endpoint == 'api_v1.tickets_page' or request.endpoint == 'api_v1.ticket_detail_page' or request.endpoint == 'api_v1.ticket_categories_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}"
+          >
+            <i class="fas fa-ticket-alt w-5"></i>
+            <span class="text-sm font-medium">Support Tickets</span>
+          </a>
+          {% endif %}
 
           <!-- Administration Section -->
           <div

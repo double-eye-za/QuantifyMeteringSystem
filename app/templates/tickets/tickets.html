@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block title %}Support Tickets - Quantify Metering System{% endblock %}
+{% block page_title %}Support Tickets{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Support Tickets</span>
+{% endblock %}
+{% block content %}
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.active }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Active Tickets</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.open }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Open</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ stats.in_progress }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">In Progress</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.pending }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Pending</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ stats.urgent }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Urgent</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.resolved }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Resolved</div>
+    </div>
+  </div>
+
+  <!-- Header Row -->
+  <div class="flex justify-between items-center mb-4">
+    <div>
+      <a href="{{ url_for('api_v1.ticket_categories_page') }}" class="text-sm text-primary hover:underline">
+        <i class="fas fa-cog mr-1"></i> Manage Categories
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <div id="filters">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Left side - Search -->
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <input
+              name="q"
+              id="searchInput"
+              value="{{ current_filters.q or '' }}"
+              type="text"
+              placeholder="Search ticket # or subject"
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+          </div>
+        </div>
+
+        <!-- Right side - Filters -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- Status Filter -->
+          <select
+            id="statusFilter"
+            name="status"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Status</option>
+            <option value="open" {% if current_filters.status=='open' %}selected{% endif %}>Open</option>
+            <option value="in_progress" {% if current_filters.status=='in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="pending" {% if current_filters.status=='pending' %}selected{% endif %}>Pending</option>
+            <option value="resolved" {% if current_filters.status=='resolved' %}selected{% endif %}>Resolved</option>
+            <option value="closed" {% if current_filters.status=='closed' %}selected{% endif %}>Closed</option>
+          </select>
+
+          <!-- Priority Filter -->
+          <select
+            id="priorityFilter"
+            name="priority"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Priority</option>
+            <option value="urgent" {% if current_filters.priority=='urgent' %}selected{% endif %}>Urgent</option>
+            <option value="high" {% if current_filters.priority=='high' %}selected{% endif %}>High</option>
+            <option value="medium" {% if current_filters.priority=='medium' %}selected{% endif %}>Medium</option>
+            <option value="low" {% if current_filters.priority=='low' %}selected{% endif %}>Low</option>
+          </select>
+
+          <!-- Category Filter -->
+          <select
+            id="categoryFilter"
+            name="category_id"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if current_filters.category_id==cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+
+          <!-- Assigned To Filter -->
+          <select
+            id="assignedFilter"
+            name="assigned_to"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Assignees</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if current_filters.assigned_to==user.id %}selected{% endif %}>{{ user.name }}</option>
+            {% endfor %}
+          </select>
+
+          <!-- Include Closed Toggle -->
+          <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              id="includeClosedFilter"
+              {% if current_filters.include_closed %}checked{% endif %}
+              class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+            />
+            Include Closed
+          </label>
+
+          <!-- Clear Filters Button -->
+          <button
+            type="button"
+            id="clearFiltersBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+          >
+            <i class="fas fa-times mr-2"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tickets Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Ticket</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Category</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Priority</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Assigned To</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Created</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ticketsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for ticket in tickets %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onclick="window.location.href='{{ url_for('api_v1.ticket_detail_page', ticket_id=ticket.id) }}'">
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-primary">{{ ticket.ticket_number }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ ticket.subject }}</div>
+            </td>
+            <td class="px-4 py-3">
+              {% if ticket.created_by_person %}
+              <div class="text-sm text-gray-900 dark:text-gray-300">{{ ticket.created_by_person.name }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ ticket.created_by_person.email }}</div>
+              {% else %}
+              <span class="text-xs text-gray-500 dark:text-gray-400">Unknown</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if ticket.category %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                {% if ticket.category.icon %}<i class="fas {{ ticket.category.icon }} mr-1"></i>{% endif %}
+                {{ ticket.category.name }}
+              </span>
+              {% else %}
+              <span class="text-xs text-gray-500 dark:text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% set status_colors = {
+                'open': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+                'in_progress': 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400',
+                'pending': 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400',
+                'resolved': 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400',
+                'closed': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              } %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ status_colors.get(ticket.status, 'bg-gray-100 text-gray-800') }}">
+                {{ ticket.status | replace('_', ' ') | title }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              {% set priority_colors = {
+                'urgent': 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400',
+                'high': 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400',
+                'medium': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+                'low': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              } %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ priority_colors.get(ticket.priority, 'bg-gray-100 text-gray-800') }}">
+                {% if ticket.priority == 'urgent' %}<i class="fas fa-exclamation-circle mr-1"></i>{% endif %}
+                {{ ticket.priority | title }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              {% if ticket.assigned_to_user %}
+              <span class="text-sm text-gray-900 dark:text-gray-300">{{ ticket.assigned_to_user.name }}</span>
+              {% else %}
+              <span class="text-xs text-gray-500 dark:text-gray-400 italic">Unassigned</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-900 dark:text-gray-300">{{ ticket.created_at[:10] if ticket.created_at else '-' }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                {{ ticket.message_count }} message{% if ticket.message_count != 1 %}s{% endif %}
+              </div>
+            </td>
+            <td class="px-4 py-3" onclick="event.stopPropagation()">
+              <a href="{{ url_for('api_v1.ticket_detail_page', ticket_id=ticket.id) }}" class="text-primary hover:underline text-sm">
+                <i class="fas fa-eye mr-1"></i>View
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              <i class="fas fa-ticket-alt text-4xl mb-2 opacity-50"></i>
+              <p>No tickets found</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> tickets
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('api_v1.tickets_page', page=(pagination.prev_page or 1), q=current_filters.q, status=current_filters.status, priority=current_filters.priority, category_id=current_filters.category_id, assigned_to=current_filters.assigned_to, include_closed='true' if current_filters.include_closed else '') }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.tickets_page', page=(pagination.next_page or pagination.page), q=current_filters.q, status=current_filters.status, priority=current_filters.priority, category_id=current_filters.category_id, assigned_to=current_filters.assigned_to, include_closed='true' if current_filters.include_closed else '') }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script>
+  // Filter functionality
+  const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const priorityFilter = document.getElementById('priorityFilter');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const assignedFilter = document.getElementById('assignedFilter');
+  const includeClosedFilter = document.getElementById('includeClosedFilter');
+  const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+  function applyFilters() {
+    const params = new URLSearchParams();
+    if (searchInput.value) params.set('q', searchInput.value);
+    if (statusFilter.value) params.set('status', statusFilter.value);
+    if (priorityFilter.value) params.set('priority', priorityFilter.value);
+    if (categoryFilter.value) params.set('category_id', categoryFilter.value);
+    if (assignedFilter.value) params.set('assigned_to', assignedFilter.value);
+    if (includeClosedFilter.checked) params.set('include_closed', 'true');
+    window.location.href = '{{ url_for("api_v1.tickets_page") }}?' + params.toString();
+  }
+
+  let searchTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, 500);
+  });
+
+  statusFilter.addEventListener('change', applyFilters);
+  priorityFilter.addEventListener('change', applyFilters);
+  categoryFilter.addEventListener('change', applyFilters);
+  assignedFilter.addEventListener('change', applyFilters);
+  includeClosedFilter.addEventListener('change', applyFilters);
+
+  clearFiltersBtn.addEventListener('click', () => {
+    window.location.href = '{{ url_for("api_v1.tickets_page") }}';
+  });
+
+  // ==================== Polling for new tickets ====================
+  let lastTicketCount = {{ pagination.total }};
+  let lastActiveCount = {{ stats.active }};
+  let pollingInterval = null;
+  const POLL_INTERVAL = 15000; // 15 seconds
+
+  function startPolling() {
+    if (pollingInterval) return;
+    pollingInterval = setInterval(checkForNewTickets, POLL_INTERVAL);
+  }
+
+  function stopPolling() {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
+  async function checkForNewTickets() {
+    try {
+      const response = await fetch('/api/v1/api/tickets/stats');
+      if (!response.ok) return;
+
+      const result = await response.json();
+      const stats = result.data;
+
+      // Check if there are new active tickets
+      if (stats.active > lastActiveCount) {
+        showNewTicketsBanner(stats.active - lastActiveCount);
+        lastActiveCount = stats.active;
+      }
+    } catch (error) {
+      console.error('Error checking for new tickets:', error);
+    }
+  }
+
+  function showNewTicketsBanner(count) {
+    // Remove existing banner if any
+    const existingBanner = document.getElementById('newTicketsBanner');
+    if (existingBanner) existingBanner.remove();
+
+    // Create banner
+    const banner = document.createElement('div');
+    banner.id = 'newTicketsBanner';
+    banner.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer hover:bg-blue-700 transition-colors';
+    banner.innerHTML = `
+      <i class="fas fa-ticket-alt"></i>
+      <span>${count} new ticket${count > 1 ? 's' : ''} available</span>
+      <span class="text-sm opacity-75">Click to refresh</span>
+    `;
+    banner.onclick = () => location.reload();
+
+    document.body.appendChild(banner);
+
+    // Play notification sound (optional)
+    // const audio = new Audio('/static/sounds/notification.mp3');
+    // audio.play().catch(() => {});
+
+    // Also show flash message
+    showFlashMessage(`${count} new ticket${count > 1 ? 's' : ''} received`, 'success');
+  }
+
+  // Start polling when page loads
+  startPolling();
+
+  // Stop polling when page is hidden, restart when visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling();
+    } else {
+      startPolling();
+      checkForNewTickets(); // Check immediately when tab becomes visible
+    }
+  });
+</script>
+{% endblock %}

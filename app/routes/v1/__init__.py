@@ -28,6 +28,7 @@ from . import unit_ownerships
 from . import unit_tenancies
 from . import device_types
 from . import communication_types
+from . import tickets
 
 
 @login_manager.unauthorized_handler

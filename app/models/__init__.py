@@ -16,6 +16,9 @@ from .rate_table_tier import RateTableTier
 from .time_of_use_rate import TimeOfUseRate
 from .notification import Notification
 from .audit_log import AuditLog
+from .ticket_category import TicketCategory
+from .ticket import Ticket
+from .ticket_message import TicketMessage
 from .system_setting import SystemSetting
 from .meter_alert import MeterAlert
 from .reconciliation_report import ReconciliationReport
@@ -41,6 +44,9 @@ __all__ = [
     "TimeOfUseRate",
     "Notification",
     "AuditLog",
+    "TicketCategory",
+    "Ticket",
+    "TicketMessage",
     "SystemSetting",
     "MeterAlert",
     "ReconciliationReport",
