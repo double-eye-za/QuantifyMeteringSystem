@@ -21,3 +21,6 @@ class Config:
     CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
     CELERY_TIMEZONE = os.getenv("CELERY_TIMEZONE", "Africa/Johannesburg")
     CELERY_ENABLE_UTC = True
+
+    # SMS configuration (Clickatell)
+    CLICKATELL_API_KEY = os.getenv("CLICKATELL_API_KEY", "")

@@ -1027,6 +1027,10 @@ def create_unit():
     owner_errors = []
     mobile_users_created = []
 
+    # Get estate info for SMS messages and tracking
+    estate_name = unit.estate.name if unit.estate else None
+    estate_id = unit.estate_id
+
     for owner_data in owners:
         person_id = owner_data.get("person_id")
         if person_id:
@@ -1049,14 +1053,21 @@ def create_unit():
                 if not existing_mobile_user:
                     user_success, user_result = create_mobile_user(
                         person_id=person_id,
-                        send_sms=False
+                        send_sms=True,
+                        estate_name=estate_name,
+                        estate_id=estate_id,
+                        unit_id=unit.id,
+                        role="owner",
+                        created_by=getattr(current_user, "id", None),
                     )
                     if user_success:
                         mobile_users_created.append({
                             "person_id": person_id,
                             "role": "owner",
                             "phone_number": user_result["user"].phone_number,
-                            "temporary_password": user_result["temp_password"]
+                            "temporary_password": user_result["temp_password"],
+                            "sms_sent": user_result.get("sms_sent", False),
+                            "sms_error": user_result.get("sms_error"),
                         })
             else:
                 # Log the error but continue with other owners
@@ -1087,14 +1098,21 @@ def create_unit():
                 if not existing_mobile_user:
                     user_success, user_result = create_mobile_user(
                         person_id=person_id,
-                        send_sms=False
+                        send_sms=True,
+                        estate_name=estate_name,
+                        estate_id=estate_id,
+                        unit_id=unit.id,
+                        role="tenant",
+                        created_by=getattr(current_user, "id", None),
                     )
                     if user_success:
                         mobile_users_created.append({
                             "person_id": person_id,
                             "role": "tenant",
                             "phone_number": user_result["user"].phone_number,
-                            "temporary_password": user_result["temp_password"]
+                            "temporary_password": user_result["temp_password"],
+                            "sms_sent": user_result.get("sms_sent", False),
+                            "sms_error": user_result.get("sms_error"),
                         })
             else:
                 # Log the error but continue with other tenants

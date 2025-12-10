@@ -1,5 +1,6 @@
 from .user import User
 from .mobile_user import MobileUser
+from .mobile_invite import MobileInvite
 from .role import Role
 from .estate import Estate
 from .person import Person
@@ -28,6 +29,7 @@ from .communication_type import CommunicationType
 __all__ = [
     "User",
     "MobileUser",
+    "MobileInvite",
     "Role",
     "Estate",
     "Person",

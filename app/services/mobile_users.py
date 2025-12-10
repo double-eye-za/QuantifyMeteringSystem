@@ -11,6 +11,8 @@ from app.utils.password_generator import (
     validate_password_strength,
     validate_phone_number
 )
+from app.services.sms_service import send_welcome_sms
+from app.services.mobile_invites import create_invite
 
 
 def get_mobile_user_by_phone(phone_number: str) -> Optional[MobileUser]:
@@ -54,26 +56,38 @@ def get_mobile_user_by_id(user_id: int) -> Optional[MobileUser]:
 
 def create_mobile_user(
     person_id: int,
-    send_sms: bool = True
+    send_sms: bool = True,
+    estate_name: Optional[str] = None,
+    estate_id: Optional[int] = None,
+    unit_id: Optional[int] = None,
+    role: Optional[str] = None,
+    created_by: Optional[int] = None,
 ) -> Tuple[bool, MobileUser | Dict]:
     """
     Create a new mobile user account for a person.
 
     Generates a temporary password and optionally sends it via SMS.
+    Also creates an invite record for admin tracking.
 
     Args:
         person_id: ID of the person to create account for
         send_sms: Whether to send welcome SMS with password (default: True)
+        estate_name: Name of the estate for personalized SMS message (optional)
+        estate_id: ID of the estate (for invite tracking)
+        unit_id: ID of the unit (for invite tracking)
+        role: 'owner' or 'tenant' (for invite tracking)
+        created_by: User ID who created this account (for invite tracking)
 
     Returns:
         Tuple of (success: bool, mobile_user or error_dict)
-        On success, also returns the temporary password in the dict
+        On success, also returns the temporary password and SMS status in the dict
 
     Example:
-        >>> success, result = create_mobile_user(person_id=5)
+        >>> success, result = create_mobile_user(person_id=5, estate_name="Sunset Estate")
         >>> if success:
         ...     print(f"User created: {result['user'].phone_number}")
         ...     print(f"Temp password: {result['temp_password']}")
+        ...     print(f"SMS sent: {result['sms_sent']}")
     """
     # Validate person exists
     person = Person.query.get(person_id)
@@ -129,16 +143,40 @@ def create_mobile_user(
     db.session.add(mobile_user)
     db.session.commit()
 
-    # TODO: Send SMS in Phase 2
+    # Send welcome SMS with temporary password
+    sms_sent = False
+    sms_error = None
     if send_sms:
-        # from app.services.sms_service import send_welcome_sms
-        # send_welcome_sms(normalized_phone, temp_password)
-        pass
+        sms_success, sms_message = send_welcome_sms(
+            phone_number=normalized_phone,
+            temp_password=temp_password,
+            estate_name=estate_name,
+        )
+        sms_sent = sms_success
+        if not sms_success:
+            sms_error = sms_message
+
+    # Create invite record for admin tracking
+    invite = create_invite(
+        mobile_user_id=mobile_user.id,
+        person_id=person_id,
+        phone_number=normalized_phone,
+        temporary_password=temp_password,
+        estate_id=estate_id,
+        unit_id=unit_id,
+        role=role,
+        sms_sent=sms_sent,
+        sms_error=sms_error,
+        created_by=created_by,
+    )
 
     return True, {
         "user": mobile_user,
-        "temp_password": temp_password,  # Return so caller can send SMS if needed
-        "person": person
+        "temp_password": temp_password,
+        "person": person,
+        "sms_sent": sms_sent,
+        "sms_error": sms_error,
+        "invite": invite,
     }
 
 

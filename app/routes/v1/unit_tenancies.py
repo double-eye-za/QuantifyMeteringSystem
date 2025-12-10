@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import jsonify, request
 from flask_login import login_required, current_user
 
+from ...models import Unit
 from ...services.unit_tenancies import (
     get_unit_tenants,
     add_tenant,
@@ -85,10 +86,20 @@ def add_unit_tenant(unit_id: int):
     existing_mobile_user = get_mobile_user_by_person_id(payload["person_id"])
 
     if not existing_mobile_user:
-        # Create mobile user account (without SMS for now)
+        # Get estate info for personalized SMS and tracking
+        unit = Unit.query.get(unit_id)
+        estate_name = unit.estate.name if unit and unit.estate else None
+        estate_id = unit.estate_id if unit else None
+
+        # Create mobile user account and send welcome SMS
         user_success, user_result = create_mobile_user(
             person_id=payload["person_id"],
-            send_sms=False
+            send_sms=True,
+            estate_name=estate_name,
+            estate_id=estate_id,
+            unit_id=unit_id,
+            role="tenant",
+            created_by=getattr(current_user, "id", None),
         )
 
         if user_success:
@@ -97,7 +108,9 @@ def add_unit_tenant(unit_id: int):
                 "phone_number": user_result["user"].phone_number,
                 "temporary_password": user_result["temp_password"],
                 "password_must_change": True,
-                "message": "Mobile app account created. Please provide the temporary password to the tenant."
+                "sms_sent": user_result.get("sms_sent", False),
+                "sms_error": user_result.get("sms_error"),
+                "message": "Mobile app account created. SMS with temporary password has been sent." if user_result.get("sms_sent") else "Mobile app account created. SMS could not be sent - please provide the temporary password manually."
             }
         else:
             # Log but don't fail the tenant addition if mobile user creation fails

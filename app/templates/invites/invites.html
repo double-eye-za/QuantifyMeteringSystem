@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}Mobile App Invites{% endblock %}
+{% block page_title %}
+Mobile App Invites
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
+  <ol class="flex items-center space-x-2">
+    <li><a href="{{ url_for('api_v1.dashboard') }}" class="hover:underline">Home</a></li>
+    <li>/</li>
+    <li class="text-gray-700 dark:text-gray-300">Mobile Invites</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ stats.total }}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400">Total Invites</div>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ stats.pending }}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400">Pending</div>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.used }}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400">Used</div>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.sms_sent }}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400">SMS Sent</div>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ stats.sms_failed }}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400">SMS Failed</div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex justify-between items-center mb-4">
+  <div class="text-sm text-gray-500 dark:text-gray-400">
+    Showing {{ invites|length }} of {{ pagination.total }} invites
+  </div>
+  {% if has_permission('users.delete') %}
+  <button id="deleteUsedBtn" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
+    <i class="fa-solid fa-trash mr-2"></i>
+    Delete Used Invites
+  </button>
+  {% endif %}
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <form id="filterForm" method="GET" class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <!-- Left side - Search -->
+    <div class="flex-1 max-w-md">
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
+        </div>
+        <input
+          name="q"
+          id="searchInput"
+          class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          placeholder="Search phone number or name..."
+          value="{{ filters.search or '' }}"
+        />
+      </div>
+    </div>
+
+    <!-- Right side - Filters -->
+    <div class="flex items-center gap-3">
+      <!-- Status Filter -->
+      <select
+        id="statusFilter"
+        name="is_used"
+        class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-40 transition-colors"
+      >
+        <option value="" {{ 'selected' if filters.is_used is none else '' }}>All Status</option>
+        <option value="false" {{ 'selected' if filters.is_used == false else '' }}>Pending</option>
+        <option value="true" {{ 'selected' if filters.is_used == true else '' }}>Used</option>
+      </select>
+
+      <!-- Estate Filter -->
+      <select
+        id="estateFilter"
+        name="estate_id"
+        class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 transition-colors"
+      >
+        <option value="">All Estates</option>
+        {% for estate in estates %}
+        <option value="{{ estate.id }}" {{ 'selected' if filters.estate_id == estate.id else '' }}>{{ estate.name }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Filter Button -->
+      <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+        <i class="fas fa-filter mr-2"></i> Filter
+      </button>
+
+      <!-- Clear Filters -->
+      <a href="{{ url_for('api_v1.invites_page') }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+        <i class="fas fa-times mr-2"></i> Clear
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Invites Table -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Person</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Phone</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Password</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estate / Unit</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Role</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">SMS</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Created</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for invite in invites %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <td class="px-4 py-3">
+            <div class="text-gray-900 dark:text-gray-100 font-medium">{{ invite.person.full_name if invite.person else 'Unknown' }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ invite.person.email if invite.person else '' }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <span class="text-gray-900 dark:text-gray-100 font-mono">{{ invite.phone_number }}</span>
+          </td>
+          <td class="px-4 py-3">
+            {% if not invite.is_used %}
+            <div class="flex items-center gap-2">
+              <code class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded font-mono text-sm">{{ invite.temporary_password }}</code>
+              <button onclick="copyPassword('{{ invite.temporary_password }}')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" title="Copy password">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+            </div>
+            {% else %}
+            <span class="text-gray-400 dark:text-gray-500 italic">Used</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="text-gray-900 dark:text-gray-100">{{ invite.estate.name if invite.estate else '-' }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ 'Unit ' + invite.unit.unit_number if invite.unit else '' }}</div>
+          </td>
+          <td class="px-4 py-3">
+            {% if invite.role %}
+            <span class="px-2 py-1 rounded text-xs {{ 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' if invite.role == 'owner' else 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' }}">
+              {{ invite.role|capitalize }}
+            </span>
+            {% else %}
+            <span class="text-gray-400">-</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if invite.sms_sent %}
+            <span class="px-2 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs">
+              <i class="fa-solid fa-check mr-1"></i> Sent
+            </span>
+            {% elif invite.sms_error %}
+            <span class="px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs" title="{{ invite.sms_error }}">
+              <i class="fa-solid fa-times mr-1"></i> Failed
+            </span>
+            {% else %}
+            <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs">
+              Not sent
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if invite.is_used %}
+            <span class="px-2 py-1 rounded bg-green-600 text-white text-xs">
+              Used
+            </span>
+            {% else %}
+            <span class="px-2 py-1 rounded bg-yellow-500 text-white text-xs">
+              Pending
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-900 dark:text-gray-100 text-sm">
+            {{ invite.created_at.strftime('%Y-%m-%d %H:%M') if invite.created_at else '-' }}
+          </td>
+          <td class="px-4 py-3">
+            {% if has_permission('users.delete') %}
+            <button onclick="deleteInvite({{ invite.id }})" class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400 transition-colors" title="Delete invite">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+            No invites found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.total_pages > 1 %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+    <div class="text-sm text-gray-500 dark:text-gray-400">
+      Page {{ pagination.page }} of {{ pagination.total_pages }}
+    </div>
+    <div class="flex gap-2">
+      {% if pagination.has_prev %}
+      <a href="?page={{ pagination.page - 1 }}{% if filters.is_used is not none %}&is_used={{ filters.is_used|lower }}{% endif %}{% if filters.estate_id %}&estate_id={{ filters.estate_id }}{% endif %}{% if filters.search %}&q={{ filters.search }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        Previous
+      </a>
+      {% endif %}
+      {% if pagination.has_next %}
+      <a href="?page={{ pagination.page + 1 }}{% if filters.is_used is not none %}&is_used={{ filters.is_used|lower }}{% endif %}{% if filters.estate_id %}&estate_id={{ filters.estate_id }}{% endif %}{% if filters.search %}&q={{ filters.search }}{% endif %}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+        Next
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Confirm Delete</h3>
+    <p id="deleteModalText" class="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete this invite?</p>
+    <div class="flex justify-end gap-3">
+      <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+        Cancel
+      </button>
+      <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let pendingDeleteId = null;
+  let deleteAllUsed = false;
+
+  function copyPassword(password) {
+    navigator.clipboard.writeText(password).then(() => {
+      // Show brief notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.textContent = 'Password copied!';
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 2000);
+    });
+  }
+
+  function deleteInvite(inviteId) {
+    pendingDeleteId = inviteId;
+    deleteAllUsed = false;
+    document.getElementById('deleteModalText').textContent = 'Are you sure you want to delete this invite?';
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.getElementById('deleteModal').classList.add('flex');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    document.getElementById('deleteModal').classList.remove('flex');
+    pendingDeleteId = null;
+    deleteAllUsed = false;
+  }
+
+  document.getElementById('deleteUsedBtn')?.addEventListener('click', () => {
+    deleteAllUsed = true;
+    pendingDeleteId = null;
+    document.getElementById('deleteModalText').textContent = 'Are you sure you want to delete ALL used invites? This cannot be undone.';
+    document.getElementById('deleteModal').classList.remove('hidden');
+    document.getElementById('deleteModal').classList.add('flex');
+  });
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    try {
+      let url, method;
+      if (deleteAllUsed) {
+        url = '/api/v1/api/invites/used';
+        method = 'DELETE';
+      } else {
+        url = `/api/v1/api/invites/${pendingDeleteId}`;
+        method = 'DELETE';
+      }
+
+      const response = await fetch(url, { method });
+      const data = await response.json();
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert(data.error || 'Failed to delete');
+      }
+    } catch (error) {
+      alert('An error occurred');
+      console.error(error);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Delete';
+      closeDeleteModal();
+    }
+  });
+
+  // Close modal on background click
+  document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('deleteModal')) {
+      closeDeleteModal();
+    }
+  });
+</script>
+{% endblock %}
