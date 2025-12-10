@@ -23,8 +23,13 @@ def get_estate_by_id(estate_id: int):
 
 
 def create_estate(payload: dict, user_id: Optional[int] = None):
+    # Convert empty code to None
+    code = payload.get("code")
+    if code is not None and not code.strip():
+        code = None
+
     estate = Estate(
-        code=payload.get("code"),
+        code=code,
         name=payload.get("name"),
         address=payload.get("address"),
         city=payload.get("city"),
@@ -53,6 +58,12 @@ def create_estate(payload: dict, user_id: Optional[int] = None):
 def update_estate(estate: Estate, payload: dict, user_id: Optional[int] = None):
     old_elec = estate.electricity_rate_table_id
     old_water = estate.water_rate_table_id
+
+    # Convert empty code to None
+    if "code" in payload:
+        code = payload["code"]
+        if code is not None and not code.strip():
+            payload["code"] = None
 
     for field in (
         "code",

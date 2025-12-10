@@ -35,7 +35,7 @@ async function performDeleteEstate() {
 
     const result = await res.json();
 
-    if (res.ok && result.success) {
+    if (res.ok) {
       // Success - hide modal and reload with success message
       hideDeleteEstate();
       showFlashMessage("Estate deleted successfully", "success", true);
@@ -83,7 +83,7 @@ async function saveNewEstate(event) {
 
     const result = await res.json();
 
-    if (res.ok && (result.success || result.id)) {
+    if (res.ok && (result.success || result.data)) {
       // Success - close modal and reload with success message
       closeAddEstateModal();
       showFlashMessage("Estate created successfully", "success", true);
@@ -1367,15 +1367,23 @@ function exportData() {
   window.addEventListener("load", () => {
     // Small delay to ensure DOM is fully rendered
     setTimeout(() => {
-      // Initialize reconciliation with default estate (Willow Creek)
-      updateMTDData("willow");
+      // Only initialize reconciliation if the view exists on the page
+      if (document.getElementById("mtdView")) {
+        updateMTDData("willow");
+      }
     }, 100);
   });
 
   // Handle window resize to redraw charts
   window.addEventListener("resize", () => {
-    const viewType = document.getElementById("viewType").value;
-    const estate = document.getElementById("estateSelect").value;
+    const viewTypeEl = document.getElementById("viewType");
+    const estateSelectEl = document.getElementById("estateSelect");
+
+    // Only run if reconciliation elements exist on the page
+    if (!viewTypeEl || !estateSelectEl) return;
+
+    const viewType = viewTypeEl.value;
+    const estate = estateSelectEl.value;
 
     if (viewType === "mtd") {
       drawDailyTrendChart(reconciliationData[estate].mtd.dailyData);

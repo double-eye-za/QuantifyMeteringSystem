@@ -20,6 +20,8 @@ from .audit_log import AuditLog
 from .ticket_category import TicketCategory
 from .ticket import Ticket
 from .ticket_message import TicketMessage
+from .message import Message
+from .message_recipient import MessageRecipient
 from .system_setting import SystemSetting
 from .meter_alert import MeterAlert
 from .reconciliation_report import ReconciliationReport
@@ -49,6 +51,8 @@ __all__ = [
     "TicketCategory",
     "Ticket",
     "TicketMessage",
+    "Message",
+    "MessageRecipient",
     "SystemSetting",
     "MeterAlert",
     "ReconciliationReport",

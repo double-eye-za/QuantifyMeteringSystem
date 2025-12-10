@@ -29,6 +29,7 @@ from . import unit_tenancies
 from . import device_types
 from . import communication_types
 from . import tickets
+from . import messages
 from . import invites
 
 

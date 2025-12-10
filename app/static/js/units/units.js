@@ -309,7 +309,7 @@ function saveUnit() {
 
       const data = await resp.json();
 
-      if (resp.ok && (data.success || data.id)) {
+      if (resp.ok && data.data) {
         // Success - hide modal and refresh table
         hideAddUnitModal();
 
@@ -466,7 +466,7 @@ function saveEditedUnit() {
 
       const result = await resp.json();
 
-      if (resp.ok && result.success) {
+      if (resp.ok && result.data) {
         // Success - hide modal and refresh table
         hideEditUnitModal();
         showFlashMessage("Unit updated successfully", "success", false);
@@ -565,7 +565,7 @@ window.performDeleteUnit = async function () {
 
     const result = await resp.json();
 
-    if (resp.ok && result.success) {
+    if (resp.ok) {
       // Success - hide modal and refresh table
       window.hideDeleteUnitModal();
       showFlashMessage("Unit deleted successfully", "success", false);

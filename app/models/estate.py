@@ -12,7 +12,7 @@ class Estate(db.Model):
     __tablename__ = "estates"
 
     id: Optional[int]
-    code: str
+    code: Optional[str]
     name: str
     address: Optional[str]
     city: Optional[str]
@@ -35,7 +35,7 @@ class Estate(db.Model):
     updated_at: Optional[datetime]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
-    code = db.Column(db.String(20), unique=True, nullable=False)
+    code = db.Column(db.String(20), nullable=True)
     name = db.Column(db.String(255), nullable=False)
     address = db.Column(db.Text)
     city = db.Column(db.String(100))
