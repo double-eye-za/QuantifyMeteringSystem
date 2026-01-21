@@ -274,6 +274,129 @@ async function handleTopUpSubmit(event) {
   }
 }
 
+// ============================================
+// Relay Control Functions (Disconnect/Reconnect)
+// ============================================
+
+let pendingRelayAction = null; // 'on' or 'off'
+
+function openRelayModal(action) {
+  pendingRelayAction = action;
+  const modal = document.getElementById("relayModal");
+  const title = document.getElementById("relayModalTitle");
+  const actionText = document.getElementById("relayActionText");
+  const confirmBtn = document.getElementById("confirmRelayBtn");
+
+  if (action === "off") {
+    title.innerHTML = '<i class="fas fa-power-off text-red-500 mr-2"></i>Confirm Disconnect';
+    actionText.textContent = "disconnect";
+    confirmBtn.innerHTML = '<i class="fas fa-power-off mr-2"></i>Disconnect';
+    confirmBtn.className = "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700";
+  } else {
+    title.innerHTML = '<i class="fas fa-plug text-green-500 mr-2"></i>Confirm Reconnect';
+    actionText.textContent = "reconnect";
+    confirmBtn.innerHTML = '<i class="fas fa-plug mr-2"></i>Reconnect';
+    confirmBtn.className = "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700";
+  }
+
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeRelayModal() {
+  const modal = document.getElementById("relayModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+  pendingRelayAction = null;
+}
+
+async function sendRelayCommand() {
+  if (!pendingRelayAction) {
+    console.error("No pending relay action");
+    return;
+  }
+
+  const confirmBtn = document.getElementById("confirmRelayBtn");
+  const originalText = confirmBtn.innerHTML;
+  confirmBtn.disabled = true;
+  confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+  try {
+    const response = await fetch(`/api/v1/meters/${window.METER_ID}/relay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: pendingRelayAction,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      const actionWord = pendingRelayAction === "off" ? "disconnect" : "reconnect";
+      alert(
+        `Success! ${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} command queued.\n\n` +
+        `Note: ${result.note || "Command will be delivered on next device uplink."}`
+      );
+      closeRelayModal();
+    } else {
+      alert(`Error: ${result.error || "Failed to send command"}`);
+    }
+  } catch (error) {
+    console.error("Relay command error:", error);
+    alert("Error: Failed to send relay command. Please try again.");
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = originalText;
+  }
+}
+
+function setupRelayControls() {
+  const disconnectBtn = document.getElementById("disconnectBtn");
+  const reconnectBtn = document.getElementById("reconnectBtn");
+  const closeRelayModalBtn = document.getElementById("closeRelayModal");
+  const cancelRelayBtn = document.getElementById("cancelRelayBtn");
+  const confirmRelayBtn = document.getElementById("confirmRelayBtn");
+  const relayModal = document.getElementById("relayModal");
+
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener("click", function () {
+      openRelayModal("off");
+    });
+  }
+
+  if (reconnectBtn) {
+    reconnectBtn.addEventListener("click", function () {
+      openRelayModal("on");
+    });
+  }
+
+  if (closeRelayModalBtn) {
+    closeRelayModalBtn.addEventListener("click", closeRelayModal);
+  }
+
+  if (cancelRelayBtn) {
+    cancelRelayBtn.addEventListener("click", closeRelayModal);
+  }
+
+  if (confirmRelayBtn) {
+    confirmRelayBtn.addEventListener("click", sendRelayCommand);
+  }
+
+  // Close modal when clicking outside
+  if (relayModal) {
+    relayModal.addEventListener("click", function (event) {
+      if (event.target === relayModal) {
+        closeRelayModal();
+      }
+    });
+  }
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
   // Initial data fetch
@@ -285,6 +408,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Start auto-refresh
   startAutoRefresh();
+
+  // Setup Relay Controls (Disconnect/Reconnect)
+  setupRelayControls();
 
   // Top Up Modal Event Listeners
   const topUpBtn = document.getElementById("topUpBtn");

@@ -24,3 +24,8 @@ class Config:
 
     # SMS configuration (Clickatell)
     CLICKATELL_API_KEY = os.getenv("CLICKATELL_API_KEY", "")
+
+    # ChirpStack API configuration (for LoRaWAN device control)
+    CHIRPSTACK_API_URL = os.getenv("CHIRPSTACK_API_URL", "http://localhost:8080")
+    CHIRPSTACK_API_KEY = os.getenv("CHIRPSTACK_API_KEY", "")
+    CHIRPSTACK_PASSTHROUGH_PORT = int(os.getenv("CHIRPSTACK_PASSTHROUGH_PORT", "5"))

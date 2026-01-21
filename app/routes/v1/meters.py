@@ -948,3 +948,75 @@ def meter_chart_data(meter_id: str):
     }
 
     return jsonify(response), 200
+
+
+@api_v1.route("/meters/<meter_id>/relay", methods=["POST"])
+@login_required
+@requires_permission("meters.edit")
+def meter_relay_control(meter_id: str):
+    """
+    Send a relay control command to a meter (disconnect/reconnect power).
+
+    This endpoint sends a Modbus command via LoRaWAN to control the relay
+    on an Eastron SDM320C meter through a Milesight UC100 bridge.
+
+    Expected JSON payload:
+    {
+        "action": "off"  // "off" to disconnect, "on" to reconnect
+    }
+
+    Returns:
+        - 200: Command queued successfully
+        - 400: Invalid action or missing device_eui
+        - 404: Meter not found
+        - 500: ChirpStack API error
+    """
+    from ...services import chirpstack_service
+
+    # Find meter by device_eui, serial_number, or id
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if meter is None:
+        meter = Meter.query.filter_by(serial_number=meter_id).first()
+    if meter is None and meter_id.isdigit():
+        meter = svc_get_meter_by_id(int(meter_id))
+
+    if meter is None:
+        return jsonify({"error": "Meter not found"}), 404
+
+    if not meter.device_eui:
+        return jsonify({"error": "Meter does not have a device EUI configured"}), 400
+
+    # Get action from request
+    data = request.get_json() or {}
+    action = data.get("action", "").lower()
+
+    if action not in ("on", "off"):
+        return jsonify({"error": "Invalid action. Must be 'on' or 'off'"}), 400
+
+    # Send the relay command via ChirpStack
+    success, message = chirpstack_service.send_relay_command(meter.device_eui, action)
+
+    if success:
+        # Log the action
+        log_action(
+            f"meter.relay_{action}",
+            entity_type="meter",
+            entity_id=meter.id,
+            new_values={
+                "device_eui": meter.device_eui,
+                "action": action,
+            },
+        )
+
+        return jsonify({
+            "success": True,
+            "message": f"Relay {action.upper()} command queued successfully",
+            "device_eui": meter.device_eui,
+            "action": action,
+            "note": "Command will be delivered on next device uplink (Class A)"
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "error": message,
+        }), 500
