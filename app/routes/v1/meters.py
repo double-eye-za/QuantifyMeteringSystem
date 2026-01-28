@@ -307,6 +307,7 @@ def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
         (Unit.electricity_meter_id == meter.id)
         | (Unit.water_meter_id == meter.id)
         | (Unit.solar_meter_id == meter.id)
+        | (Unit.hot_water_meter_id == meter.id)
     ).first()
     if current_unit:
         if current_unit.electricity_meter_id == meter.id:
@@ -315,6 +316,8 @@ def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
             current_unit.water_meter_id = None
         if current_unit.solar_meter_id == meter.id:
             current_unit.solar_meter_id = None
+        if current_unit.hot_water_meter_id == meter.id:
+            current_unit.hot_water_meter_id = None
     if unit_id:
         target = Unit.query.get(unit_id)
         if target:
@@ -330,6 +333,10 @@ def _assign_meter_to_unit(meter: Meter, unit_id: int | None):
                 if target.solar_meter_id:
                     raise ValueError("Target unit already has a solar meter")
                 target.solar_meter_id = meter.id
+            elif meter.meter_type == "hot_water":
+                if target.hot_water_meter_id:
+                    raise ValueError("Target unit already has a hot water meter")
+                target.hot_water_meter_id = meter.id
     from ...db import db
 
     db.session.commit()
@@ -1019,4 +1026,98 @@ def meter_relay_control(meter_id: str):
         return jsonify({
             "success": False,
             "error": message,
+        }), 500
+
+
+@api_v1.route("/meters/prepaid/zero-balance-report", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def get_zero_balance_report():
+    """
+    Get a report of all electricity meters with zero or negative balance.
+    These are meters that would be disconnected by the scheduled task.
+
+    This is a DRY RUN - no actual disconnects are performed.
+
+    Returns:
+        JSON list of meters with zero/negative electricity balance
+    """
+    from ...db import db
+
+    try:
+        # Find all units with electricity meters that have zero or negative balance
+        zero_balance_units = (
+            db.session.query(Unit, Wallet, Meter)
+            .join(Wallet, Unit.id == Wallet.unit_id)
+            .join(Meter, Unit.electricity_meter_id == Meter.id)
+            .filter(
+                Wallet.electricity_balance <= 0,  # Zero or negative balance
+                Meter.device_eui.isnot(None),     # Has LoRaWAN device
+                Meter.is_active == True,          # Meter is active
+                Unit.is_active == True,           # Unit is active
+            )
+            .all()
+        )
+
+        report = []
+        for unit, wallet, meter in zero_balance_units:
+            # Get estate name
+            estate = Estate.query.get(unit.estate_id)
+
+            report.append({
+                'unit_id': unit.id,
+                'unit_number': unit.unit_number,
+                'estate_id': unit.estate_id,
+                'estate_name': estate.estate_name if estate else None,
+                'meter_id': meter.id,
+                'meter_serial': meter.serial_number,
+                'device_eui': meter.device_eui,
+                'electricity_balance': float(wallet.electricity_balance),
+                'total_balance': float(wallet.balance),
+                'can_disconnect': True,  # Has device_eui, so can be controlled
+            })
+
+        return jsonify({
+            'success': True,
+            'total_meters': len(report),
+            'note': 'This is a report only - no disconnects performed',
+            'meters': report,
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+        }), 500
+
+
+@api_v1.route("/meters/prepaid/test-disconnect-check", methods=["POST"])
+@login_required
+@requires_permission("meters.edit")
+def test_disconnect_check():
+    """
+    Manually trigger the zero balance disconnect check task (for testing).
+
+    This triggers the same task that runs at 6 AM daily.
+    NOTE: The actual disconnect is COMMENTED OUT in the task for safety.
+
+    Returns:
+        Task result with list of meters that would be disconnected
+    """
+    from ...tasks.prepaid_disconnect_tasks import disconnect_zero_balance_meters
+
+    try:
+        # Run the task synchronously for immediate feedback
+        result = disconnect_zero_balance_meters.apply().get(timeout=60)
+
+        return jsonify({
+            'success': True,
+            'message': 'Disconnect check completed (dry run mode)',
+            'result': result,
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
         }), 500

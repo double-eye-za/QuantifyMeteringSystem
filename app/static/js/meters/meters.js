@@ -313,7 +313,7 @@ async function submitEditMeter() {
 
     const result = await resp.json();
 
-    if (resp.ok && result.success) {
+    if (resp.ok) {
       // Success - hide modal and refresh table
       hideEditMeter();
       const successMessage = result.message || "Meter updated successfully";
