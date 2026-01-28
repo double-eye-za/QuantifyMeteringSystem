@@ -1,5 +1,6 @@
 const BASE_URL = "/api/v1/meters";
 const API_URL = "/api/v1/api/meters";
+const UNITS_API_URL = "/api/v1/api/meters/units-availability";
 
 // Global table filter instance
 let metersTableFilter = null;
@@ -149,6 +150,7 @@ function openEditMeterFromData(data) {
   const editModal = document.getElementById("editMeterModal");
   const form = document.getElementById("editMeterForm");
   form.elements.id.value = data.id;
+  form.elements.device_eui.value = data.device_eui || "";
   form.elements.serial_number.value = data.serial_number || "";
   form.elements.meter_type.value = data.meter_type || "";
   form.elements.installation_date.value =
@@ -159,9 +161,15 @@ function openEditMeterFromData(data) {
     form.elements.estate_id.value = data.unit.estate_id;
   } else if (data.assigned_estate && data.assigned_estate.id) {
     form.elements.estate_id.value = data.assigned_estate.id;
+  } else {
+    form.elements.estate_id.value = "";
   }
+  // Filter units by estate first, then set the unit value
+  filterUnitsByEstate(form);
   if (data.unit && data.unit.id) {
     form.elements.unit_id.value = data.unit.id;
+  } else {
+    form.elements.unit_id.value = "";
   }
   editModal.classList.remove("hidden");
   editModal.classList.add("flex");
@@ -174,6 +182,52 @@ function refreshMetersTable() {
     metersTableFilter.refresh();
   } else {
     window.location.reload();
+  }
+}
+
+// Refresh unit dropdowns with fresh data from server
+async function refreshUnitDropdowns() {
+  try {
+    const resp = await fetch(UNITS_API_URL);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const units = data.units || [];
+
+    // Update both create and edit form dropdowns
+    ['createMeterForm', 'editMeterForm'].forEach(formId => {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      const unitSelect = form.elements.unit_id;
+      if (!unitSelect) return;
+
+      // Preserve current selection
+      const currentValue = unitSelect.value;
+
+      // Clear existing options except the first "Unassigned" option
+      while (unitSelect.options.length > 1) {
+        unitSelect.remove(1);
+      }
+
+      // Add fresh unit options
+      units.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `Unit ${u.unit_number} (${u.estate_name})`;
+        opt.setAttribute('data-estate-id', u.estate_id);
+        opt.setAttribute('data-has-electricity', u.has_electricity ? '1' : '0');
+        opt.setAttribute('data-has-water', u.has_water ? '1' : '0');
+        opt.setAttribute('data-has-solar', u.has_solar ? '1' : '0');
+        opt.setAttribute('data-has-hot-water', u.has_hot_water ? '1' : '0');
+        unitSelect.appendChild(opt);
+      });
+
+      // Restore selection if it still exists
+      if (currentValue) {
+        unitSelect.value = currentValue;
+      }
+    });
+  } catch (e) {
+    console.error('Error refreshing unit dropdowns:', e);
   }
 }
 
@@ -195,6 +249,7 @@ function openEditMeter(btn) {
   const editModal = document.getElementById("editMeterModal");
   const form = document.getElementById("editMeterForm");
   form.elements.id.value = data.id;
+  form.elements.device_eui.value = data.device_eui || "";
   form.elements.serial_number.value = data.serial_number || "";
   form.elements.meter_type.value = data.meter_type || "";
   form.elements.installation_date.value =
@@ -205,9 +260,15 @@ function openEditMeter(btn) {
     form.elements.estate_id.value = data.unit.estate_id;
   } else if (data.assigned_estate && data.assigned_estate.id) {
     form.elements.estate_id.value = data.assigned_estate.id;
+  } else {
+    form.elements.estate_id.value = "";
   }
+  // Filter units by estate first, then set the unit value
+  filterUnitsByEstate(form);
   if (data.unit && data.unit.id) {
     form.elements.unit_id.value = data.unit.id;
+  } else {
+    form.elements.unit_id.value = "";
   }
   editModal.classList.remove("hidden");
   editModal.classList.add("flex");
@@ -254,15 +315,55 @@ function refreshUnitDisableState(scope) {
   });
 }
 
+// Filter units dropdown by selected estate
+function filterUnitsByEstate(form) {
+  const estateSelect = form.elements.estate_id;
+  const unitSelect = form.elements.unit_id;
+  const selectedEstateId = estateSelect.value;
+  const currentUnitId = unitSelect.value;
+
+  // Show/hide unit options based on estate
+  Array.from(unitSelect.options).forEach((opt) => {
+    if (!opt.value) {
+      // Always show the "-- Unassigned --" option
+      opt.style.display = "";
+      return;
+    }
+    const optEstateId = opt.getAttribute("data-estate-id");
+    if (!selectedEstateId || optEstateId === selectedEstateId) {
+      opt.style.display = "";
+    } else {
+      opt.style.display = "none";
+      // If currently selected unit is now hidden, reset selection
+      if (opt.value === currentUnitId) {
+        unitSelect.value = "";
+      }
+    }
+  });
+
+  // Also refresh the disable state based on meter type
+  refreshUnitDisableState(form);
+}
+
 document
   .getElementById("createMeterForm")
   ?.elements.meter_type?.addEventListener("change", () =>
     refreshUnitDisableState(document.getElementById("createMeterForm"))
   );
 document
+  .getElementById("createMeterForm")
+  ?.elements.estate_id?.addEventListener("change", () =>
+    filterUnitsByEstate(document.getElementById("createMeterForm"))
+  );
+document
   .getElementById("editMeterForm")
   ?.elements.meter_type?.addEventListener("change", () =>
     refreshUnitDisableState(document.getElementById("editMeterForm"))
+  );
+document
+  .getElementById("editMeterForm")
+  ?.elements.estate_id?.addEventListener("change", () =>
+    filterUnitsByEstate(document.getElementById("editMeterForm"))
   );
 
 async function submitCreateMeter() {
@@ -280,11 +381,12 @@ async function submitCreateMeter() {
     const result = await resp.json();
 
     if (resp.ok && (result.success || result.id)) {
-      // Success - hide modal and refresh table
+      // Success - hide modal and refresh table and unit dropdowns
       hideCreateMeter();
       const successMessage = result.message || "Meter created successfully";
       showFlashMessage(successMessage, "success", false);
       refreshMetersTable();
+      refreshUnitDropdowns();
     } else {
       // Error - show message immediately WITHOUT reload
       const errorMessage = result.error || result.message || "Failed to create meter. Please check the form and try again.";
@@ -314,11 +416,12 @@ async function submitEditMeter() {
     const result = await resp.json();
 
     if (resp.ok) {
-      // Success - hide modal and refresh table
+      // Success - hide modal and refresh table and unit dropdowns
       hideEditMeter();
       const successMessage = result.message || "Meter updated successfully";
       showFlashMessage(successMessage, "success", false);
       refreshMetersTable();
+      refreshUnitDropdowns();
     } else {
       // Error - show message immediately WITHOUT reload
       const errorMessage = result.error || result.message || "Failed to update meter. Please try again.";
@@ -341,10 +444,11 @@ async function performDeleteMeter() {
     const result = await resp.json();
 
     if (resp.ok && result.success) {
-      // Success - hide modal and refresh table
+      // Success - hide modal and refresh table and unit dropdowns
       hideDeleteMeter();
       showFlashMessage("Meter deleted successfully", "success", false);
       refreshMetersTable();
+      refreshUnitDropdowns();
     } else {
       // Error - show message immediately WITHOUT reload
       hideDeleteMeter();

@@ -112,14 +112,21 @@ def meters_page():
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
 
-    # Units availability
+    # Units availability - join with Estate to get estate name
     units_info = []
-    for u in Unit.query.order_by(Unit.unit_number.asc()).all():
+    units_with_estates = (
+        Unit.query
+        .join(Estate, Unit.estate_id == Estate.id)
+        .order_by(Estate.name.asc(), Unit.unit_number.asc())
+        .all()
+    )
+    for u in units_with_estates:
         units_info.append(
             {
                 "id": u.id,
                 "unit_number": u.unit_number,
                 "estate_id": u.estate_id,
+                "estate_name": u.estate.name if u.estate else "",
                 "has_electricity": bool(u.electricity_meter_id),
                 "has_water": bool(u.water_meter_id),
                 "has_solar": bool(u.solar_meter_id),
@@ -196,6 +203,32 @@ def list_meters_api():
         "total": meta["total"],
         "total_pages": meta["pages"],
     })
+
+
+@api_v1.route("/api/meters/units-availability", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def get_units_availability():
+    """Get fresh unit availability data for meter assignment dropdowns."""
+    units_with_estates = (
+        Unit.query
+        .join(Estate, Unit.estate_id == Estate.id)
+        .order_by(Estate.name.asc(), Unit.unit_number.asc())
+        .all()
+    )
+    units_info = []
+    for u in units_with_estates:
+        units_info.append({
+            "id": u.id,
+            "unit_number": u.unit_number,
+            "estate_id": u.estate_id,
+            "estate_name": u.estate.name if u.estate else "",
+            "has_electricity": bool(u.electricity_meter_id),
+            "has_water": bool(u.water_meter_id),
+            "has_solar": bool(u.solar_meter_id),
+            "has_hot_water": bool(u.hot_water_meter_id),
+        })
+    return jsonify({"units": units_info})
 
 
 @api_v1.route("/meters/<meter_id>/details", methods=["GET"])
@@ -382,6 +415,16 @@ def create_meter():
     missing = [f for f in required if not payload.get(f)]
     if missing:
         return jsonify({"message": f"Missing fields: {', '.join(missing)}"}), 400
+
+    # Validate device_eui length (LoRaWAN EUI-64 = 16 hex characters)
+    device_eui = payload.get("device_eui", "").strip()
+    if device_eui:
+        # Clean and validate device_eui
+        device_eui = device_eui.lower().replace(":", "").replace("-", "")
+        if len(device_eui) != 16 or not all(c in "0123456789abcdef" for c in device_eui):
+            return jsonify({"message": "Device EUI must be exactly 16 hexadecimal characters"}), 400
+        payload["device_eui"] = device_eui
+
     status = (payload.get("status") or "").lower()
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
@@ -427,7 +470,18 @@ def update_meter(meter_id: int):
     if status in ("active", "inactive"):
         payload["is_active"] = status == "active"
 
-    for f in ("serial_number", "meter_type", "installation_date", "is_active"):
+    # Validate device_eui if provided
+    device_eui = payload.get("device_eui", "").strip() if payload.get("device_eui") else ""
+    if device_eui:
+        device_eui = device_eui.lower().replace(":", "").replace("-", "")
+        if len(device_eui) != 16 or not all(c in "0123456789abcdef" for c in device_eui):
+            return jsonify({"message": "Device EUI must be exactly 16 hexadecimal characters"}), 400
+        payload["device_eui"] = device_eui
+    elif "device_eui" in payload:
+        # Allow clearing device_eui by setting to empty string or null
+        payload["device_eui"] = None
+
+    for f in ("serial_number", "meter_type", "installation_date", "is_active", "device_eui"):
         if f in payload:
             setattr(meter, f, payload[f])
     from ...db import db
@@ -435,7 +489,7 @@ def update_meter(meter_id: int):
     try:
         db.session.commit()
     except IntegrityError:
-        return jsonify({"message": "Serial number already exists"}), 409
+        return jsonify({"message": "Serial number or Device EUI already exists"}), 409
     except Exception as e:
         return jsonify({"message": str(e)}), 400
     # Handle assignment changes
