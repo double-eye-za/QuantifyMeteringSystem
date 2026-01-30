@@ -217,6 +217,88 @@ def get_application(application_id: str) -> Tuple[bool, Any]:
     return _make_request("GET", f"/api/applications/{application_id}")
 
 
+def create_application(
+    name: str,
+    description: str = "",
+) -> Tuple[bool, Any]:
+    """
+    Create a new application in ChirpStack.
+
+    Args:
+        name: Application name
+        description: Application description (optional)
+
+    Returns:
+        Tuple of (success, application data or error message)
+    """
+    config = get_config()
+
+    if not config.get("tenant_id"):
+        return False, "ChirpStack tenant_id not configured"
+
+    application_data = {
+        "application": {
+            "name": name,
+            "description": description,
+            "tenantId": config["tenant_id"],
+        }
+    }
+
+    success, result = _make_request("POST", "/api/applications", json_data=application_data)
+
+    if success:
+        logger.info(f"Application '{name}' created successfully in ChirpStack")
+        return True, result
+
+    return False, result
+
+
+def update_application(
+    application_id: str,
+    name: str,
+    description: str = "",
+) -> Tuple[bool, Any]:
+    """
+    Update an existing application in ChirpStack.
+
+    Args:
+        application_id: The application ID
+        name: New application name
+        description: New application description
+
+    Returns:
+        Tuple of (success, result or error message)
+    """
+    application_data = {
+        "application": {
+            "id": application_id,
+            "name": name,
+            "description": description,
+        }
+    }
+
+    return _make_request("PUT", f"/api/applications/{application_id}", json_data=application_data)
+
+
+def delete_application(application_id: str) -> Tuple[bool, str]:
+    """
+    Delete an application from ChirpStack.
+
+    Args:
+        application_id: The application ID
+
+    Returns:
+        Tuple of (success, message)
+    """
+    success, result = _make_request("DELETE", f"/api/applications/{application_id}")
+
+    if success:
+        logger.info(f"Application {application_id} deleted from ChirpStack")
+        return True, "Application deleted successfully"
+
+    return False, result
+
+
 # =============================================================================
 # DEVICE PROFILE MANAGEMENT
 # =============================================================================

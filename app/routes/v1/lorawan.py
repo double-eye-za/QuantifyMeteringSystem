@@ -85,6 +85,93 @@ def list_applications():
     }), 500
 
 
+@api_v1.route("/api/lorawan/applications", methods=["POST"])
+@login_required
+@requires_permission("meters.manage")
+def create_application():
+    """Create a new application in ChirpStack."""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    name = data.get("name")
+    if not name:
+        return jsonify({"success": False, "error": "Application name is required"}), 400
+
+    description = data.get("description", "")
+
+    success, result = chirpstack_service.create_application(
+        name=name,
+        description=description,
+    )
+
+    if success:
+        return jsonify({
+            "success": True,
+            "message": "Application created successfully",
+            "application": result,
+        }), 201
+
+    return jsonify({
+        "success": False,
+        "error": result,
+    }), 500
+
+
+@api_v1.route("/api/lorawan/applications/<application_id>", methods=["PUT"])
+@login_required
+@requires_permission("meters.manage")
+def update_application(application_id):
+    """Update an existing application in ChirpStack."""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"success": False, "error": "No data provided"}), 400
+
+    name = data.get("name")
+    if not name:
+        return jsonify({"success": False, "error": "Application name is required"}), 400
+
+    description = data.get("description", "")
+
+    success, result = chirpstack_service.update_application(
+        application_id=application_id,
+        name=name,
+        description=description,
+    )
+
+    if success:
+        return jsonify({
+            "success": True,
+            "message": "Application updated successfully",
+        }), 200
+
+    return jsonify({
+        "success": False,
+        "error": result,
+    }), 500
+
+
+@api_v1.route("/api/lorawan/applications/<application_id>", methods=["DELETE"])
+@login_required
+@requires_permission("meters.manage")
+def delete_application(application_id):
+    """Delete an application from ChirpStack."""
+    success, result = chirpstack_service.delete_application(application_id)
+
+    if success:
+        return jsonify({
+            "success": True,
+            "message": result,
+        }), 200
+
+    return jsonify({
+        "success": False,
+        "error": result,
+    }), 500
+
+
 # =============================================================================
 # DEVICE PROFILES
 # =============================================================================
