@@ -30,6 +30,7 @@ def get_config() -> Dict[str, Any]:
     return {
         "api_url": current_app.config.get("CHIRPSTACK_API_URL", "http://localhost:8090"),
         "api_key": current_app.config.get("CHIRPSTACK_API_KEY", ""),
+        "tenant_id": current_app.config.get("CHIRPSTACK_TENANT_ID", ""),
         "passthrough_port": current_app.config.get("CHIRPSTACK_PASSTHROUGH_PORT", 5),
     }
 
@@ -193,10 +194,17 @@ def list_applications(limit: int = 100) -> Tuple[bool, Any]:
     Returns:
         Tuple of (success, list of applications or error message)
     """
+    config = get_config()
+    params = {"limit": limit}
+
+    # ChirpStack v4 requires tenantId for listing applications
+    if config.get("tenant_id"):
+        params["tenantId"] = config["tenant_id"]
+
     success, result = _make_request(
         "GET",
         "/api/applications",
-        params={"limit": limit},
+        params=params,
     )
 
     if success:
@@ -220,10 +228,17 @@ def list_device_profiles(limit: int = 100) -> Tuple[bool, Any]:
     Returns:
         Tuple of (success, list of device profiles or error message)
     """
+    config = get_config()
+    params = {"limit": limit}
+
+    # ChirpStack v4 requires tenantId for listing device profiles
+    if config.get("tenant_id"):
+        params["tenantId"] = config["tenant_id"]
+
     success, result = _make_request(
         "GET",
         "/api/device-profiles",
-        params={"limit": limit},
+        params=params,
     )
 
     if success:
