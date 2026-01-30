@@ -45,6 +45,14 @@ def lorawan_devices_page():
     return render_template("lorawan/devices.html")
 
 
+@api_v1.route("/lorawan/applications", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def lorawan_applications_page():
+    """Render the LoRaWAN applications management page."""
+    return render_template("lorawan/applications.html")
+
+
 # =============================================================================
 # CONNECTION TEST
 # =============================================================================
