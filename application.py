@@ -1,4 +1,9 @@
 from __future__ import annotations
+from dotenv import load_dotenv
+
+# Load environment variables from .env file BEFORE importing Config
+load_dotenv()
+
 from flask import Flask, render_template
 from config import Config
 from app.db import db
@@ -8,10 +13,6 @@ import os
 from flask_migrate import Migrate
 from datetime import timedelta
 from flask_login import current_user
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Celery instance (will be initialized with app context)
 celery = None
