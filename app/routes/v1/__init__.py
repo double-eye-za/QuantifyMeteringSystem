@@ -31,6 +31,7 @@ from . import communication_types
 from . import tickets
 from . import messages
 from . import invites
+from . import lorawan
 
 
 @login_manager.unauthorized_handler

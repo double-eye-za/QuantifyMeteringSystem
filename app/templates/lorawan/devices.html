@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}LoRaWAN Devices - Quantify Metering System{% endblock %}
+
+{% block page_title %}LoRaWAN Devices{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Dashboard</a>
+<span class="mx-2">/</span>
+<a href="{{ url_for('api_v1.lorawan_page') }}" class="hover:text-primary">LoRaWAN</a>
+<span class="mx-2">/</span>
+<span class="text-gray-500 dark:text-gray-400">Devices</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-gray-500 dark:text-gray-400">Manage your LoRaWAN devices (meters, sensors)</p>
+        </div>
+        <button onclick="openAddDeviceModal()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+            <i class="fas fa-plus mr-2"></i> Add Device
+        </button>
+    </div>
+
+    <!-- Devices Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Device EUI</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Seen</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Device Profile</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="devicesTable" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                            <p>Loading devices...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Device Modal -->
+<div id="addDeviceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add New Device</h3>
+        </div>
+        <form id="addDeviceForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device EUI *</label>
+                <input type="text" name="device_eui" required maxlength="16" pattern="[0-9a-fA-F]{16}"
+                    placeholder="e.g., 24e124621f170095"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">16 hexadecimal characters (found on device label)</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                <input type="text" name="name" required
+                    placeholder="e.g., Meter-Unit-A101"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application *</label>
+                <select name="application_id" required id="applicationSelect"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">Loading applications...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device Profile *</label>
+                <select name="device_profile_id" required id="deviceProfileSelect"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">Loading device profiles...</option>
+                </select>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Defines device capabilities and codec</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Join EUI (AppEUI)</label>
+                <input type="text" name="join_eui" maxlength="16" pattern="[0-9a-fA-F]{16}"
+                    placeholder="e.g., 24e124c0002a0001"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required for OTAA devices (found on device label)</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application Key (AppKey)</label>
+                <input type="text" name="app_key" maxlength="32" pattern="[0-9a-fA-F]{32}"
+                    placeholder="e.g., 2b7e151628aed2a6abf7158809cf4f3c"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">32 hex characters for OTAA authentication</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea name="description" rows="2"
+                    placeholder="Optional description"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <button type="button" onclick="closeAddDeviceModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+                Cancel
+            </button>
+            <button type="button" onclick="submitAddDevice()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                <i class="fas fa-plus mr-2"></i> Add Device
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Set Keys Modal -->
+<div id="setKeysModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Set Device Keys</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Device: <code id="setKeysDeviceEui" class="font-mono"></code></p>
+        </div>
+        <form id="setKeysForm" class="p-6 space-y-4">
+            <input type="hidden" name="device_eui" id="setKeysDeviceEuiInput">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application Key (AppKey) *</label>
+                <input type="text" name="app_key" required maxlength="32" pattern="[0-9a-fA-F]{32}"
+                    placeholder="32 hex characters"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <button type="button" onclick="closeSetKeysModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+                Cancel
+            </button>
+            <button type="button" onclick="submitSetKeys()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                <i class="fas fa-key mr-2"></i> Set Keys
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let applications = [];
+let deviceProfiles = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDevices();
+    loadApplications();
+    loadDeviceProfiles();
+
+    // Check if we should open add modal
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add') {
+        openAddDeviceModal();
+    }
+});
+
+function loadDevices() {
+    fetch('/api/v1/api/lorawan/devices')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('devicesTable');
+            if (!data.success || !data.devices || data.devices.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-microchip text-4xl mb-3 opacity-50"></i>
+                            <p class="mb-2">No devices found</p>
+                            <button onclick="openAddDeviceModal()" class="text-primary hover:underline">
+                                Add your first device
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.devices.map(device => {
+                const lastSeen = device.lastSeenAt ? new Date(device.lastSeenAt).toLocaleString() : 'Never';
+                const isOnline = device.lastSeenAt && (new Date() - new Date(device.lastSeenAt)) < 5 * 60 * 1000;
+                const profileName = device.deviceProfileName || 'Unknown';
+
+                return `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <code class="text-sm font-mono text-gray-900 dark:text-white">${device.devEui}</code>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">${device.name}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">${device.description || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                device.isDisabled
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                    : isOnline
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                            }">
+                                <span class="w-2 h-2 rounded-full mr-1.5 ${
+                                    device.isDisabled ? 'bg-red-500' : isOnline ? 'bg-green-500' : 'bg-gray-400'
+                                }"></span>
+                                ${device.isDisabled ? 'Disabled' : isOnline ? 'Online' : 'Offline'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            ${lastSeen}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            ${profileName}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                            <button onclick="openSetKeysModal('${device.devEui}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Set Keys">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            <button onclick="deleteDevice('${device.devEui}', '${device.name}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        })
+        .catch(error => {
+            console.error('Error loading devices:', error);
+            document.getElementById('devicesTable').innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading devices</p>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadApplications() {
+    fetch('/api/v1/api/lorawan/applications')
+        .then(response => response.json())
+        .then(data => {
+            applications = data.applications || [];
+            const select = document.getElementById('applicationSelect');
+            if (applications.length === 0) {
+                select.innerHTML = '<option value="">No applications available</option>';
+            } else {
+                select.innerHTML = applications.map(app =>
+                    `<option value="${app.id}">${app.name}</option>`
+                ).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading applications:', error);
+            document.getElementById('applicationSelect').innerHTML = '<option value="">Error loading</option>';
+        });
+}
+
+function loadDeviceProfiles() {
+    fetch('/api/v1/api/lorawan/device-profiles')
+        .then(response => response.json())
+        .then(data => {
+            deviceProfiles = data.deviceProfiles || [];
+            const select = document.getElementById('deviceProfileSelect');
+            if (deviceProfiles.length === 0) {
+                select.innerHTML = '<option value="">No device profiles available</option>';
+            } else {
+                select.innerHTML = deviceProfiles.map(profile =>
+                    `<option value="${profile.id}">${profile.name}</option>`
+                ).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading device profiles:', error);
+            document.getElementById('deviceProfileSelect').innerHTML = '<option value="">Error loading</option>';
+        });
+}
+
+function openAddDeviceModal() {
+    document.getElementById('addDeviceModal').classList.remove('hidden');
+    document.getElementById('addDeviceModal').classList.add('flex');
+}
+
+function closeAddDeviceModal() {
+    document.getElementById('addDeviceModal').classList.add('hidden');
+    document.getElementById('addDeviceModal').classList.remove('flex');
+    document.getElementById('addDeviceForm').reset();
+}
+
+function submitAddDevice() {
+    const form = document.getElementById('addDeviceForm');
+    const formData = new FormData(form);
+
+    const data = {
+        device_eui: formData.get('device_eui'),
+        name: formData.get('name'),
+        application_id: formData.get('application_id'),
+        device_profile_id: formData.get('device_profile_id'),
+        description: formData.get('description'),
+    };
+
+    if (formData.get('join_eui')) data.join_eui = formData.get('join_eui');
+    if (formData.get('app_key')) data.app_key = formData.get('app_key');
+
+    fetch('/api/v1/api/lorawan/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeAddDeviceModal();
+            loadDevices();
+            let message = 'Device created successfully';
+            if (result.warning) message += '\n\nWarning: ' + result.warning;
+            showNotification(message, result.warning ? 'warning' : 'success');
+        } else {
+            showNotification(result.error || 'Failed to create device', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error creating device', 'error');
+    });
+}
+
+function openSetKeysModal(deviceEui) {
+    document.getElementById('setKeysDeviceEui').textContent = deviceEui;
+    document.getElementById('setKeysDeviceEuiInput').value = deviceEui;
+    document.getElementById('setKeysModal').classList.remove('hidden');
+    document.getElementById('setKeysModal').classList.add('flex');
+}
+
+function closeSetKeysModal() {
+    document.getElementById('setKeysModal').classList.add('hidden');
+    document.getElementById('setKeysModal').classList.remove('flex');
+    document.getElementById('setKeysForm').reset();
+}
+
+function submitSetKeys() {
+    const form = document.getElementById('setKeysForm');
+    const formData = new FormData(form);
+    const deviceEui = formData.get('device_eui');
+
+    fetch(`/api/v1/api/lorawan/devices/${deviceEui}/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            app_key: formData.get('app_key')
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeSetKeysModal();
+            showNotification('Device keys set successfully', 'success');
+        } else {
+            showNotification(result.error || 'Failed to set keys', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error setting keys', 'error');
+    });
+}
+
+function deleteDevice(deviceEui, name) {
+    if (!confirm(`Are you sure you want to delete device "${name}"?\n\nDevice EUI: ${deviceEui}\n\nThis will remove it from ChirpStack.`)) {
+        return;
+    }
+
+    fetch(`/api/v1/api/lorawan/devices/${deviceEui}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            loadDevices();
+            showNotification('Device deleted successfully', 'success');
+        } else {
+            showNotification(result.error || 'Failed to delete device', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error deleting device', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    // Simple notification - you can enhance this with your existing notification system
+    alert(message);
+}
+</script>
+{% endblock %}
