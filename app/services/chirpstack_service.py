@@ -264,17 +264,34 @@ def list_devices(
     List devices in ChirpStack.
 
     Args:
-        application_id: Filter by application (optional)
+        application_id: Filter by application (optional, but required by ChirpStack v4)
         limit: Maximum number of devices to return
         offset: Offset for pagination
 
     Returns:
         Tuple of (success, list of devices or error message)
     """
-    params = {"limit": limit, "offset": offset}
-    if application_id:
-        params["applicationId"] = application_id
+    # If no application_id provided, fetch devices from all applications
+    if not application_id:
+        # First get all applications
+        success, applications = list_applications(limit=100)
+        if not success:
+            return False, applications
 
+        # Collect devices from all applications
+        all_devices = []
+        for app in applications:
+            app_id = app.get("id")
+            if app_id:
+                params = {"limit": limit, "offset": offset, "applicationId": app_id}
+                success, result = _make_request("GET", "/api/devices", params=params)
+                if success:
+                    all_devices.extend(result.get("result", []))
+
+        return True, all_devices
+
+    # If application_id provided, fetch devices from that application
+    params = {"limit": limit, "offset": offset, "applicationId": application_id}
     success, result = _make_request("GET", "/api/devices", params=params)
 
     if success:
