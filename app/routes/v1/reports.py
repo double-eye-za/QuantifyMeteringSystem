@@ -475,7 +475,25 @@ def get_financial_reports(start_date, end_date, estate_id, page=1, per_page=10):
         per_page
     )
 
-    reports["credit_purchases"] = paginated_purchases.all()
+    # Convert to list for template use
+    credit_purchases_raw = paginated_purchases.all()
+    reports["credit_purchases"] = credit_purchases_raw
+
+    # Also create JSON-serializable version for JavaScript charts
+    reports["credit_purchases_json"] = [
+        {
+            "transaction_number": row.transaction_number,
+            "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+            "unit_number": row.unit_number,
+            "estate_name": row.estate_name,
+            "amount": float(row.amount) if row.amount else 0,
+            "payment_method": row.payment_method,
+            "status": row.status,
+            "description": row.description,
+        }
+        for row in credit_purchases_raw
+    ]
+
     reports["credit_purchases_pagination"] = {
         "total": total_purchases,
         "page": page,
@@ -816,7 +834,22 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
     if estate_id:
         estate_utility_summary = estate_utility_summary.filter(Estate.id == estate_id)
 
-    reports["estate_utility_summary"] = estate_utility_summary.all()
+    estate_utility_summary_raw = estate_utility_summary.all()
+    reports["estate_utility_summary"] = estate_utility_summary_raw
+
+    # Also create JSON-serializable version for JavaScript charts
+    reports["estate_utility_summary_json"] = [
+        {
+            "estate_name": row.estate_name,
+            "total_electricity": float(row.total_electricity) if row.total_electricity else 0,
+            "total_water": float(row.total_water) if row.total_water else 0,
+            "total_hot_water": float(row.total_hot_water) if row.total_hot_water else 0,
+            "total_solar": float(row.total_solar) if row.total_solar else 0,
+            "total_units": row.total_units or 0,
+            "occupied_units": row.occupied_units or 0,
+        }
+        for row in estate_utility_summary_raw
+    ]
 
     # Communal Usage Report
     communal_usage = []

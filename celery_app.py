@@ -22,7 +22,10 @@ def make_celery(app_name: str = __name__) -> Celery:
         app_name,
         broker=Config.CELERY_BROKER_URL,
         backend=Config.CELERY_RESULT_BACKEND,
-        include=['app.tasks.notification_tasks']
+        include=[
+            'app.tasks.notification_tasks',
+            'app.tasks.prepaid_disconnect_tasks',
+        ]
     )
 
     # Celery configuration
@@ -46,6 +49,13 @@ def make_celery(app_name: str = __name__) -> Celery:
             'schedule': crontab(hour=6, minute=0),
             'options': {'queue': 'notifications'}
         },
+        # Disconnect zero balance electricity meters at 6 AM
+        # NOTE: Actual disconnect is COMMENTED OUT in the task for safety
+        'disconnect-zero-balance-meters': {
+            'task': 'app.tasks.prepaid_disconnect_tasks.disconnect_zero_balance_meters',
+            'schedule': crontab(hour=6, minute=0),
+            'options': {'queue': 'prepaid'}
+        },
         # Analyze high usage patterns every night at 7 AM
         'analyze-high-usage-daily': {
             'task': 'app.tasks.notification_tasks.analyze_high_usage',
@@ -62,6 +72,7 @@ def make_celery(app_name: str = __name__) -> Celery:
 
     celery.conf.task_routes = {
         'app.tasks.notification_tasks.*': {'queue': 'notifications'},
+        'app.tasks.prepaid_disconnect_tasks.*': {'queue': 'prepaid'},
     }
 
     return celery

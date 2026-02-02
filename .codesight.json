@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "framework": "auto",
+  "devServer": {
+    "url": "http://localhost:3000",
+    "startCommand": "npm run dev",
+    "readyWhen": "ready on",
+    "timeout": 60000
+  },
+  "browser": {
+    "type": "chromium",
+    "headed": true,
+    "slowMotion": 0,
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "wait": {
+    "strategy": "auto",
+    "timeout": 30000,
+    "stabilityTime": 500
+  },
+  "output": {
+    "screenshotDir": ".codesight/screenshots",
+    "sessionDir": ".codesight/recordings",
+    "format": "json"
+  },
+  "visual": {
+    "highlight": true,
+    "highlightColor": "red",
+    "highlightDuration": 1000,
+    "showTooltips": true
+  }
+}

@@ -787,6 +787,6 @@ endblock %} {% block breadcrumb %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
-<script src="/static/js/flash.js"></script>
-<script src="/static/js/rate-tables/rate-table-builder.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/rate-table-builder.js') }}"></script>
 {% endblock %}

@@ -99,12 +99,19 @@ async function previewRates() {
     const waterEl = document.querySelector("#previewWaterTotal");
     const feeEl = document.querySelector("#previewServiceFee");
     const totalEl = document.querySelector("#previewTotal");
+    const elecMarkupText = document.querySelector("#previewElecMarkupText");
+    const waterMarkupText = document.querySelector("#previewWaterMarkupText");
     if (elecEl)
       elecEl.textContent = `R ${Number(d.electricity_total || 0).toFixed(2)}`;
     if (waterEl)
       waterEl.textContent = `R ${Number(d.water_total || 0).toFixed(2)}`;
     if (feeEl) feeEl.textContent = `R ${Number(d.service_fee || 0).toFixed(2)}`;
     if (totalEl) totalEl.textContent = `R ${Number(d.total || 0).toFixed(2)}`;
+    // Update markup text dynamically based on estate settings
+    if (elecMarkupText)
+      elecMarkupText.textContent = `Incl. ${Number(elecMarkup || 0).toFixed(0)}% markup + VAT`;
+    if (waterMarkupText)
+      waterMarkupText.textContent = `Incl. ${Number(waterMarkup || 0).toFixed(0)}% markup + VAT`;
   } catch (err) {
     showFlashMessage("Failed to preview rates", "error");
   }

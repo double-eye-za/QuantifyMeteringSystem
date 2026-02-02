@@ -14,8 +14,10 @@ function formatNumber(num, decimals = 2) {
 }
 
 // Render meter cell with balance and status
-function renderMeterCell(meterId, balance, isVacant) {
+function renderMeterCell(meterId, balance, isVacant, lowBalanceThreshold) {
   const meterIdDisplay = meterId || '—';
+  // Use wallet's low_balance_threshold, default to 50 if not set
+  const threshold = parseFloat(lowBalanceThreshold) || 50;
 
   if (isVacant) {
     return `
@@ -38,7 +40,7 @@ function renderMeterCell(meterId, balance, isVacant) {
     statusClass = 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400';
     statusText = 'Disconnected';
     icon = 'fa-times-circle';
-  } else if (balanceNum < 50) {
+  } else if (balanceNum < threshold) {
     colorClass = 'text-yellow-600 dark:text-yellow-400';
     statusClass = 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400';
     statusText = 'Low';
@@ -77,6 +79,7 @@ function renderUnitRow(u) {
   const waterBalance = wallet.water_balance || 0;
   const hotWaterBalance = wallet.hot_water_balance || 0;
   const solarBalance = wallet.solar_balance || 0;
+  const lowBalanceThreshold = wallet.low_balance_threshold || 50;
 
   // Build tenants HTML
   let tenantsHtml = '';
@@ -129,10 +132,10 @@ function renderUnitRow(u) {
       <td class="px-4 py-3">
         <div>${tenantsHtml}</div>
       </td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.electricity_meter_id, electricityBalance, isVacant)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.water_meter_id, waterBalance, isVacant)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, hotWaterBalance, isVacant)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, solarBalance, isVacant)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.electricity_meter_id, electricityBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.water_meter_id, waterBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, hotWaterBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, solarBalance, isVacant, lowBalanceThreshold)}</td>
       <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
       <td class="px-4 py-3">${actionsHtml}</td>
     </tr>

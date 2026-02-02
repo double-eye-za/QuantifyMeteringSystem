@@ -447,8 +447,8 @@ breadcrumb %}
             Electricity Cost
           </p>
           <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewElecTotal">R 0.00</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Incl. 20% markup + VAT
+          <p class="text-xs text-gray-600 dark:text-gray-400" id="previewElecMarkupText">
+            Incl. markup + VAT
           </p>
                             </div>
                             <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
@@ -456,8 +456,8 @@ breadcrumb %}
             Water Cost
           </p>
           <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewWaterTotal">R 0.00</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400">
-            Incl. 15% markup + VAT
+          <p class="text-xs text-gray-600 dark:text-gray-400" id="previewWaterMarkupText">
+            Incl. markup + VAT
           </p>
                             </div>
                             <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
@@ -505,6 +505,6 @@ breadcrumb %}
 
 {% endblock %}
 {% block extra_js %}
-<script src="../../static/js/flash.js"></script>
-<script src="../../static/js/rate-tables/rate-table.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/rate-table.js') }}"></script>
 {% endblock %}

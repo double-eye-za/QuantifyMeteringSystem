@@ -102,11 +102,21 @@ def estates_page():
         eid = e["id"]
         has_bulk_e = e["bulk_electricity_meter_id"] is not None
         has_bulk_w = e["bulk_water_meter_id"] is not None
+        # Calculate total meters for this estate
+        total_estate_meters = (
+            elec_counts.get(eid, 0) +
+            water_counts.get(eid, 0) +
+            solar_counts.get(eid, 0) +
+            hot_water_counts.get(eid, 0) +
+            (1 if has_bulk_e else 0) +
+            (1 if has_bulk_w else 0)
+        )
         meter_configs[eid] = {
             "elec": f"{elec_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_e else ''}",
             "water": f"{water_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_w else ''}",
             "solar": f"{solar_counts.get(eid, 0)} unit",
             "hot_water": f"{hot_water_counts.get(eid, 0)} unit",
+            "total": total_estate_meters,
         }
 
     # Rate tables for dropdowns

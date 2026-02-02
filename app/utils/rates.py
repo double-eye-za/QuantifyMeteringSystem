@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Dict, Any, Optional, List, Tuple
 
 
@@ -188,6 +189,9 @@ def get_default_rate_structure(utility_type: str) -> Dict[str, Any]:
     ).first()
 
     if rate_table and rate_table.rate_structure:
+        # rate_structure is stored as JSON text in the database, need to parse it
+        if isinstance(rate_table.rate_structure, str):
+            return json.loads(rate_table.rate_structure)
         return rate_table.rate_structure
 
     # Fallback to simple flat rates if no rate tables exist

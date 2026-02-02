@@ -428,5 +428,5 @@ endblock %} {% block breadcrumb %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="../../static/js/billing/billing.js"> </script>
+<script src="{{ url_for('static', filename='js/billing/billing.js') }}"></script>
 {% endblock %}

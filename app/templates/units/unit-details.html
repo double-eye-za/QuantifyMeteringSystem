@@ -469,10 +469,11 @@
                 >Electricity</span
               >
             </div>
+            {% set elec_status = meters.get('electricity').communication_status if meters.get('electricity') else 'offline' %}
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if elec_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if elec_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Active
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ elec_status | capitalize if unit.electricity_meter_id else 'No Meter' }}
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -517,10 +518,11 @@
                 >Water</span
               >
             </div>
+            {% set water_status = meters.get('water').communication_status if meters.get('water') else 'offline' %}
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if water_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if water_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Active
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ water_status | capitalize if unit.water_meter_id else 'No Meter' }}
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -565,10 +567,11 @@
                 >Hot Water</span
               >
             </div>
+            {% set hw_status = meters.get('hot_water').communication_status if meters.get('hot_water') else 'offline' %}
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if hw_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if hw_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Active
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ hw_status | capitalize if unit.hot_water_meter_id else 'No Meter' }}
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -613,10 +616,11 @@
                 >Solar</span
               >
             </div>
+            {% set solar_status = meters.get('solar').communication_status if meters.get('solar') else 'offline' %}
             <span
-              class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if solar_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if solar_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
             >
-              <i class="fas fa-circle mr-1 text-xs"></i>Active
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ solar_status | capitalize if unit.solar_meter_id else 'No Meter' }}
             </span>
           </div>
           <div class="space-y-2 text-sm">
@@ -834,264 +838,10 @@
 </div>
 
 {% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
 <script>
-const UNIT_ID = {{ unit.id }};
-
-// Owner Management
-function showAddOwnerModal() {
-  document.getElementById('addOwnerModal').classList.remove('hidden');
-}
-
-function closeAddOwnerModal() {
-  document.getElementById('addOwnerModal').classList.add('hidden');
-  document.getElementById('addOwnerForm').reset();
-}
-
-async function submitAddOwner() {
-  const personId = parseInt(document.getElementById('ownerPersonId').value);
-  const percentage = parseFloat(document.getElementById('ownerPercentage').value);
-
-  if (!personId) {
-    alert('Please select a person');
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/owners`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        person_id: personId,
-        ownership_percentage: percentage
-      })
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('Owner added successfully');
-      closeAddOwnerModal();
-      window.location.reload();
-    } else {
-      alert(data.message || 'Failed to add owner');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Failed to add owner');
-  }
-}
-
-async function removeOwner(personId) {
-  if (!confirm('Are you sure you want to remove this owner?')) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/owners/${personId}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('Owner removed successfully');
-      window.location.reload();
-    } else {
-      alert(data.message || 'Failed to remove owner');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Failed to remove owner');
-  }
-}
-
-// Tenant Management
-function showAddTenantModal() {
-  document.getElementById('addTenantModal').classList.remove('hidden');
-}
-
-function closeAddTenantModal() {
-  document.getElementById('addTenantModal').classList.add('hidden');
-  document.getElementById('addTenantForm').reset();
-}
-
-async function submitAddTenant() {
-  const personId = parseInt(document.getElementById('tenantPersonId').value);
-
-  if (!personId) {
-    alert('Please select a person');
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        person_id: personId,
-        status: 'active'
-      })
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('Tenant added successfully');
-      closeAddTenantModal();
-      window.location.reload();
-    } else {
-      alert(data.message || 'Failed to add tenant');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Failed to add tenant');
-  }
-}
-
-async function removeTenant(personId) {
-  if (!confirm('Are you sure you want to remove this tenant?')) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants/${personId}`, {
-      method: 'DELETE'
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      alert('Tenant removed successfully');
-      window.location.reload();
-    } else {
-      alert(data.message || 'Failed to remove tenant');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Failed to remove tenant');
-  }
-}
-
-// Top Up Modal Functions
-function openTopUpModal() {
-  const modal = document.getElementById("topUpModal");
-  if (modal) {
-    modal.classList.remove("hidden");
-  }
-}
-
-function closeTopUpModal() {
-  const modal = document.getElementById("topUpModal");
-  if (modal) {
-    modal.classList.add("hidden");
-    // Reset form
-    document.getElementById("topUpForm").reset();
-  }
-}
-
-async function handleTopUpSubmit(event) {
-  event.preventDefault();
-
-  const walletId = document.getElementById("walletId").value;
-  const amount = parseFloat(document.getElementById("topUpAmount").value);
-  const utilityType = document.getElementById("topUpUtilityType").value;
-  const reference = document.getElementById("topUpReference").value;
-
-  if (!walletId) {
-    alert("Error: Wallet ID not found");
-    return;
-  }
-
-  if (!amount || amount <= 0) {
-    alert("Please enter a valid amount");
-    return;
-  }
-
-  if (!utilityType) {
-    alert("Please select a utility type");
-    return;
-  }
-
-  const submitBtn = document.getElementById("submitTopUpBtn");
-  const originalText = submitBtn.innerHTML;
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-
-  try {
-    const response = await fetch(`/api/v1/wallets/${walletId}/topup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: amount,
-        payment_method: "manual_admin",
-        reference: reference || `Admin top-up for ${utilityType}`,
-        metadata: {
-          utility_type: utilityType,
-          added_by: "admin",
-          source: "unit_details_page"
-        }
-      }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok && result.data) {
-      alert(`Success! Top-up completed.\nTransaction: ${result.data.transaction_number}\nStatus: ${result.data.status}`);
-      closeTopUpModal();
-      // Reload page to show updated balance
-      window.location.reload();
-    } else {
-      alert(`Error: ${result.error || "Failed to process top-up"}`);
-    }
-  } catch (error) {
-    console.error("Top-up error:", error);
-    alert("Error: Failed to process top-up. Please try again.");
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalText;
-  }
-}
-
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", function () {
-  // Top Up Modal Event Listeners
-  const topUpBtn = document.getElementById("topUpBtn");
-  const topUpBtnWarning = document.getElementById("topUpBtnWarning");
-  const closeTopUpModalBtn = document.getElementById("closeTopUpModal");
-  const cancelTopUpBtn = document.getElementById("cancelTopUpBtn");
-  const topUpForm = document.getElementById("topUpForm");
-
-  if (topUpBtn) {
-    topUpBtn.addEventListener("click", openTopUpModal);
-  }
-
-  if (topUpBtnWarning) {
-    topUpBtnWarning.addEventListener("click", openTopUpModal);
-  }
-
-  if (closeTopUpModalBtn) {
-    closeTopUpModalBtn.addEventListener("click", closeTopUpModal);
-  }
-
-  if (cancelTopUpBtn) {
-    cancelTopUpBtn.addEventListener("click", closeTopUpModal);
-  }
-
-  if (topUpForm) {
-    topUpForm.addEventListener("submit", handleTopUpSubmit);
-  }
-
-  // Close modal when clicking outside
-  const modal = document.getElementById("topUpModal");
-  if (modal) {
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) {
-        closeTopUpModal();
-      }
-    });
-  }
-});
+  // Pass unit ID to JavaScript
+  window.UNIT_ID = {{ unit.id }};
 </script>
+<script src="{{ url_for('static', filename='js/units/unit-details.js') }}"></script>
 {% endblock %}

@@ -110,33 +110,17 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // Auto-refresh functionality for real-time reports
-  function autoRefresh() {
-    if (window.location.search.includes('auto_refresh=true')) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 30000); // Refresh every 30 seconds
-    }
-  }
-  
-  // Export functionality
-  function exportReport(reportType, format) {
-    const url = new URL(window.location);
-    url.pathname = '/api/v1/reports/export/' + reportType;
-    url.searchParams.set('format', format);
-    url.searchParams.set('category', '{{ category }}');
-    url.searchParams.set('date_range', '{{ current_date_range }}');
-    {% if current_estate %}
-    url.searchParams.set('estate_id', '{{ current_estate }}');
-    {% endif %}
-    {% if current_meter_type %}
-    url.searchParams.set('meter_type', '{{ current_meter_type }}');
-    {% endif %}
-    
-    window.open(url.toString(), '_blank');
-  }
-  
-  // Initialize auto-refresh
-  document.addEventListener('DOMContentLoaded', autoRefresh);
+  // Report configuration passed to external JS
+  window.REPORT_CONFIG = {
+    category: '{{ category }}',
+    dateRange: '{{ current_date_range }}',
+    estateId: {{ current_estate | tojson if current_estate else 'null' }},
+    meterType: {{ current_meter_type | tojson if current_meter_type else 'null' }},
+    dailyConsumptionTrend: {{ daily_consumption_trend | tojson if daily_consumption_trend is defined else '[]' }},
+    bulkSubComparison: {{ bulk_sub_comparison | tojson if bulk_sub_comparison is defined else '[]' }},
+    creditPurchases: {{ credit_purchases_json | tojson if credit_purchases_json is defined else '[]' }},
+    estateUtilitySummary: {{ estate_utility_summary_json | tojson if estate_utility_summary_json is defined else '[]' }}
+  };
 </script>
+<script src="{{ url_for('static', filename='js/reports/reports.js') }}"></script>
 {% endblock %}

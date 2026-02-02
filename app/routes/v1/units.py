@@ -789,6 +789,18 @@ def unit_details_page(unit_id: int):
     # Get latest meter readings for all 4 meters
     meter_readings = {}
     from ...models.meter_reading import MeterReading
+    from ...models.meter import Meter
+
+    # Get actual Meter objects for status information
+    meters = {}
+    if unit.electricity_meter_id:
+        meters["electricity"] = Meter.query.get(unit.electricity_meter_id)
+    if unit.water_meter_id:
+        meters["water"] = Meter.query.get(unit.water_meter_id)
+    if unit.hot_water_meter_id:
+        meters["hot_water"] = Meter.query.get(unit.hot_water_meter_id)
+    if unit.solar_meter_id:
+        meters["solar"] = Meter.query.get(unit.solar_meter_id)
 
     if unit.electricity_meter_id:
         latest_electricity = (
@@ -843,6 +855,7 @@ def unit_details_page(unit_id: int):
         wallet=wallet,
         recent_transactions=recent_transactions,
         meter_readings=meter_readings,
+        meters=meters,
     )
 
 

@@ -484,10 +484,10 @@ block page_title %}Edit Rate Table{% endblock %} {% block breadcrumb %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
-<script src="/static/js/flash.js"></script>
-<script src="/static/js/rate-tables/edit-rate-table.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/edit-rate-table.js') }}"></script>
 <script>
-
+  // Rate table data passed from server
   const BASE_URL = "/api/v1"
   const initial = {{ rate_table | tojson }};
   console.log("Initial rate table data:", initial);
