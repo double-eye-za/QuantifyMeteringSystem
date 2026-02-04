@@ -58,48 +58,101 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add New Device</h3>
         </div>
         <form id="addDeviceForm" class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device EUI *</label>
-                <input type="text" name="device_eui" required maxlength="16" pattern="[0-9a-fA-F]{16}"
-                    placeholder="e.g., 24e124621f170095"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">16 hexadecimal characters (found on device label)</p>
+            <!-- ChirpStack Fields -->
+            <div class="pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    <i class="fas fa-broadcast-tower mr-2 text-primary"></i>ChirpStack Configuration
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device EUI *</label>
+                        <input type="text" name="device_eui" required maxlength="16" pattern="[0-9a-fA-F]{16}"
+                            placeholder="e.g., 24e124621f170095"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">16 hex characters (from device label)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                        <input type="text" name="name" required
+                            placeholder="e.g., Meter-Unit-A101"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application *</label>
+                        <select name="application_id" required id="applicationSelect"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Loading applications...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device Profile *</label>
+                        <select name="device_profile_id" required id="deviceProfileSelect"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Loading device profiles...</option>
+                        </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Defines LoRaWAN capabilities and codec</p>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
-                <input type="text" name="name" required
-                    placeholder="e.g., Meter-Unit-A101"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+
+            <!-- Meter Configuration Fields -->
+            <div class="pb-3 border-b border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    <i class="fas fa-tachometer-alt mr-2 text-green-600"></i>Meter Configuration
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meter Type *</label>
+                        <select name="meter_type" required id="meterTypeSelect"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">-- Select Meter Type --</option>
+                            <option value="electricity">Electricity</option>
+                            <option value="water">Water</option>
+                            <option value="solar">Solar</option>
+                            <option value="hot_water">Hot Water</option>
+                            <option value="bulk_electricity">Bulk Electricity</option>
+                            <option value="bulk_water">Bulk Water</option>
+                        </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Type of utility being measured</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device Type *</label>
+                        <select name="lorawan_device_type" required id="lorawanDeviceTypeSelect"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Loading device types...</option>
+                        </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Determines how data is decoded by the monitor</p>
+                    </div>
+                </div>
             </div>
+
+            <!-- OTAA Configuration -->
+            <!-- OTAA Configuration -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application *</label>
-                <select name="application_id" required id="applicationSelect"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">Loading applications...</option>
-                </select>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    <i class="fas fa-key mr-2 text-yellow-600"></i>OTAA Keys (Optional)
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Join EUI (AppEUI)</label>
+                        <input type="text" name="join_eui" maxlength="16" pattern="[0-9a-fA-F]{16}"
+                            placeholder="e.g., 24e124c0002a0001"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">From device label</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application Key (AppKey)</label>
+                        <input type="text" name="app_key" maxlength="32" pattern="[0-9a-fA-F]{32}"
+                            placeholder="e.g., 2b7e151628aed2a6abf7158809cf4f3c"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">32 hex characters for OTAA</p>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device Profile *</label>
-                <select name="device_profile_id" required id="deviceProfileSelect"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">Loading device profiles...</option>
-                </select>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Defines device capabilities and codec</p>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Join EUI (AppEUI)</label>
-                <input type="text" name="join_eui" maxlength="16" pattern="[0-9a-fA-F]{16}"
-                    placeholder="e.g., 24e124c0002a0001"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Required for OTAA devices (found on device label)</p>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Application Key (AppKey)</label>
-                <input type="text" name="app_key" maxlength="32" pattern="[0-9a-fA-F]{32}"
-                    placeholder="e.g., 2b7e151628aed2a6abf7158809cf4f3c"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary font-mono">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">32 hex characters for OTAA authentication</p>
-            </div>
+
+            <!-- Description -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea name="description" rows="2"
@@ -148,11 +201,16 @@
 <script>
 let applications = [];
 let deviceProfiles = [];
+let lorawanDeviceTypes = [];
+
+// Device types that have working decoders in the Monitor
+const VALID_DECODER_TYPES = ['qalcosonic_w1', 'milesight_em300', 'eastron_sdm'];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadDevices();
     loadApplications();
     loadDeviceProfiles();
+    loadLorawanDeviceTypes();
 
     // Check if we should open add modal
     const urlParams = new URLSearchParams(window.location.search);
@@ -160,6 +218,30 @@ document.addEventListener('DOMContentLoaded', function() {
         openAddDeviceModal();
     }
 });
+
+function loadLorawanDeviceTypes() {
+    fetch('/api/v1/api/device-types?active_only=true')
+        .then(response => response.json())
+        .then(data => {
+            // API returns array directly, not wrapped in object
+            lorawanDeviceTypes = Array.isArray(data) ? data : [];
+            const select = document.getElementById('lorawanDeviceTypeSelect');
+            if (lorawanDeviceTypes.length === 0) {
+                select.innerHTML = '<option value="">No device types available</option>';
+            } else {
+                select.innerHTML = '<option value="">-- Select Device Type --</option>' +
+                    lorawanDeviceTypes.map(dt => {
+                        const hasDecoder = VALID_DECODER_TYPES.includes(dt.code);
+                        const warning = hasDecoder ? '' : ' ⚠️ No decoder';
+                        return `<option value="${dt.code}">${dt.name}${warning}</option>`;
+                    }).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading device types:', error);
+            document.getElementById('lorawanDeviceTypeSelect').innerHTML = '<option value="">Error loading</option>';
+        });
+}
 
 function loadDevices() {
     fetch('/api/v1/api/lorawan/devices')
@@ -295,12 +377,36 @@ function submitAddDevice() {
     const form = document.getElementById('addDeviceForm');
     const formData = new FormData(form);
 
+    // Validate meter fields
+    const meterType = formData.get('meter_type');
+    const lorawanDeviceType = formData.get('lorawan_device_type');
+
+    if (!meterType) {
+        showNotification('Please select a Meter Type', 'error');
+        return;
+    }
+    if (!lorawanDeviceType) {
+        showNotification('Please select a Device Type', 'error');
+        return;
+    }
+
+    // Warn if device type has no decoder
+    if (!VALID_DECODER_TYPES.includes(lorawanDeviceType)) {
+        if (!confirm('Warning: The selected Device Type does not have a decoder in the Monitor.\n\nData from this device will NOT be processed.\n\nAre you sure you want to continue?')) {
+            return;
+        }
+    }
+
     const data = {
+        // ChirpStack fields
         device_eui: formData.get('device_eui'),
         name: formData.get('name'),
         application_id: formData.get('application_id'),
         device_profile_id: formData.get('device_profile_id'),
         description: formData.get('description'),
+        // Meter fields
+        meter_type: meterType,
+        lorawan_device_type: lorawanDeviceType,
     };
 
     if (formData.get('join_eui')) data.join_eui = formData.get('join_eui');
@@ -316,7 +422,7 @@ function submitAddDevice() {
         if (result.success) {
             closeAddDeviceModal();
             loadDevices();
-            let message = 'Device created successfully';
+            let message = 'Device and meter created successfully';
             if (result.warning) message += '\n\nWarning: ' + result.warning;
             showNotification(message, result.warning ? 'warning' : 'success');
         } else {

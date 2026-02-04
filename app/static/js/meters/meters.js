@@ -231,18 +231,6 @@ async function refreshUnitDropdowns() {
   }
 }
 
-function showCreateMeter() {
-  const modal = document.getElementById("createMeterModal");
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
-}
-
-function hideCreateMeter() {
-  const modal = document.getElementById("createMeterModal");
-  modal.classList.add("hidden");
-  modal.classList.remove("flex");
-}
-
 function openEditMeter(btn) {
   const row = btn.closest("tr");
   const data = JSON.parse(row.getAttribute("data-meter"));
@@ -297,7 +285,8 @@ function hideDeleteMeter() {
 }
 
 function refreshUnitDisableState(scope) {
-  const form = scope || document.getElementById("createMeterForm");
+  const form = scope || document.getElementById("editMeterForm");
+  if (!form || !form.elements.meter_type || !form.elements.unit_id) return;
   const type = form.elements.meter_type.value;
   const unitSelect = form.elements.unit_id;
   Array.from(unitSelect.options).forEach((opt) => {
@@ -346,16 +335,6 @@ function filterUnitsByEstate(form) {
 }
 
 document
-  .getElementById("createMeterForm")
-  ?.elements.meter_type?.addEventListener("change", () =>
-    refreshUnitDisableState(document.getElementById("createMeterForm"))
-  );
-document
-  .getElementById("createMeterForm")
-  ?.elements.estate_id?.addEventListener("change", () =>
-    filterUnitsByEstate(document.getElementById("createMeterForm"))
-  );
-document
   .getElementById("editMeterForm")
   ?.elements.meter_type?.addEventListener("change", () =>
     refreshUnitDisableState(document.getElementById("editMeterForm"))
@@ -365,39 +344,6 @@ document
   ?.elements.estate_id?.addEventListener("change", () =>
     filterUnitsByEstate(document.getElementById("editMeterForm"))
   );
-
-async function submitCreateMeter() {
-  const form = document.getElementById("createMeterForm");
-  const payload = Object.fromEntries(new FormData(form).entries());
-  if (payload.installation_date === "") delete payload.installation_date;
-
-  try {
-    const resp = await fetch(`${BASE_URL}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await resp.json();
-
-    if (resp.ok && (result.success || result.id)) {
-      // Success - hide modal and refresh table and unit dropdowns
-      hideCreateMeter();
-      const successMessage = result.message || "Meter created successfully";
-      showFlashMessage(successMessage, "success", false);
-      refreshMetersTable();
-      refreshUnitDropdowns();
-    } else {
-      // Error - show message immediately WITHOUT reload
-      const errorMessage = result.error || result.message || "Failed to create meter. Please check the form and try again.";
-      showFlashMessage(errorMessage, "error", false);
-    }
-  } catch (e) {
-    // Network or parsing error
-    console.error("Error creating meter:", e);
-    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
-  }
-}
 
 async function submitEditMeter() {
   const form = document.getElementById("editMeterForm");

@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from flask import jsonify, request, render_template
 from flask_login import login_required
+from sqlalchemy.exc import IntegrityError
 
 from ...services import chirpstack_service
+from ...services.meters import create_meter as svc_create_meter
 from ...utils.decorators import requires_permission
 from ...utils.audit import log_action
 from . import api_v1
@@ -288,7 +290,7 @@ def get_lorawan_device(device_eui: str):
 @requires_permission("meters.create")
 def create_lorawan_device():
     """
-    Create a new device in ChirpStack.
+    Create a new device in ChirpStack AND a meter in the database.
 
     Expected JSON payload:
     {
@@ -298,13 +300,15 @@ def create_lorawan_device():
         "device_profile_id": "uuid-of-device-profile",
         "description": "Optional description",
         "join_eui": "optional-join-eui",
-        "app_key": "32-char-hex-key-for-otaa"
+        "app_key": "32-char-hex-key-for-otaa",
+        "meter_type": "electricity|water|solar|hot_water|bulk_electricity|bulk_water",
+        "lorawan_device_type": "qalcosonic_w1|milesight_em300|eastron_sdm"
     }
     """
     data = request.get_json() or {}
 
-    # Required fields
-    required = ["device_eui", "name", "application_id", "device_profile_id"]
+    # Required fields - now includes meter fields
+    required = ["device_eui", "name", "application_id", "device_profile_id", "meter_type", "lorawan_device_type"]
     missing = [f for f in required if not data.get(f)]
     if missing:
         return jsonify({
@@ -320,7 +324,15 @@ def create_lorawan_device():
             "error": "Invalid device_eui format. Must be 16 hex characters.",
         }), 400
 
-    # Create the device
+    # Validate meter_type
+    valid_meter_types = ["electricity", "water", "solar", "hot_water", "bulk_electricity", "bulk_water"]
+    if data["meter_type"] not in valid_meter_types:
+        return jsonify({
+            "success": False,
+            "error": f"Invalid meter_type. Must be one of: {', '.join(valid_meter_types)}",
+        }), 400
+
+    # Create the device in ChirpStack
     success, result = chirpstack_service.create_device(
         device_eui=device_eui,
         name=data["name"],
@@ -335,34 +347,52 @@ def create_lorawan_device():
     if not success:
         return jsonify({
             "success": False,
-            "error": result,
+            "error": f"ChirpStack error: {result}",
         }), 400
+
+    warnings = []
 
     # Set OTAA keys if provided
     app_key = data.get("app_key")
     if app_key:
         app_key = app_key.lower().replace(":", "").replace("-", "")
         if len(app_key) != 32 or not all(c in "0123456789abcdef" for c in app_key):
-            # Device created but keys failed - still return success with warning
-            return jsonify({
-                "success": True,
-                "warning": "Device created but app_key format invalid. Set keys manually.",
-                "device_eui": device_eui,
-            }), 201
+            warnings.append("app_key format invalid - set keys manually")
+        else:
+            keys_success, keys_result = chirpstack_service.set_device_keys(
+                device_eui=device_eui,
+                app_key=app_key,
+            )
+            if not keys_success:
+                warnings.append(f"Failed to set keys: {keys_result}")
 
-        keys_success, keys_result = chirpstack_service.set_device_keys(
-            device_eui=device_eui,
-            app_key=app_key,
+    # Create the meter in the database
+    try:
+        meter_payload = {
+            "device_eui": device_eui,
+            "serial_number": device_eui,  # Use device_eui as serial_number
+            "meter_type": data["meter_type"],
+            "lorawan_device_type": data["lorawan_device_type"],
+            "communication_type": "lora",
+            "is_active": True,
+        }
+        meter = svc_create_meter(meter_payload)
+
+        # Log meter creation
+        log_action(
+            "meter.create",
+            entity_type="meter",
+            entity_id=meter.id,
+            new_values=meter_payload,
         )
+    except IntegrityError:
+        # Meter with this device_eui or serial_number already exists
+        # Device was created in ChirpStack, so we should clean up or warn
+        warnings.append("Meter already exists in database with this Device EUI")
+    except Exception as e:
+        warnings.append(f"Failed to create meter in database: {str(e)}")
 
-        if not keys_success:
-            return jsonify({
-                "success": True,
-                "warning": f"Device created but failed to set keys: {keys_result}",
-                "device_eui": device_eui,
-            }), 201
-
-    # Log the action
+    # Log the ChirpStack action
     log_action(
         "lorawan.device.create",
         entity_type="lorawan_device",
@@ -371,14 +401,21 @@ def create_lorawan_device():
             "device_eui": device_eui,
             "name": data["name"],
             "application_id": data["application_id"],
+            "meter_type": data["meter_type"],
+            "lorawan_device_type": data["lorawan_device_type"],
         },
     )
 
-    return jsonify({
+    response = {
         "success": True,
-        "message": "Device created successfully",
+        "message": "Device and meter created successfully",
         "device_eui": device_eui,
-    }), 201
+    }
+
+    if warnings:
+        response["warning"] = "; ".join(warnings)
+
+    return jsonify(response), 201
 
 
 @api_v1.route("/api/lorawan/devices/<device_eui>", methods=["PUT"])

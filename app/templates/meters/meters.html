@@ -66,13 +66,12 @@ block breadcrumb %}
               Export PDF
             </a>
             {% if has_permission('meters.create') %}
-            <button 
-              type="button" 
-              onclick="showCreateMeter()" 
+            <a
+              href="{{ url_for('api_v1.lorawan_devices_page') }}?action=add"
               class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
             >
-              <i class="fas fa-plus mr-2"></i>Create Meter
-            </button>
+              <i class="fas fa-plus mr-2"></i>Add New Meter
+            </a>
             {% endif %}
           </div>
         </div>
@@ -273,116 +272,6 @@ block breadcrumb %}
             </div>
         </div>
         
-        <!-- Create Meter Modal -->
-        <div id="createMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Create New Meter</h3>
-              <button onclick="hideCreateMeter()" class="text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
-            </div>
-            <form id="createMeterForm" onsubmit="event.preventDefault(); submitCreateMeter();" class="p-4 space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Device EUI / IMEI <span class="text-red-600">*</span></label>
-                  <input name="device_eui" id="createDeviceEui" placeholder="e.g. 860123456789012" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono" required />
-                  <p class="text-xs text-gray-500 mt-1">DevEUI from ChirpStack or IMEI for 4G devices</p>
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Meter Type <span class="text-red-600">*</span></label>
-                  <select name="meter_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
-                    <option value="electricity">Electricity</option>
-                    <option value="bulk_electricity">Bulk Electricity</option>
-                    <option value="water">Water</option>
-                    <option value="hot_water">Hot Water</option>
-                    <option value="solar">Solar</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-xs text-gray-400">(optional display name)</span></label>
-                  <input name="serial_number" id="createSerialNumber" placeholder="Auto-filled from Device EUI if empty" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">
-                    Device Type
-                    <a href="{{ url_for('api_v1.device_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Device Types">
-                      <i class="fas fa-cog"></i>
-                    </a>
-                  </label>
-                  <select name="lorawan_device_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">-- Select Device Type --</option>
-                    {% for dt in device_types %}
-                    <option value="{{ dt.code }}">{{ dt.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Estate</label>
-                  <select name="estate_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">-- Select Estate --</option>
-                    {% for e in estates %}
-                    <option value="{{ e.id }}">{{ e.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Assign to Unit</label>
-                  <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="">-- Unassigned --</option>
-                    {% for u in units %}
-                    <option value="{{ u.id }}" data-estate-id="{{ u.estate_id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}" data-has-hot-water="{{ '1' if u.has_hot_water else '0' }}">Unit {{ u.unit_number }} ({{ u.estate_name }})</option>
-                    {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <!-- Additional Device Fields -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">
-                    Communication Type
-                    <a href="{{ url_for('api_v1.communication_types_page') }}" class="text-xs text-primary hover:underline ml-2" title="Manage Communication Types">
-                      <i class="fas fa-cog"></i>
-                    </a>
-                  </label>
-                  <select name="communication_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    {% for ct in communication_types %}
-                    <option value="{{ ct.code }}" {% if loop.first %}selected{% endif %}>{{ ct.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Manufacturer</label>
-                  <input name="manufacturer" placeholder="e.g. Milesight, Fengbo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Model</label>
-                  <input name="model" placeholder="e.g. EM300-DI" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                </div>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Installation Date</label>
-                  <input name="installation_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                </div>
-                <div>
-                  <label class="text-sm text-gray-700 dark:text-gray-300">Status</label>
-                  <select name="is_active" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="true" selected>Active</option>
-                    <option value="false">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="hideCreateMeter()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded">Cancel</button>
-                <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Create</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
         <!-- Edit Meter Modal -->
         <div id="editMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">

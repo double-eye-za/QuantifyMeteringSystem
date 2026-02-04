@@ -16,10 +16,13 @@ from application import create_app
 def seed_device_types():
     """Create initial device types"""
     device_types_data = [
+        # ==========================================
+        # Device types WITH working decoders in Monitor
+        # ==========================================
         {
             "code": "milesight_em300",
             "name": "Milesight EM300-DI (Pulse Counter)",
-            "description": "LoRaWAN pulse counter for electricity and water meters",
+            "description": "LoRaWAN pulse counter for electricity and water meters. Has working decoder in Monitor.",
             "manufacturer": "Milesight",
             "default_model": "EM300-DI",
             "supports_temperature": True,
@@ -30,8 +33,8 @@ def seed_device_types():
         {
             "code": "qalcosonic_w1",
             "name": "Qalcosonic W1 (Water Meter)",
-            "description": "LoRaWAN ultrasonic water meter",
-            "manufacturer": "Qalcosonic",
+            "description": "LoRaWAN ultrasonic water meter. Has working decoder in Monitor.",
+            "manufacturer": "Axioma/Qalcosonic",
             "default_model": "W1",
             "supports_temperature": False,
             "supports_pulse": False,
@@ -39,9 +42,23 @@ def seed_device_types():
             "is_active": True,
         },
         {
+            "code": "eastron_sdm",
+            "name": "Eastron SDM (Electricity Meter)",
+            "description": "Eastron SDM electricity meter via UC100 LoRaWAN bridge. Has working decoder in Monitor.",
+            "manufacturer": "Eastron",
+            "default_model": "SDM320C / SDM630",
+            "supports_temperature": False,
+            "supports_pulse": False,
+            "supports_modbus": True,
+            "is_active": True,
+        },
+        # ==========================================
+        # Device types WITHOUT decoders (4G/other)
+        # ==========================================
+        {
             "code": "kamstrup_multical",
             "name": "Kamstrup Multical (Heat/Water Meter)",
-            "description": "4G/NB-IoT heat and water meter",
+            "description": "4G/NB-IoT heat and water meter. NO decoder in Monitor yet.",
             "manufacturer": "Kamstrup",
             "default_model": "Multical 21",
             "supports_temperature": True,
@@ -52,7 +69,7 @@ def seed_device_types():
         {
             "code": "fengbo_water",
             "name": "Fengbo 4G Water Meter",
-            "description": "4G/NB-IoT water meter with remote shutoff",
+            "description": "4G/NB-IoT water meter with remote shutoff. NO decoder in Monitor yet.",
             "manufacturer": "Fengbo",
             "default_model": "FB-4G",
             "supports_temperature": False,
