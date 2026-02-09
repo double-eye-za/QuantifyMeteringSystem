@@ -257,6 +257,7 @@ def meter_details_page(meter_id: str):
         (Unit.electricity_meter_id == meter.id)
         | (Unit.water_meter_id == meter.id)
         | (Unit.solar_meter_id == meter.id)
+        | (Unit.hot_water_meter_id == meter.id)
     ).first()
     estate = Estate.query.get(unit.estate_id) if unit else None
     # Use backward compatibility: unit.resident returns primary_tenant
@@ -272,6 +273,8 @@ def meter_details_page(meter_id: str):
             return float(w.water_balance)
         if m.meter_type == "solar":
             return float(w.solar_balance)
+        if m.meter_type == "hot_water":
+            return float(w.hot_water_balance)
         return float(w.balance or 0)
 
     balance_value = typed_balance(wallet, meter)

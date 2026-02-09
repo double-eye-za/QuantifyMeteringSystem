@@ -75,10 +75,13 @@ def add_unit_owner(unit_id: int):
     )
 
     # Auto-create mobile user account if person doesn't have one
+    print(f"[UNIT_OWNERSHIPS] Owner added successfully, checking for mobile user creation...")
     mobile_user_info = None
     existing_mobile_user = get_mobile_user_by_person_id(payload["person_id"])
+    print(f"[UNIT_OWNERSHIPS] Existing mobile user: {existing_mobile_user}")
 
     if not existing_mobile_user:
+        print(f"[UNIT_OWNERSHIPS] No existing mobile user, creating one...")
         # Get estate info for personalized SMS and tracking
         unit = Unit.query.get(unit_id)
         estate_name = unit.estate.name if unit and unit.estate else None
@@ -96,6 +99,7 @@ def add_unit_owner(unit_id: int):
         )
 
         if user_success:
+            print(f"[UNIT_OWNERSHIPS] Mobile user created successfully!")
             mobile_user_info = {
                 "mobile_user_created": True,
                 "phone_number": user_result["user"].phone_number,
@@ -107,6 +111,7 @@ def add_unit_owner(unit_id: int):
             }
         else:
             # Log but don't fail the owner addition if mobile user creation fails
+            print(f"[UNIT_OWNERSHIPS] Mobile user creation FAILED: {user_result}")
             mobile_user_info = {
                 "mobile_user_created": False,
                 "error": user_result.get("message", "Failed to create mobile user account")

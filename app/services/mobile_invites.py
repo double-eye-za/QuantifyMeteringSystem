@@ -194,3 +194,49 @@ def get_invite_stats() -> Dict:
         'sms_sent': sms_sent,
         'sms_failed': sms_failed,
     }
+
+
+def resend_invite_sms(invite_id: int, estate_name: Optional[str] = None) -> Tuple[bool, str]:
+    """
+    Resend the welcome SMS for an existing invite.
+
+    Args:
+        invite_id: ID of the invite to resend SMS for
+        estate_name: Optional estate name for personalized message
+
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    from app.services.sms_service import send_welcome_sms
+
+    invite = get_invite_by_id(invite_id)
+    if not invite:
+        return False, "Invite not found"
+
+    if invite.is_used:
+        return False, "Cannot resend SMS for a used invite"
+
+    # Get estate name if not provided
+    if not estate_name and invite.estate:
+        estate_name = invite.estate.name
+
+    # Send the SMS
+    sms_success, sms_message = send_welcome_sms(
+        phone_number=invite.phone_number,
+        temp_password=invite.temporary_password,
+        estate_name=estate_name,
+    )
+
+    # Update invite record
+    invite.sms_sent = sms_success
+    if sms_success:
+        invite.sms_error = None
+    else:
+        invite.sms_error = sms_message
+
+    db.session.commit()
+
+    if sms_success:
+        return True, "SMS sent successfully"
+    else:
+        return False, sms_message

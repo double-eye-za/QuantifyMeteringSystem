@@ -167,13 +167,27 @@ Mobile App Invites
               <i class="fa-solid fa-check mr-1"></i> Sent
             </span>
             {% elif invite.sms_error %}
-            <span class="px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs" title="{{ invite.sms_error }}">
-              <i class="fa-solid fa-times mr-1"></i> Failed
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs" title="{{ invite.sms_error }}">
+                <i class="fa-solid fa-times mr-1"></i> Failed
+              </span>
+              {% if not invite.is_used and has_permission('users.edit') %}
+              <button onclick="resendSms({{ invite.id }})" class="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors" title="Resend SMS">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+              {% endif %}
+            </div>
             {% else %}
-            <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs">
-              Not sent
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs">
+                Not sent
+              </span>
+              {% if not invite.is_used and has_permission('users.edit') %}
+              <button onclick="resendSms({{ invite.id }})" class="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors" title="Send SMS">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+              {% endif %}
+            </div>
             {% endif %}
           </td>
           <td class="px-4 py-3">
@@ -326,5 +340,52 @@ Mobile App Invites
       closeDeleteModal();
     }
   });
+
+  async function resendSms(inviteId) {
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    try {
+      const response = await fetch(`/api/v1/api/invites/${inviteId}/resend-sms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'SMS sent successfully!';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+        // Reload to update status
+        window.location.reload();
+      } else {
+        // Show error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = data.error || 'Failed to send SMS';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    } catch (error) {
+      console.error('Error sending SMS:', error);
+      const notification = document.createElement('div');
+      notification.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.textContent = 'An error occurred while sending SMS';
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 5000);
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 </script>
 {% endblock %}

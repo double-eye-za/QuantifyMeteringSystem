@@ -12,6 +12,7 @@ from ...services.mobile_invites import (
     delete_used_invites,
     get_invite_stats,
     mark_invite_as_used,
+    resend_invite_sms,
 )
 from ...utils.decorators import requires_permission
 from . import api_v1
@@ -146,3 +147,14 @@ def api_delete_used_invites():
         "message": f"Deleted {count} used invite(s)",
         "deleted_count": count,
     })
+
+
+@api_v1.route("/api/invites/<int:invite_id>/resend-sms", methods=["POST"])
+@login_required
+@requires_permission("users.edit")
+def api_resend_invite_sms(invite_id: int):
+    """API endpoint to resend welcome SMS for an invite."""
+    success, message = resend_invite_sms(invite_id)
+    if success:
+        return jsonify({"message": message})
+    return jsonify({"error": message}), 400

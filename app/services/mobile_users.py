@@ -89,9 +89,12 @@ def create_mobile_user(
         ...     print(f"Temp password: {result['temp_password']}")
         ...     print(f"SMS sent: {result['sms_sent']}")
     """
+    print(f"[MOBILE_USERS] create_mobile_user called - person_id: {person_id}, send_sms: {send_sms}, estate: {estate_name}")
+
     # Validate person exists
     person = Person.query.get(person_id)
     if not person:
+        print(f"[MOBILE_USERS] ERROR: Person {person_id} not found")
         return False, {
             "code": 404,
             "message": f"Person with ID {person_id} not found"
@@ -99,37 +102,48 @@ def create_mobile_user(
 
     # Validate person has phone number
     if not person.phone:
+        print(f"[MOBILE_USERS] ERROR: Person {person_id} has no phone number")
         return False, {
             "code": 400,
             "message": "Person must have a phone number to create mobile account"
         }
 
+    print(f"[MOBILE_USERS] Person found: {person.full_name}, phone: {person.phone}")
+
     # Validate and normalize phone number
     is_valid, normalized_phone = validate_phone_number(person.phone)
     if not is_valid:
+        print(f"[MOBILE_USERS] ERROR: Invalid phone number format: {person.phone}")
         return False, {
             "code": 400,
             "message": f"Invalid phone number format: {person.phone}"
         }
 
+    print(f"[MOBILE_USERS] Phone validated and normalized: {normalized_phone}")
+
     # Check if mobile user already exists for this person
     existing = get_mobile_user_by_person_id(person_id)
     if existing:
+        print(f"[MOBILE_USERS] ERROR: Mobile user already exists for person {person_id}")
         return False, {
             "code": 409,
             "message": "Mobile user account already exists for this person"
         }
 
     # Check if phone number is already in use
+    print(f"[MOBILE_USERS] Checking if phone {normalized_phone} exists in mobile_users...")
     existing_phone = get_mobile_user_by_phone(normalized_phone)
     if existing_phone:
+        print(f"[MOBILE_USERS] ERROR: Phone {normalized_phone} already in use by mobile_user id={existing_phone.id}, person_id={existing_phone.person_id}, phone_number={existing_phone.phone_number}")
         return False, {
             "code": 409,
             "message": "This phone number is already registered to another mobile user"
         }
+    print(f"[MOBILE_USERS] Phone {normalized_phone} is available")
 
     # Generate temporary password
     temp_password = generate_temporary_password()
+    print(f"[MOBILE_USERS] Generated temp password: {temp_password}")
 
     # Create mobile user
     mobile_user = MobileUser(
@@ -142,11 +156,13 @@ def create_mobile_user(
 
     db.session.add(mobile_user)
     db.session.commit()
+    print(f"[MOBILE_USERS] Mobile user created with ID: {mobile_user.id}")
 
     # Send welcome SMS with temporary password
     sms_sent = False
     sms_error = None
     if send_sms:
+        print(f"[MOBILE_USERS] Sending welcome SMS to {normalized_phone}...")
         sms_success, sms_message = send_welcome_sms(
             phone_number=normalized_phone,
             temp_password=temp_password,
@@ -155,8 +171,12 @@ def create_mobile_user(
         sms_sent = sms_success
         if not sms_success:
             sms_error = sms_message
+        print(f"[MOBILE_USERS] SMS result - sent: {sms_sent}, error: {sms_error}")
+    else:
+        print(f"[MOBILE_USERS] SMS sending disabled (send_sms=False)")
 
     # Create invite record for admin tracking
+    print(f"[MOBILE_USERS] Creating invite record...")
     invite = create_invite(
         mobile_user_id=mobile_user.id,
         person_id=person_id,
@@ -169,7 +189,9 @@ def create_mobile_user(
         sms_error=sms_error,
         created_by=created_by,
     )
+    print(f"[MOBILE_USERS] Invite created with ID: {invite.id}")
 
+    print(f"[MOBILE_USERS] SUCCESS - Mobile user creation complete")
     return True, {
         "user": mobile_user,
         "temp_password": temp_password,

@@ -36,6 +36,9 @@ class MeterReading(db.Model):
     flow_rate: Optional[float]
     pressure: Optional[float]
     status: Optional[str]
+    is_billed: Optional[bool]
+    billed_at: Optional[datetime]
+    transaction_id: Optional[int]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"), nullable=False)
@@ -68,6 +71,11 @@ class MeterReading(db.Model):
     pressure = db.Column(db.Numeric(6, 2), nullable=True)  # Pressure (bar or kPa)
 
     status = db.Column(db.String(50), nullable=True)  # Meter status (online, offline, error, etc.)
+
+    # Billing tracking fields (for consumption deduction)
+    is_billed = db.Column(db.Boolean, default=False, nullable=False)
+    billed_at = db.Column(db.DateTime, nullable=True)
+    transaction_id = db.Column(db.Integer, db.ForeignKey("transactions.id"), nullable=True)
 
     __table_args__ = (
         CheckConstraint(
@@ -106,4 +114,7 @@ class MeterReading(db.Model):
             "flow_rate": float(self.flow_rate) if self.flow_rate is not None else None,
             "pressure": float(self.pressure) if self.pressure is not None else None,
             "status": self.status,
+            "is_billed": self.is_billed,
+            "billed_at": self.billed_at.isoformat() if self.billed_at else None,
+            "transaction_id": self.transaction_id,
         }

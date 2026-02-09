@@ -36,7 +36,7 @@ class Person(db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    phone = db.Column(db.String(20), nullable=False)
+    phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
     alternate_phone = db.Column(db.String(20))
     id_number = db.Column(db.String(20), unique=True, index=True)
     emergency_contact_name = db.Column(db.String(200))
