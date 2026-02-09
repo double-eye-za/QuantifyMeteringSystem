@@ -409,6 +409,52 @@ async function performDeleteMeter() {
   }
 }
 
+// Get estate ID from a meter record for grouping
+function getMeterEstateId(meter) {
+  if (meter.unit && meter.unit.estate_id) {
+    return meter.unit.estate_id;
+  } else if (meter.assigned_estate && meter.assigned_estate.id) {
+    return meter.assigned_estate.id;
+  }
+  return 'unassigned';
+}
+
+// Get estate name from a meter record
+function getMeterEstateName(meter) {
+  if (meter.unit && meter.unit.estate_name) {
+    return meter.unit.estate_name;
+  } else if (meter.assigned_estate && meter.assigned_estate.name) {
+    return meter.assigned_estate.name;
+  }
+  return 'Unassigned';
+}
+
+// Render estate group header row for meters
+function renderMeterEstateHeader(meter, meterCount) {
+  const estateId = getMeterEstateId(meter);
+  const estateName = getMeterEstateName(meter);
+  const isUnassigned = estateId === 'unassigned';
+
+  const bgClass = isUnassigned
+    ? 'from-gray-500 to-gray-400 dark:from-gray-600 dark:to-gray-500'
+    : 'from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600';
+  const icon = isUnassigned ? 'fa-question-circle' : 'fa-building';
+
+  return `
+    <tr class="estate-header-row bg-gradient-to-r ${bgClass}">
+      <td colspan="8" class="px-6 py-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas ${icon} text-white/80"></i>
+            <span class="text-sm font-semibold text-white">${estateName}</span>
+          </div>
+          <span class="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">${meterCount} meter${meterCount !== 1 ? 's' : ''}</span>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   // Initialize TableFilter for AJAX-based filtering
   metersTableFilter = new TableFilter({
@@ -423,6 +469,9 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     renderRow: renderMeterRow,
     colSpan: 8,
+    // Group by estate (with unassigned last)
+    groupBy: getMeterEstateId,
+    renderGroupHeader: renderMeterEstateHeader,
     onError: (error) => showFlashMessage(error, 'error', false),
     onAfterFetch: () => {
       // Re-attach event listeners after table is re-rendered

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Any
 
-from sqlalchemy import or_, case, and_, literal
+from sqlalchemy import or_, case, and_, literal, func
 from sqlalchemy.orm import aliased
 
 from app.db import db
@@ -36,10 +36,15 @@ def list_meters_paginated(
     Returns:
         Tuple of (list of meter dicts with related data, pagination metadata)
     """
+    # Alias for bulk meter estate assignments
+    BulkElecEstate = aliased(Estate)
+    BulkWaterEstate = aliased(Estate)
+
     # Build base query with all necessary joins
     # Join meters to units (a meter can be assigned via any of the 4 meter_id columns)
+    # Also join to estates for bulk meters
     query = (
-        db.session.query(Meter, Unit, Wallet, Estate)
+        db.session.query(Meter, Unit, Wallet, Estate, BulkElecEstate, BulkWaterEstate)
         .outerjoin(
             Unit,
             or_(
@@ -51,6 +56,16 @@ def list_meters_paginated(
         )
         .outerjoin(Wallet, Wallet.unit_id == Unit.id)
         .outerjoin(Estate, Estate.id == Unit.estate_id)
+        # Join for bulk electricity meters
+        .outerjoin(
+            BulkElecEstate,
+            BulkElecEstate.bulk_electricity_meter_id == Meter.id,
+        )
+        # Join for bulk water meters
+        .outerjoin(
+            BulkWaterEstate,
+            BulkWaterEstate.bulk_water_meter_id == Meter.id,
+        )
     )
 
     # Apply meter_type filter
@@ -61,53 +76,14 @@ def list_meters_paginated(
     if communication_status:
         query = query.filter(Meter.communication_status == communication_status)
 
-    # Apply estate filter (for unit-assigned meters)
+    # Apply estate filter (for unit-assigned meters and bulk meters)
     if estate_id:
-        # Also check for bulk meters assigned directly to estates
-        bulk_elec_estate = aliased(Estate)
-        bulk_water_estate = aliased(Estate)
-
-        query = (
-            db.session.query(Meter, Unit, Wallet, Estate)
-            .outerjoin(
-                Unit,
-                or_(
-                    Unit.electricity_meter_id == Meter.id,
-                    Unit.water_meter_id == Meter.id,
-                    Unit.solar_meter_id == Meter.id,
-                    Unit.hot_water_meter_id == Meter.id,
-                ),
-            )
-            .outerjoin(Wallet, Wallet.unit_id == Unit.id)
-            .outerjoin(Estate, Estate.id == Unit.estate_id)
-            .outerjoin(
-                bulk_elec_estate,
-                and_(
-                    bulk_elec_estate.bulk_electricity_meter_id == Meter.id,
-                    Meter.meter_type == "bulk_electricity",
-                ),
-            )
-            .outerjoin(
-                bulk_water_estate,
-                and_(
-                    bulk_water_estate.bulk_water_meter_id == Meter.id,
-                    Meter.meter_type == "bulk_water",
-                ),
-            )
-        )
-
-        # Re-apply other filters after rebuilding query
-        if meter_type:
-            query = query.filter(Meter.meter_type == meter_type)
-        if communication_status:
-            query = query.filter(Meter.communication_status == communication_status)
-
         # Filter by estate (either through unit or bulk meter assignment)
         query = query.filter(
             or_(
                 Estate.id == estate_id,
-                bulk_elec_estate.id == estate_id,
-                bulk_water_estate.id == estate_id,
+                BulkElecEstate.id == estate_id,
+                BulkWaterEstate.id == estate_id,
             )
         )
 
@@ -120,6 +96,8 @@ def list_meters_paginated(
                 Meter.serial_number.ilike(like),
                 Unit.unit_number.ilike(like),
                 Estate.name.ilike(like),
+                BulkElecEstate.name.ilike(like),
+                BulkWaterEstate.name.ilike(like),
             )
         )
 
@@ -161,9 +139,26 @@ def list_meters_paginated(
     # Get total count before pagination (using a subquery for efficiency)
     total = query.count()
 
-    # Apply pagination
+    # Create a coalesced estate name expression that considers:
+    # 1. Estate from unit assignment
+    # 2. Estate from bulk electricity meter assignment
+    # 3. Estate from bulk water meter assignment
+    # 4. NULL for truly unassigned meters
+    effective_estate_name = func.coalesce(
+        Estate.name,
+        BulkElecEstate.name,
+        BulkWaterEstate.name
+    )
+
+    # Apply pagination with sorting by estate name (nulls/unassigned last), then unit number, then meter serial
     items = (
-        query.order_by(Meter.id)
+        query.order_by(
+            # Unassigned meters (no estate from any source) should appear last
+            case((effective_estate_name.is_(None), 1), else_=0),
+            effective_estate_name.asc(),
+            Unit.unit_number.asc(),
+            Meter.serial_number.asc()
+        )
         .offset((page - 1) * per_page)
         .limit(per_page)
         .all()
@@ -171,7 +166,7 @@ def list_meters_paginated(
 
     # Build result list with computed fields
     meters_data = []
-    for meter, unit, wallet, estate in items:
+    for meter, unit, wallet, estate, bulk_elec_estate, bulk_water_estate in items:
         # Compute credit status
         if wallet:
             if meter.meter_type == "electricity":
@@ -196,17 +191,8 @@ def list_meters_paginated(
             bal = 0.0
             derived_credit = "disconnected" if unit else None
 
-        # Check for bulk meter estate assignment
-        assigned_estate = None
-        if not unit and meter.meter_type in ("bulk_electricity", "bulk_water"):
-            if meter.meter_type == "bulk_electricity":
-                assigned_estate = Estate.query.filter_by(
-                    bulk_electricity_meter_id=meter.id
-                ).first()
-            elif meter.meter_type == "bulk_water":
-                assigned_estate = Estate.query.filter_by(
-                    bulk_water_meter_id=meter.id
-                ).first()
+        # Check for bulk meter estate assignment (use joined data, no extra queries)
+        assigned_estate = bulk_elec_estate or bulk_water_estate
 
         meters_data.append({
             **meter.to_dict(),

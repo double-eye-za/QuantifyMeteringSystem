@@ -16,6 +16,9 @@ from ...services.units import (
     create_unit as svc_create_unit,
     update_unit as svc_update_unit,
     delete_unit as svc_delete_unit,
+    decommission_unit as svc_decommission_unit,
+    recommission_unit as svc_recommission_unit,
+    UnitDeleteError,
 )
 from ...services.meters import list_available_by_type as svc_list_available_meters
 from ...services.persons import (
@@ -64,6 +67,13 @@ def units_page():
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
 
+    # Count units per estate for header display (within the current filtered result set)
+    estate_unit_counts = {}
+    for u in units:
+        eid = u.get("estate_id")
+        if eid:
+            estate_unit_counts[eid] = estate_unit_counts.get(eid, 0) + 1
+
     assigned_ids = set()
     for u in Unit.query.with_entities(
         Unit.electricity_meter_id,
@@ -100,6 +110,7 @@ def units_page():
         "units/units.html",
         units=units,
         estates=estates,
+        estate_unit_counts=estate_unit_counts,
         electricity_meters=electricity_meters,
         water_meters=water_meters,
         hot_water_meters=hot_water_meters,
@@ -1183,6 +1194,63 @@ def delete_unit(unit_id: int):
     unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
-    svc_delete_unit(unit)
+    try:
+        svc_delete_unit(unit)
+    except UnitDeleteError as e:
+        return jsonify({"error": str(e), "code": 409}), 409
     log_action("unit.delete", entity_type="unit", entity_id=unit_id)
     return jsonify({"message": "Deleted"})
+
+
+@api_v1.post("/units/<int:unit_id>/decommission")
+@login_required
+@requires_permission("units.delete")
+def decommission_unit(unit_id: int):
+    """
+    Decommission a unit (soft delete).
+
+    This is used when a unit has transaction history that must be preserved.
+    - Sets is_active = False
+    - Unlinks all meters
+    - Keeps wallet and transactions for audit
+    """
+    unit = svc_get_unit_by_id(unit_id)
+    if not unit:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    if not unit.is_active:
+        return jsonify({"error": "Unit is already decommissioned", "code": 400}), 400
+
+    svc_decommission_unit(unit)
+    log_action("unit.decommission", entity_type="unit", entity_id=unit_id)
+    return jsonify({
+        "message": f"Unit '{unit.unit_number}' has been decommissioned",
+        "data": unit.to_dict()
+    })
+
+
+@api_v1.post("/units/<int:unit_id>/recommission")
+@login_required
+@requires_permission("units.edit")
+def recommission_unit(unit_id: int):
+    """
+    Recommission a previously decommissioned unit.
+
+    This brings the unit back to active status.
+    - Sets is_active = True
+    - Sets occupancy_status to 'vacant'
+    - Meters must be reassigned manually after recommissioning
+    """
+    unit = svc_get_unit_by_id(unit_id)
+    if not unit:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    if unit.is_active:
+        return jsonify({"error": "Unit is already active", "code": 400}), 400
+
+    svc_recommission_unit(unit)
+    log_action("unit.recommission", entity_type="unit", entity_id=unit_id)
+    return jsonify({
+        "message": f"Unit '{unit.unit_number}' has been recommissioned and is now active",
+        "data": unit.to_dict()
+    })

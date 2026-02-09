@@ -144,7 +144,31 @@ block breadcrumb %}
                                 </tr>
                             </thead>
                             <tbody id="unitsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+       {% set current_estate_id = namespace(value=None) %}
+       {% set estate_name_ns = namespace(value='') %}
        {% for u in units %}
+        {# Insert estate header row when estate changes #}
+        {% if u.estate_id != current_estate_id.value %}
+          {% set current_estate_id.value = u.estate_id %}
+          {% set estate_name_ns.value = '' %}
+          {% for e in estates %}
+            {% if e.id == u.estate_id %}
+              {% set estate_name_ns.value = e.name %}
+            {% endif %}
+          {% endfor %}
+          {% set estate_unit_count = estate_unit_counts.get(u.estate_id, 0) %}
+        <tr class="estate-header-row bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
+          <td colspan="10" class="px-4 py-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-building text-white/80"></i>
+                <span class="text-sm font-semibold text-white">{{ estate_name_ns.value }}</span>
+              </div>
+              <span class="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{{ estate_unit_count }} unit{{ 's' if estate_unit_count != 1 else '' }}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-unit='{{ u | tojson }}'>
           <td class="px-4 py-3"><input type="checkbox" class="rounded border-gray-300 dark:border-gray-600"/></td>
                                     <td class="px-4 py-3">
@@ -249,19 +273,38 @@ block breadcrumb %}
               {% endif %}
                                         </div>
                                     </td>
-          <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' if u.occupancy_status=='occupied' else 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">{{ u.occupancy_status|capitalize }}</span></td>
+          <td class="px-4 py-3">
+            {% if u.is_active == false %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400">Decommissioned</span>
+            {% elif u.occupancy_status=='occupied' %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400">Occupied</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{{ u.occupancy_status|capitalize if u.occupancy_status else 'Vacant' }}</span>
+            {% endif %}
+          </td>
                                     <td class="px-4 py-3">
                                         <div class="flex items-center gap-2">
               <a href="{{ url_for('api_v1.unit_details_page', unit_id=u.id) }}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>
-              {% if u.occupancy_status=='vacant' %}
-                <button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>
-              {% else %}
-                {% if has_permission('units.edit') %}
-                <button type="button" onclick="editUnit(this)" class="text-gray-600 dark:text-gray-400 hover:text-primary text-sm"><i class="fas fa-edit mr-1"></i>Edit</button>
+              {% if u.is_active != false %}
+                {# Active units: show normal actions #}
+                {% if u.occupancy_status=='vacant' %}
+                  <button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>
+                {% else %}
+                  {% if has_permission('units.edit') %}
+                  <button type="button" onclick="editUnit(this)" class="text-gray-600 dark:text-gray-400 hover:text-primary text-sm"><i class="fas fa-edit mr-1"></i>Edit</button>
+                  {% endif %}
                 {% endif %}
-              {% endif %}
-              {% if has_permission('units.delete') %}
-              <button type="button" onclick="confirmDeleteUnit({{ u.id }})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>
+                {% if has_permission('units.delete') %}
+                <button type="button" onclick="confirmDecommissionUnit({{ u.id }}, '{{ u.unit_number }}')" class="text-yellow-600 dark:text-yellow-400 hover:underline text-sm"><i class="fas fa-archive mr-1"></i>Decommission</button>
+                {% endif %}
+              {% else %}
+                {# Decommissioned units: show Recommission and Delete buttons #}
+                {% if has_permission('units.edit') %}
+                <button type="button" onclick="confirmRecommissionUnit({{ u.id }}, '{{ u.unit_number }}')" class="text-green-600 dark:text-green-400 hover:underline text-sm"><i class="fas fa-undo mr-1"></i>Recommission</button>
+                {% endif %}
+                {% if has_permission('units.delete') %}
+                <button type="button" onclick="confirmDeleteUnit({{ u.id }})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>
+                {% endif %}
               {% endif %}
                                         </div>
                                     </td>
@@ -353,6 +396,54 @@ block breadcrumb %}
     <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
       <button type="button" onclick="hideDeleteUnitModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
       <button type="button" onclick="performDeleteUnit()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Decommission Unit Confirmation Modal -->
+<div id="decommissionUnitModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white"><i class="fas fa-archive mr-2 text-yellow-500"></i>Decommission Unit</h3>
+    </div>
+    <div class="p-4 text-sm text-gray-700 dark:text-gray-300">
+      <p class="mb-3">Are you sure you want to decommission unit <strong id="decommissionUnitLabel"></strong>?</p>
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+        <p class="text-yellow-800 dark:text-yellow-300 text-sm"><i class="fas fa-info-circle mr-2"></i>This will:</p>
+        <ul class="list-disc list-inside text-yellow-700 dark:text-yellow-400 text-sm mt-2 space-y-1">
+          <li>Mark the unit as inactive</li>
+          <li>Unlink all meters (they can be reassigned)</li>
+          <li>Preserve wallet and transaction history</li>
+        </ul>
+      </div>
+    </div>
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+      <button type="button" onclick="hideDecommissionUnitModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+      <button type="button" onclick="performDecommissionUnit()" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg"><i class="fas fa-archive mr-2"></i>Decommission</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recommission Unit Confirmation Modal -->
+<div id="recommissionUnitModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white"><i class="fas fa-undo mr-2 text-green-500"></i>Recommission Unit</h3>
+    </div>
+    <div class="p-4 text-sm text-gray-700 dark:text-gray-300">
+      <p class="mb-3">Are you sure you want to recommission unit <strong id="recommissionUnitLabel"></strong>?</p>
+      <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+        <p class="text-green-800 dark:text-green-300 text-sm"><i class="fas fa-info-circle mr-2"></i>This will:</p>
+        <ul class="list-disc list-inside text-green-700 dark:text-green-400 text-sm mt-2 space-y-1">
+          <li>Mark the unit as active again</li>
+          <li>Set status to vacant (ready for new tenant)</li>
+          <li>Meters will need to be reassigned</li>
+        </ul>
+      </div>
+    </div>
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+      <button type="button" onclick="hideRecommissionUnitModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+      <button type="button" onclick="performRecommissionUnit()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"><i class="fas fa-undo mr-2"></i>Recommission</button>
     </div>
   </div>
 </div>

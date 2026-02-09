@@ -13,7 +13,9 @@ def list_units(
     occupancy_status: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    query = Unit.query
+    # Always join to Estate for sorting by estate name
+    query = Unit.query.outerjoin(Estate, Unit.estate_id == Estate.id)
+
     if estate_id is not None:
         query = query.filter(Unit.estate_id == estate_id)
     if occupancy_status is not None:
@@ -23,8 +25,7 @@ def list_units(
         # Search across unit_number, building, estate name, and tenant name
         # Use outerjoin to include units without tenants
         query = (
-            query.outerjoin(Estate, Unit.estate_id == Estate.id)
-            .outerjoin(UnitTenancy, Unit.id == UnitTenancy.unit_id)
+            query.outerjoin(UnitTenancy, Unit.id == UnitTenancy.unit_id)
             .outerjoin(Person, UnitTenancy.person_id == Person.id)
             .filter(
                 or_(
@@ -37,6 +38,10 @@ def list_units(
             )
             .distinct()
         )
+
+    # Sort by Estate name, then by Unit number
+    query = query.order_by(Estate.name.asc(), Unit.unit_number.asc())
+
     return query
 
 
@@ -117,9 +122,86 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
     return unit
 
 
+class UnitDeleteError(Exception):
+    """Raised when a unit cannot be deleted due to dependencies."""
+    pass
+
+
 def delete_unit(unit: Unit):
+    """
+    Delete a unit safely.
+
+    Rules:
+    - If wallet has transactions, raise error (can't delete financial history)
+    - If wallet exists but no transactions, delete wallet first
+    - Unlink meters (don't delete them, they can be repurposed)
+    - Delete unit
+    """
+    from ..models import Wallet, Transaction
+
+    # Check if unit has a wallet
+    wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+
+    if wallet:
+        # Check if wallet has any transactions (financial history)
+        transaction_count = Transaction.query.filter_by(wallet_id=wallet.id).count()
+
+        if transaction_count > 0:
+            raise UnitDeleteError(
+                f"Cannot delete unit '{unit.unit_number}': wallet has {transaction_count} transaction(s). "
+                f"Consider decommissioning the unit instead to preserve financial history."
+            )
+
+        # No transactions - safe to delete wallet
+        db.session.delete(wallet)
+
+    # Unlink meters (don't delete them - they can be repurposed)
+    unit.electricity_meter_id = None
+    unit.water_meter_id = None
+    unit.solar_meter_id = None
+    unit.hot_water_meter_id = None
+
+    # Now delete the unit
     db.session.delete(unit)
     db.session.commit()
+
+
+def decommission_unit(unit: Unit):
+    """
+    Decommission a unit (soft delete).
+
+    This preserves financial history while removing the unit from active use.
+    - Sets is_active = False
+    - Unlinks all meters (they can be repurposed)
+    - Keeps wallet and transactions for audit trail
+    """
+    # Unlink meters (don't delete them - they can be repurposed)
+    unit.electricity_meter_id = None
+    unit.water_meter_id = None
+    unit.solar_meter_id = None
+    unit.hot_water_meter_id = None
+
+    # Mark as inactive
+    unit.is_active = False
+
+    db.session.commit()
+    return unit
+
+
+def recommission_unit(unit: Unit):
+    """
+    Recommission a previously decommissioned unit.
+
+    This brings the unit back to active status.
+    - Sets is_active = True
+    - Sets occupancy_status to 'vacant' (meters need to be reassigned)
+    - Meters must be reassigned manually after recommissioning
+    """
+    unit.is_active = True
+    unit.occupancy_status = "vacant"
+
+    db.session.commit()
+    return unit
 
 
 def count_units():

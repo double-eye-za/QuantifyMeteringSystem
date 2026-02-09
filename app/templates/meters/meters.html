@@ -191,8 +191,42 @@ block breadcrumb %}
                         </tr>
                     </thead>
                     <tbody id="metersTableBody">
+        {% set current_estate_id = namespace(value='__initial__') %}
+        {% set estate_name_ns = namespace(value='') %}
         {% for m in meters %}
         {% set unit = m.unit %}
+        {% set assigned_estate = m.assigned_estate %}
+        {# Determine estate ID for this meter #}
+        {% set meter_estate_id = unit.estate_id if unit else (assigned_estate.id if assigned_estate else 'unassigned') %}
+
+        {# Insert estate header row when estate changes #}
+        {% if meter_estate_id != current_estate_id.value %}
+          {% set current_estate_id.value = meter_estate_id %}
+          {% if meter_estate_id == 'unassigned' %}
+            {% set estate_name_ns.value = 'Unassigned' %}
+            {% set estate_meter_count = estate_meter_counts.get('unassigned', 0) %}
+          {% else %}
+            {% set estate_name_ns.value = '' %}
+            {% for e in estates %}
+              {% if e.id == meter_estate_id %}
+                {% set estate_name_ns.value = e.name %}
+              {% endif %}
+            {% endfor %}
+            {% set estate_meter_count = estate_meter_counts.get(meter_estate_id, 0) %}
+          {% endif %}
+        <tr class="estate-header-row bg-gradient-to-r {{ 'from-gray-500 to-gray-400 dark:from-gray-600 dark:to-gray-500' if meter_estate_id == 'unassigned' else 'from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600' }}">
+          <td colspan="8" class="px-6 py-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas {{ 'fa-question-circle' if meter_estate_id == 'unassigned' else 'fa-building' }} text-white/80"></i>
+                <span class="text-sm font-semibold text-white">{{ estate_name_ns.value }}</span>
+              </div>
+              <span class="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{{ estate_meter_count }} meter{{ 's' if estate_meter_count != 1 else '' }}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
         {% set est_name = '' %}
         {% for e in estates %}{% if unit and e.id==unit.estate_id %}{% set est_name = e.name %}{% endif %}{% endfor %}
         {% set balance = 0 %}

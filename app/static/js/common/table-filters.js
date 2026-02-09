@@ -38,6 +38,10 @@ class TableFilter {
     this.renderPagination = options.renderPagination || null;
     this.colSpan = options.colSpan || 7;
 
+    // Grouping support
+    this.groupBy = options.groupBy || null; // Function to get group key from item
+    this.renderGroupHeader = options.renderGroupHeader || null; // Function to render group header row
+
     // Internal state
     this.debounceTimers = {};
     this.currentRequest = null;
@@ -298,7 +302,35 @@ class TableFilter {
       return;
     }
 
-    const html = items.map(item => this.renderRow(item)).join('');
+    let html = '';
+
+    // If grouping is configured, insert group headers when group key changes
+    if (this.groupBy && this.renderGroupHeader) {
+      let currentGroupKey = null;
+
+      // Pre-calculate group counts
+      const groupCounts = {};
+      items.forEach(item => {
+        const groupKey = this.groupBy(item);
+        groupCounts[groupKey] = (groupCounts[groupKey] || 0) + 1;
+      });
+
+      items.forEach(item => {
+        const groupKey = this.groupBy(item);
+
+        // Insert group header if group changed
+        if (groupKey !== currentGroupKey) {
+          currentGroupKey = groupKey;
+          html += this.renderGroupHeader(item, groupCounts[groupKey] || 0);
+        }
+
+        html += this.renderRow(item);
+      });
+    } else {
+      // No grouping, render rows directly
+      html = items.map(item => this.renderRow(item)).join('');
+    }
+
     tableBody.innerHTML = html;
 
     // Re-attach any event listeners needed for action buttons

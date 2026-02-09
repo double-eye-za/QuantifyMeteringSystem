@@ -98,24 +98,45 @@ function renderUnitRow(u) {
     tenantsHtml = '<p class="text-sm text-gray-500 dark:text-gray-400">Vacant</p>';
   }
 
+  // Check if unit is decommissioned (inactive)
+  const isDecommissioned = u.is_active === false;
+
   // Build status badge
-  const statusClass = u.occupancy_status === 'occupied'
-    ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400'
-    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
-  const statusText = u.occupancy_status ? u.occupancy_status.charAt(0).toUpperCase() + u.occupancy_status.slice(1) : '';
+  let statusClass, statusText;
+  if (isDecommissioned) {
+    statusClass = 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400';
+    statusText = 'Decommissioned';
+  } else if (u.occupancy_status === 'occupied') {
+    statusClass = 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400';
+    statusText = 'Occupied';
+  } else {
+    statusClass = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
+    statusText = u.occupancy_status ? u.occupancy_status.charAt(0).toUpperCase() + u.occupancy_status.slice(1) : 'Vacant';
+  }
 
   // Build actions HTML
   let actionsHtml = '<div class="flex items-center gap-2">';
   actionsHtml += `<a href="/api/v1/units/${u.id}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>`;
 
-  if (isVacant) {
-    actionsHtml += `<button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>`;
-  } else if (permissions.canEdit) {
-    actionsHtml += `<button type="button" class="edit-unit-btn text-gray-600 dark:text-gray-400 hover:text-primary text-sm" data-unit="${unitJson}"><i class="fas fa-edit mr-1"></i>Edit</button>`;
-  }
+  if (!isDecommissioned) {
+    if (isVacant) {
+      actionsHtml += `<button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>`;
+    } else if (permissions.canEdit) {
+      actionsHtml += `<button type="button" class="edit-unit-btn text-gray-600 dark:text-gray-400 hover:text-primary text-sm" data-unit="${unitJson}"><i class="fas fa-edit mr-1"></i>Edit</button>`;
+    }
 
-  if (permissions.canDelete) {
-    actionsHtml += `<button type="button" onclick="confirmDeleteUnit(${u.id})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>`;
+    // Active units: show Decommission button only
+    if (permissions.canDelete) {
+      actionsHtml += `<button type="button" onclick="confirmDecommissionUnit(${u.id}, '${u.unit_number}')" class="text-yellow-600 dark:text-yellow-400 hover:underline text-sm"><i class="fas fa-archive mr-1"></i>Decommission</button>`;
+    }
+  } else {
+    // Decommissioned units: show Recommission and Delete buttons
+    if (permissions.canEdit) {
+      actionsHtml += `<button type="button" onclick="confirmRecommissionUnit(${u.id}, '${u.unit_number}')" class="text-green-600 dark:text-green-400 hover:underline text-sm"><i class="fas fa-undo mr-1"></i>Recommission</button>`;
+    }
+    if (permissions.canDelete) {
+      actionsHtml += `<button type="button" onclick="confirmDeleteUnit(${u.id})" class="text-red-600 dark:text-red-400 hover:underline text-sm"><i class="fas fa-trash mr-1"></i>Delete</button>`;
+    }
   }
   actionsHtml += '</div>';
 
@@ -587,6 +608,142 @@ window.performDeleteUnit = async function () {
   }
 };
 
+// Decommission Unit functionality
+let decommissionUnitId = null;
+let decommissionUnitNumber = null;
+
+window.confirmDecommissionUnit = function (unitId, unitNumber) {
+  try {
+    decommissionUnitId = unitId;
+    decommissionUnitNumber = unitNumber;
+    const modal = document.getElementById("decommissionUnitModal");
+    const unitLabel = document.getElementById("decommissionUnitLabel");
+    if (unitLabel) unitLabel.textContent = unitNumber || unitId;
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+window.hideDecommissionUnitModal = function () {
+  try {
+    const modal = document.getElementById("decommissionUnitModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+window.performDecommissionUnit = async function () {
+  try {
+    if (!decommissionUnitId) return;
+
+    const resp = await fetch(`${BASE_URL}/${decommissionUnitId}/decommission`, {
+      method: "POST",
+    });
+
+    const result = await resp.json();
+
+    if (resp.ok) {
+      window.hideDecommissionUnitModal();
+      showFlashMessage(result.message || "Unit decommissioned successfully", "success", false);
+      refreshUnitsTable();
+    } else {
+      window.hideDecommissionUnitModal();
+      const errorMessage = result.error || result.message || "Failed to decommission unit.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (e) {
+    window.hideDecommissionUnitModal();
+    console.error("Error decommissioning unit:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
+  }
+};
+
+// Recommission Unit functionality
+let recommissionUnitId = null;
+let recommissionUnitNumber = null;
+
+window.confirmRecommissionUnit = function (unitId, unitNumber) {
+  try {
+    recommissionUnitId = unitId;
+    recommissionUnitNumber = unitNumber;
+    const modal = document.getElementById("recommissionUnitModal");
+    const unitLabel = document.getElementById("recommissionUnitLabel");
+    if (unitLabel) unitLabel.textContent = unitNumber || unitId;
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+window.hideRecommissionUnitModal = function () {
+  try {
+    const modal = document.getElementById("recommissionUnitModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+window.performRecommissionUnit = async function () {
+  try {
+    if (!recommissionUnitId) return;
+
+    const resp = await fetch(`${BASE_URL}/${recommissionUnitId}/recommission`, {
+      method: "POST",
+    });
+
+    const result = await resp.json();
+
+    if (resp.ok) {
+      window.hideRecommissionUnitModal();
+      showFlashMessage(result.message || "Unit recommissioned successfully", "success", false);
+      refreshUnitsTable();
+    } else {
+      window.hideRecommissionUnitModal();
+      const errorMessage = result.error || result.message || "Failed to recommission unit.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (e) {
+    window.hideRecommissionUnitModal();
+    console.error("Error recommissioning unit:", e);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
+  }
+};
+
+// Render estate group header row
+function renderEstateHeader(unit, unitCount) {
+  const estatesMap = window.ESTATES_MAP || {};
+  const estateName = estatesMap[unit.estate_id] || 'Unknown Estate';
+
+  return `
+    <tr class="estate-header-row bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600">
+      <td colspan="10" class="px-4 py-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-building text-white/80"></i>
+            <span class="text-sm font-semibold text-white">${estateName}</span>
+          </div>
+          <span class="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">${unitCount} unit${unitCount !== 1 ? 's' : ''}</span>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   // Initialize TableFilter for AJAX-based filtering
   unitsTableFilter = new TableFilter({
@@ -599,6 +756,9 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     renderRow: renderUnitRow,
     colSpan: 10,
+    // Group by estate_id and render estate headers
+    groupBy: (unit) => unit.estate_id,
+    renderGroupHeader: renderEstateHeader,
     onError: (error) => showFlashMessage(error, 'error', false),
     onAfterFetch: () => {
       // Re-attach event listeners after table is re-rendered

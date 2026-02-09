@@ -112,6 +112,21 @@ def meters_page():
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
 
+    # Count meters per estate for header display (within the current result set)
+    # Also count unassigned meters
+    estate_meter_counts = {}
+    unassigned_count = 0
+    for m in meters:
+        if m.get("unit") and m["unit"].get("estate_id"):
+            eid = m["unit"]["estate_id"]
+            estate_meter_counts[eid] = estate_meter_counts.get(eid, 0) + 1
+        elif m.get("assigned_estate") and m["assigned_estate"].get("id"):
+            eid = m["assigned_estate"]["id"]
+            estate_meter_counts[eid] = estate_meter_counts.get(eid, 0) + 1
+        else:
+            unassigned_count += 1
+    estate_meter_counts["unassigned"] = unassigned_count
+
     # Units availability - join with Estate to get estate name
     units_info = []
     units_with_estates = (
@@ -150,6 +165,7 @@ def meters_page():
         "meters/meters.html",
         meters=meters,
         estates=estates,
+        estate_meter_counts=estate_meter_counts,
         units=units_info,
         meter_types=meter_types,
         device_types=device_types,
