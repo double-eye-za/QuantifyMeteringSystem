@@ -432,9 +432,13 @@ function initReadingsDateFilters() {
 async function fetchReadings(page = 1) {
   const startDate = document.getElementById("readingsStartDate")?.value || getTodayDateString();
   const endDate = document.getElementById("readingsEndDate")?.value || getTodayDateString();
+  const minConsumption = document.getElementById("readingsMinConsumption")?.value;
 
   try {
-    const url = `/api/v1/meters/${window.METER_ID}/readings-paginated?start_date=${startDate}&end_date=${endDate}&page=${page}&per_page=${readingsPerPage}`;
+    let url = `/api/v1/meters/${window.METER_ID}/readings-paginated?start_date=${startDate}&end_date=${endDate}&page=${page}&per_page=${readingsPerPage}`;
+    if (minConsumption && parseFloat(minConsumption) > 0) {
+      url += `&min_consumption=${minConsumption}`;
+    }
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -512,6 +516,7 @@ function updateReadingsPagination(pagination) {
   const paginationInfo = document.getElementById("readingsPaginationInfo");
   const prevBtn = document.getElementById("readingsPrevBtn");
   const nextBtn = document.getElementById("readingsNextBtn");
+  const pageNumbersContainer = document.getElementById("readingsPageNumbers");
 
   if (paginationInfo) {
     const start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.per_page + 1;
@@ -525,6 +530,57 @@ function updateReadingsPagination(pagination) {
   if (nextBtn) {
     nextBtn.disabled = pagination.page >= pagination.total_pages;
   }
+
+  // Generate page numbers
+  if (pageNumbersContainer) {
+    pageNumbersContainer.innerHTML = generatePageNumbers(
+      pagination.page,
+      pagination.total_pages,
+      (page) => fetchReadings(page)
+    );
+  }
+}
+
+function generatePageNumbers(currentPage, totalPages, onClickFn) {
+  if (totalPages <= 1) return "";
+
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+  // Adjust start if we're near the end
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+
+  let html = "";
+
+  // First page + ellipsis
+  if (startPage > 1) {
+    html += `<button onclick="(${onClickFn.toString()})(1)" class="px-2 py-1 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">1</button>`;
+    if (startPage > 2) {
+      html += `<span class="px-1 text-gray-400">...</span>`;
+    }
+  }
+
+  // Page numbers
+  for (let i = startPage; i <= endPage; i++) {
+    const isActive = i === currentPage;
+    const activeClass = isActive
+      ? "bg-primary text-white"
+      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600";
+    html += `<button data-page="${i}" class="page-num-btn px-2 py-1 text-sm rounded-lg ${activeClass}">${i}</button>`;
+  }
+
+  // Last page + ellipsis
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      html += `<span class="px-1 text-gray-400">...</span>`;
+    }
+    html += `<button data-page="${totalPages}" class="page-num-btn px-2 py-1 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">${totalPages}</button>`;
+  }
+
+  return html;
 }
 
 function showReadingsError(message) {
@@ -544,6 +600,7 @@ function setupReadingsControls() {
   const filterBtn = document.getElementById("filterReadingsBtn");
   const prevBtn = document.getElementById("readingsPrevBtn");
   const nextBtn = document.getElementById("readingsNextBtn");
+  const pageNumbersContainer = document.getElementById("readingsPageNumbers");
 
   if (filterBtn) {
     filterBtn.addEventListener("click", () => {
@@ -568,9 +625,23 @@ function setupReadingsControls() {
     });
   }
 
+  // Event delegation for page number buttons
+  if (pageNumbersContainer) {
+    pageNumbersContainer.addEventListener("click", (e) => {
+      const btn = e.target.closest(".page-num-btn");
+      if (btn) {
+        const page = parseInt(btn.dataset.page, 10);
+        if (page && page !== readingsCurrentPage) {
+          fetchReadings(page);
+        }
+      }
+    });
+  }
+
   // Also allow Enter key on date inputs to trigger filter
   const startDateInput = document.getElementById("readingsStartDate");
   const endDateInput = document.getElementById("readingsEndDate");
+  const minConsumptionInput = document.getElementById("readingsMinConsumption");
 
   if (startDateInput) {
     startDateInput.addEventListener("keypress", (e) => {
@@ -583,6 +654,15 @@ function setupReadingsControls() {
 
   if (endDateInput) {
     endDateInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        readingsCurrentPage = 1;
+        fetchReadings(1);
+      }
+    });
+  }
+
+  if (minConsumptionInput) {
+    minConsumptionInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         readingsCurrentPage = 1;
         fetchReadings(1);
@@ -712,6 +792,7 @@ function updateTransactionsPagination(pagination) {
   const paginationInfo = document.getElementById("txnPaginationInfo");
   const prevBtn = document.getElementById("txnPrevBtn");
   const nextBtn = document.getElementById("txnNextBtn");
+  const pageNumbersContainer = document.getElementById("txnPageNumbers");
 
   if (paginationInfo) {
     const start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.per_page + 1;
@@ -725,6 +806,52 @@ function updateTransactionsPagination(pagination) {
   if (nextBtn) {
     nextBtn.disabled = pagination.page >= pagination.total_pages;
   }
+
+  // Generate page numbers for transactions
+  if (pageNumbersContainer) {
+    pageNumbersContainer.innerHTML = generateTxnPageNumbers(
+      pagination.page,
+      pagination.total_pages
+    );
+  }
+}
+
+function generateTxnPageNumbers(currentPage, totalPages) {
+  if (totalPages <= 1) return "";
+
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+
+  let html = "";
+
+  if (startPage > 1) {
+    html += `<button data-page="1" class="txn-page-num-btn px-2 py-1 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">1</button>`;
+    if (startPage > 2) {
+      html += `<span class="px-1 text-gray-400">...</span>`;
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    const isActive = i === currentPage;
+    const activeClass = isActive
+      ? "bg-primary text-white"
+      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600";
+    html += `<button data-page="${i}" class="txn-page-num-btn px-2 py-1 text-sm rounded-lg ${activeClass}">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      html += `<span class="px-1 text-gray-400">...</span>`;
+    }
+    html += `<button data-page="${totalPages}" class="txn-page-num-btn px-2 py-1 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">${totalPages}</button>`;
+  }
+
+  return html;
 }
 
 function showTransactionsError(message) {
@@ -744,6 +871,7 @@ function setupTransactionsControls() {
   const filterBtn = document.getElementById("filterTxnBtn");
   const prevBtn = document.getElementById("txnPrevBtn");
   const nextBtn = document.getElementById("txnNextBtn");
+  const pageNumbersContainer = document.getElementById("txnPageNumbers");
 
   if (filterBtn) {
     filterBtn.addEventListener("click", () => {
@@ -764,6 +892,19 @@ function setupTransactionsControls() {
     nextBtn.addEventListener("click", () => {
       if (txnCurrentPage < txnTotalPages) {
         fetchTransactions(txnCurrentPage + 1);
+      }
+    });
+  }
+
+  // Event delegation for page number buttons
+  if (pageNumbersContainer) {
+    pageNumbersContainer.addEventListener("click", (e) => {
+      const btn = e.target.closest(".txn-page-num-btn");
+      if (btn) {
+        const page = parseInt(btn.dataset.page, 10);
+        if (page && page !== txnCurrentPage) {
+          fetchTransactions(page);
+        }
       }
     });
   }

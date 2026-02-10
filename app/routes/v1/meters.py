@@ -1252,12 +1252,21 @@ def meter_readings_paginated(meter_id: str):
     per_page = request.args.get("per_page", 20, type=int)
     per_page = min(per_page, 100)  # Cap at 100
 
+    # Consumption filter
+    min_consumption = request.args.get("min_consumption", type=float)
+
     # Query readings for this meter within date range
     query = MeterReading.query.filter(
         MeterReading.meter_id == meter.id,
         MeterReading.reading_date >= start_datetime,
         MeterReading.reading_date <= end_datetime
-    ).order_by(MeterReading.reading_date.desc())
+    )
+
+    # Apply consumption filter if specified
+    if min_consumption is not None:
+        query = query.filter(MeterReading.consumption_since_last >= min_consumption)
+
+    query = query.order_by(MeterReading.reading_date.desc())
 
     # Get total count
     total = query.count()
