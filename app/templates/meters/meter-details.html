@@ -261,6 +261,83 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
     </div>
 
+    <!-- Billing Transactions Table -->
+    <div class="mt-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 md:mb-0">
+          Billing Transactions
+        </h4>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div class="flex items-center gap-2">
+            <label for="txnStartDate" class="text-sm text-gray-600 dark:text-gray-400">From:</label>
+            <input type="date" id="txnStartDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="txnEndDate" class="text-sm text-gray-600 dark:text-gray-400">To:</label>
+            <input type="date" id="txnEndDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <button id="filterTxnBtn" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-blue-600">
+            <i class="fas fa-filter mr-1"></i>Filter
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Consumption</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnTotalConsumption">—</div>
+        </div>
+        <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Billed</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnTotalAmount">—</div>
+        </div>
+        <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Transactions</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnCount">—</div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+              <th scope="col" class="px-4 py-3">Date/Time</th>
+              <th scope="col" class="px-4 py-3">Consumption</th>
+              <th scope="col" class="px-4 py-3">Rate</th>
+              <th scope="col" class="px-4 py-3">Amount</th>
+              <th scope="col" class="px-4 py-3">Balance After</th>
+              <th scope="col" class="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="txnTableBody">
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading transactions...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4" id="txnPagination">
+        <div class="text-sm text-gray-600 dark:text-gray-400" id="txnPaginationInfo">
+          Showing 0 of 0 transactions
+        </div>
+        <div class="flex gap-2">
+          <button id="txnPrevBtn" disabled class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50">
+            <i class="fas fa-chevron-left mr-1"></i>Prev
+          </button>
+          <button id="txnNextBtn" disabled class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50">
+            Next<i class="fas fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Recent Readings Table -->
     <div class="mt-6">
       <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">

@@ -11,7 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert
+from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Transaction
 from ...utils.pagination import paginate_query, parse_pagination_params
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
@@ -1194,3 +1194,116 @@ def test_disconnect_check():
             'success': False,
             'error': str(e),
         }), 500
+
+
+@api_v1.route("/meters/<meter_id>/transactions", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def meter_transactions(meter_id: str):
+    """
+    Get transactions for a specific meter with date filtering and pagination.
+
+    Query parameters:
+        - start_date: ISO date string (default: today)
+        - end_date: ISO date string (default: today)
+        - page: Page number (default: 1)
+        - per_page: Items per page (default: 20, max: 100)
+
+    Returns:
+        JSON with transactions data and pagination metadata
+    """
+    from datetime import datetime, date, timedelta
+    from ...db import db
+
+    # Find meter by device_eui, serial_number, or id
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if meter is None:
+        meter = Meter.query.filter_by(serial_number=meter_id).first()
+    if meter is None and meter_id.isdigit():
+        meter = svc_get_meter_by_id(int(meter_id))
+
+    if meter is None:
+        return jsonify({"error": "Meter not found"}), 404
+
+    # Parse date filters (default to today)
+    today = date.today()
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str).date()
+        else:
+            start_date = today
+
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str).date()
+        else:
+            end_date = today
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DD)"}), 400
+
+    # Ensure end_date includes the full day
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+
+    # Pagination
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    per_page = min(per_page, 100)  # Cap at 100
+
+    # Query transactions for this meter within date range
+    query = Transaction.query.filter(
+        Transaction.meter_id == meter.id,
+        Transaction.created_at >= start_datetime,
+        Transaction.created_at <= end_datetime
+    ).order_by(Transaction.created_at.desc())
+
+    # Get total count
+    total = query.count()
+
+    # Apply pagination
+    transactions = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Calculate totals for the date range
+    from sqlalchemy import func
+    totals = db.session.query(
+        func.sum(Transaction.amount).label('total_amount'),
+        func.sum(Transaction.consumption_kwh).label('total_consumption'),
+        func.count(Transaction.id).label('transaction_count')
+    ).filter(
+        Transaction.meter_id == meter.id,
+        Transaction.created_at >= start_datetime,
+        Transaction.created_at <= end_datetime
+    ).first()
+
+    # Convert to SAST for display
+    transactions_data = []
+    for t in transactions:
+        t_dict = t.to_dict()
+        # Convert UTC to SAST (UTC+2)
+        if t.created_at:
+            sast_time = t.created_at + timedelta(hours=2)
+            t_dict["created_at_sast"] = sast_time.strftime("%Y-%m-%d %H:%M:%S")
+        transactions_data.append(t_dict)
+
+    return jsonify({
+        "data": transactions_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page if per_page > 0 else 0
+        },
+        "summary": {
+            "total_amount": float(totals.total_amount) if totals.total_amount else 0.0,
+            "total_consumption": float(totals.total_consumption) if totals.total_consumption else 0.0,
+            "transaction_count": totals.transaction_count or 0
+        },
+        "filters": {
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "meter_id": meter.id,
+            "meter_serial": meter.serial_number
+        }
+    }), 200

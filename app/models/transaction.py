@@ -88,3 +88,23 @@ class Transaction(db.Model):
             name="ck_transactions_status",
         ),
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "transaction_number": self.transaction_number,
+            "wallet_id": self.wallet_id,
+            "transaction_type": self.transaction_type,
+            "amount": float(self.amount) if self.amount is not None else None,
+            "balance_before": float(self.balance_before) if self.balance_before is not None else None,
+            "balance_after": float(self.balance_after) if self.balance_after is not None else None,
+            "reference": self.reference,
+            "description": self.description,
+            "payment_method": self.payment_method,
+            "status": self.status,
+            "meter_id": self.meter_id,
+            "consumption_kwh": float(self.consumption_kwh) if self.consumption_kwh is not None else None,
+            "rate_applied": float(self.rate_applied) if self.rate_applied is not None else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

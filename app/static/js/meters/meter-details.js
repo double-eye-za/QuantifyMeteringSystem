@@ -2,6 +2,11 @@
 let consumptionChart = null;
 let currentPeriod = "day";
 
+// Transactions state
+let txnCurrentPage = 1;
+let txnTotalPages = 1;
+let txnPerPage = 20;
+
 // Fetch real-time stats and update cards
 async function fetchRealtimeStats() {
   try {
@@ -397,6 +402,211 @@ function setupRelayControls() {
   }
 }
 
+// ============================================
+// Transactions Table Functions
+// ============================================
+
+function getTodayDateString() {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+}
+
+function initTransactionDateFilters() {
+  const today = getTodayDateString();
+  const startDateInput = document.getElementById("txnStartDate");
+  const endDateInput = document.getElementById("txnEndDate");
+
+  if (startDateInput) {
+    startDateInput.value = today;
+  }
+  if (endDateInput) {
+    endDateInput.value = today;
+  }
+}
+
+async function fetchTransactions(page = 1) {
+  const startDate = document.getElementById("txnStartDate")?.value || getTodayDateString();
+  const endDate = document.getElementById("txnEndDate")?.value || getTodayDateString();
+
+  try {
+    const url = `/api/v1/meters/${window.METER_ID}/transactions?start_date=${startDate}&end_date=${endDate}&page=${page}&per_page=${txnPerPage}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch transactions");
+    }
+
+    const data = await response.json();
+    updateTransactionsTable(data);
+    updateTransactionsSummary(data.summary);
+    updateTransactionsPagination(data.pagination);
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    showTransactionsError("Failed to load transactions");
+  }
+}
+
+function updateTransactionsTable(data) {
+  const tbody = document.getElementById("txnTableBody");
+  if (!tbody) return;
+
+  if (!data.data || data.data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+          <i class="fas fa-inbox mr-2"></i>No transactions found for the selected date range
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const unit = window.METER_TYPE === "water" ? "kL" : "kWh";
+
+  tbody.innerHTML = data.data.map(txn => {
+    const statusClass = txn.status === "completed"
+      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+
+    const consumption = txn.consumption_kwh !== null
+      ? `${parseFloat(txn.consumption_kwh).toFixed(4)} ${unit}`
+      : "—";
+
+    const rate = txn.rate_applied !== null
+      ? `R${parseFloat(txn.rate_applied).toFixed(4)}/${unit}`
+      : "—";
+
+    const amount = txn.amount !== null
+      ? `R${parseFloat(txn.amount).toFixed(2)}`
+      : "—";
+
+    const balanceAfter = txn.balance_after !== null
+      ? `R${parseFloat(txn.balance_after).toFixed(2)}`
+      : "—";
+
+    const dateTime = txn.created_at_sast || txn.created_at || "—";
+
+    return `
+      <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <td class="px-4 py-3 text-xs font-mono">${dateTime}</td>
+        <td class="px-4 py-3">${consumption}</td>
+        <td class="px-4 py-3">${rate}</td>
+        <td class="px-4 py-3 font-medium">${amount}</td>
+        <td class="px-4 py-3">${balanceAfter}</td>
+        <td class="px-4 py-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs ${statusClass}">
+            ${txn.status || "—"}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updateTransactionsSummary(summary) {
+  const totalConsumption = document.getElementById("txnTotalConsumption");
+  const totalAmount = document.getElementById("txnTotalAmount");
+  const txnCount = document.getElementById("txnCount");
+
+  const unit = window.METER_TYPE === "water" ? "kL" : "kWh";
+
+  if (totalConsumption) {
+    totalConsumption.textContent = `${(summary.total_consumption || 0).toFixed(4)} ${unit}`;
+  }
+  if (totalAmount) {
+    totalAmount.textContent = `R${(summary.total_amount || 0).toFixed(2)}`;
+  }
+  if (txnCount) {
+    txnCount.textContent = summary.transaction_count || 0;
+  }
+}
+
+function updateTransactionsPagination(pagination) {
+  txnCurrentPage = pagination.page;
+  txnTotalPages = pagination.total_pages;
+
+  const paginationInfo = document.getElementById("txnPaginationInfo");
+  const prevBtn = document.getElementById("txnPrevBtn");
+  const nextBtn = document.getElementById("txnNextBtn");
+
+  if (paginationInfo) {
+    const start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.per_page + 1;
+    const end = Math.min(pagination.page * pagination.per_page, pagination.total);
+    paginationInfo.textContent = `Showing ${start}-${end} of ${pagination.total} transactions`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = pagination.page <= 1;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = pagination.page >= pagination.total_pages;
+  }
+}
+
+function showTransactionsError(message) {
+  const tbody = document.getElementById("txnTableBody");
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-4 py-8 text-center text-red-500 dark:text-red-400">
+          <i class="fas fa-exclamation-triangle mr-2"></i>${message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function setupTransactionsControls() {
+  const filterBtn = document.getElementById("filterTxnBtn");
+  const prevBtn = document.getElementById("txnPrevBtn");
+  const nextBtn = document.getElementById("txnNextBtn");
+
+  if (filterBtn) {
+    filterBtn.addEventListener("click", () => {
+      txnCurrentPage = 1;
+      fetchTransactions(1);
+    });
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      if (txnCurrentPage > 1) {
+        fetchTransactions(txnCurrentPage - 1);
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      if (txnCurrentPage < txnTotalPages) {
+        fetchTransactions(txnCurrentPage + 1);
+      }
+    });
+  }
+
+  // Also allow Enter key on date inputs to trigger filter
+  const startDateInput = document.getElementById("txnStartDate");
+  const endDateInput = document.getElementById("txnEndDate");
+
+  if (startDateInput) {
+    startDateInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        txnCurrentPage = 1;
+        fetchTransactions(1);
+      }
+    });
+  }
+
+  if (endDateInput) {
+    endDateInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        txnCurrentPage = 1;
+        fetchTransactions(1);
+      }
+    });
+  }
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
   // Initial data fetch
@@ -411,6 +621,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Setup Relay Controls (Disconnect/Reconnect)
   setupRelayControls();
+
+  // Initialize and fetch transactions
+  initTransactionDateFilters();
+  setupTransactionsControls();
+  fetchTransactions(1);
 
   // Top Up Modal Event Listeners
   const topUpBtn = document.getElementById("topUpBtn");
