@@ -68,11 +68,19 @@ class Transaction(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "transaction_type IN (\n            'topup','purchase_electricity','purchase_water','purchase_solar',\n            'consumption_electricity','consumption_water','consumption_solar',\n            'refund','adjustment','service_charge'\n        )",
+            "transaction_type IN ("
+            "'topup', 'topup_electricity', 'topup_water', 'topup_solar', 'topup_hot_water', "
+            "'purchase_electricity', 'purchase_water', 'purchase_solar', "
+            "'consumption_electricity', 'consumption_water', 'consumption_solar', 'consumption_hot_water', "
+            "'deduction_electricity', 'deduction_water', 'deduction_solar', 'deduction_hot_water', "
+            "'refund', 'adjustment', 'service_charge'"
+            ")",
             name="ck_transactions_type",
         ),
         CheckConstraint(
-            "payment_method IS NULL OR payment_method IN ('eft','card','instant_eft','cash','system','adjustment')",
+            "payment_method IS NULL OR payment_method IN ("
+            "'eft', 'card', 'instant_eft', 'cash', 'system', 'adjustment', 'manual_admin'"
+            ")",
             name="ck_transactions_payment_method",
         ),
         CheckConstraint(
