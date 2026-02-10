@@ -7,6 +7,11 @@ let txnCurrentPage = 1;
 let txnTotalPages = 1;
 let txnPerPage = 20;
 
+// Readings state
+let readingsCurrentPage = 1;
+let readingsTotalPages = 1;
+let readingsPerPage = 20;
+
 // Fetch real-time stats and update cards
 async function fetchRealtimeStats() {
   try {
@@ -403,13 +408,192 @@ function setupRelayControls() {
 }
 
 // ============================================
-// Transactions Table Functions
+// Readings Table Functions
 // ============================================
 
 function getTodayDateString() {
   const today = new Date();
   return today.toISOString().split('T')[0];
 }
+
+function initReadingsDateFilters() {
+  const today = getTodayDateString();
+  const startDateInput = document.getElementById("readingsStartDate");
+  const endDateInput = document.getElementById("readingsEndDate");
+
+  if (startDateInput) {
+    startDateInput.value = today;
+  }
+  if (endDateInput) {
+    endDateInput.value = today;
+  }
+}
+
+async function fetchReadings(page = 1) {
+  const startDate = document.getElementById("readingsStartDate")?.value || getTodayDateString();
+  const endDate = document.getElementById("readingsEndDate")?.value || getTodayDateString();
+
+  try {
+    const url = `/api/v1/meters/${window.METER_ID}/readings-paginated?start_date=${startDate}&end_date=${endDate}&page=${page}&per_page=${readingsPerPage}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch readings");
+    }
+
+    const data = await response.json();
+    updateReadingsTable(data);
+    updateReadingsPagination(data.pagination);
+  } catch (error) {
+    console.error("Error fetching readings:", error);
+    showReadingsError("Failed to load readings");
+  }
+}
+
+function updateReadingsTable(data) {
+  const tbody = document.getElementById("readingsTableBody");
+  if (!tbody) return;
+
+  if (!data.data || data.data.length === 0) {
+    const colSpan = window.METER_TYPE === "electricity" || window.METER_TYPE === "solar" ? 6 : 6;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="${colSpan}" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+          <i class="fas fa-inbox mr-2"></i>No readings found for the selected date range
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const unit = window.METER_TYPE === "water" ? "L" : "kWh";
+  const isElectricity = window.METER_TYPE === "electricity" || window.METER_TYPE === "solar";
+  const isWater = window.METER_TYPE === "water";
+
+  tbody.innerHTML = data.data.map(r => {
+    const dateTime = r.reading_date_sast || r.reading_date || "—";
+    const readingValue = r.reading_value !== null ? parseFloat(r.reading_value).toFixed(3) : "—";
+    const consumption = r.consumption_since_last !== null ? parseFloat(r.consumption_since_last).toFixed(4) : "—";
+    const status = r.status || "—";
+
+    let extraCols = "";
+    if (isElectricity) {
+      const power = r.power !== null ? r.power : "—";
+      const voltage = r.voltage !== null ? r.voltage : "—";
+      extraCols = `
+        <td class="px-6 py-4">${power}</td>
+        <td class="px-6 py-4">${voltage}</td>
+      `;
+    } else if (isWater) {
+      const flowRate = r.flow_rate !== null ? r.flow_rate : "—";
+      const temperature = r.temperature !== null ? r.temperature : "—";
+      extraCols = `
+        <td class="px-6 py-4">${flowRate}</td>
+        <td class="px-6 py-4">${temperature}</td>
+      `;
+    }
+
+    return `
+      <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <td class="px-6 py-4 text-xs font-mono">${dateTime}</td>
+        <td class="px-6 py-4 font-mono">${readingValue}</td>
+        <td class="px-6 py-4">${consumption}</td>
+        ${extraCols}
+        <td class="px-6 py-4">${status}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updateReadingsPagination(pagination) {
+  readingsCurrentPage = pagination.page;
+  readingsTotalPages = pagination.total_pages;
+
+  const paginationInfo = document.getElementById("readingsPaginationInfo");
+  const prevBtn = document.getElementById("readingsPrevBtn");
+  const nextBtn = document.getElementById("readingsNextBtn");
+
+  if (paginationInfo) {
+    const start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.per_page + 1;
+    const end = Math.min(pagination.page * pagination.per_page, pagination.total);
+    paginationInfo.textContent = `Showing ${start}-${end} of ${pagination.total} readings`;
+  }
+
+  if (prevBtn) {
+    prevBtn.disabled = pagination.page <= 1;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = pagination.page >= pagination.total_pages;
+  }
+}
+
+function showReadingsError(message) {
+  const tbody = document.getElementById("readingsTableBody");
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
+          <i class="fas fa-exclamation-triangle mr-2"></i>${message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function setupReadingsControls() {
+  const filterBtn = document.getElementById("filterReadingsBtn");
+  const prevBtn = document.getElementById("readingsPrevBtn");
+  const nextBtn = document.getElementById("readingsNextBtn");
+
+  if (filterBtn) {
+    filterBtn.addEventListener("click", () => {
+      readingsCurrentPage = 1;
+      fetchReadings(1);
+    });
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      if (readingsCurrentPage > 1) {
+        fetchReadings(readingsCurrentPage - 1);
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      if (readingsCurrentPage < readingsTotalPages) {
+        fetchReadings(readingsCurrentPage + 1);
+      }
+    });
+  }
+
+  // Also allow Enter key on date inputs to trigger filter
+  const startDateInput = document.getElementById("readingsStartDate");
+  const endDateInput = document.getElementById("readingsEndDate");
+
+  if (startDateInput) {
+    startDateInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        readingsCurrentPage = 1;
+        fetchReadings(1);
+      }
+    });
+  }
+
+  if (endDateInput) {
+    endDateInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        readingsCurrentPage = 1;
+        fetchReadings(1);
+      }
+    });
+  }
+}
+
+// ============================================
+// Transactions Table Functions
+// ============================================
 
 function initTransactionDateFilters() {
   const today = getTodayDateString();
@@ -621,6 +805,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Setup Relay Controls (Disconnect/Reconnect)
   setupRelayControls();
+
+  // Initialize and fetch readings
+  initReadingsDateFilters();
+  setupReadingsControls();
+  fetchReadings(1);
 
   // Initialize and fetch transactions
   initTransactionDateFilters();

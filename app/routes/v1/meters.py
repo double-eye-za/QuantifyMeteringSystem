@@ -1196,6 +1196,102 @@ def test_disconnect_check():
         }), 500
 
 
+@api_v1.route("/meters/<meter_id>/readings-paginated", methods=["GET"])
+@login_required
+@requires_permission("meters.view")
+def meter_readings_paginated(meter_id: str):
+    """
+    Get readings for a specific meter with date filtering and pagination.
+
+    Query parameters:
+        - start_date: ISO date string (default: today)
+        - end_date: ISO date string (default: today)
+        - page: Page number (default: 1)
+        - per_page: Items per page (default: 20, max: 100)
+
+    Returns:
+        JSON with readings data and pagination metadata
+    """
+    from datetime import datetime, date, timedelta
+    from ...db import db
+
+    # Find meter by device_eui, serial_number, or id
+    meter = Meter.query.filter_by(device_eui=meter_id).first()
+    if meter is None:
+        meter = Meter.query.filter_by(serial_number=meter_id).first()
+    if meter is None and meter_id.isdigit():
+        meter = svc_get_meter_by_id(int(meter_id))
+
+    if meter is None:
+        return jsonify({"error": "Meter not found"}), 404
+
+    # Parse date filters (default to today)
+    today = date.today()
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    try:
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str).date()
+        else:
+            start_date = today
+
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str).date()
+        else:
+            end_date = today
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DD)"}), 400
+
+    # Ensure end_date includes the full day
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+
+    # Pagination
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    per_page = min(per_page, 100)  # Cap at 100
+
+    # Query readings for this meter within date range
+    query = MeterReading.query.filter(
+        MeterReading.meter_id == meter.id,
+        MeterReading.reading_date >= start_datetime,
+        MeterReading.reading_date <= end_datetime
+    ).order_by(MeterReading.reading_date.desc())
+
+    # Get total count
+    total = query.count()
+
+    # Apply pagination
+    readings = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Convert to SAST for display
+    readings_data = []
+    for r in readings:
+        r_dict = r.to_dict()
+        # Convert UTC to SAST (UTC+2)
+        if r.reading_date:
+            sast_time = r.reading_date + timedelta(hours=2)
+            r_dict["reading_date_sast"] = sast_time.strftime("%Y-%m-%d %H:%M:%S")
+        readings_data.append(r_dict)
+
+    return jsonify({
+        "data": readings_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page if per_page > 0 else 0
+        },
+        "filters": {
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "meter_id": meter.id,
+            "meter_serial": meter.serial_number
+        }
+    }), 200
+
+
 @api_v1.route("/meters/<meter_id>/transactions", methods=["GET"])
 @login_required
 @requires_permission("meters.view")
