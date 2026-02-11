@@ -379,26 +379,21 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
             <tr>
               <th scope="col" class="px-6 py-3">Timestamp</th>
               <th scope="col" class="px-6 py-3">
-                {% if meter and meter.meter_type == 'electricity' %}
+                {% if meter and meter.meter_type in ('electricity', 'solar') %}
                   Reading (kWh)
-                {% elif meter and meter.meter_type == 'water' %}
+                {% elif meter and meter.meter_type in ('water', 'hot_water') %}
                   Reading (L)
-                {% elif meter and meter.meter_type == 'solar' %}
-                  Reading (kWh)
                 {% else %}
                   Reading
                 {% endif %}
               </th>
               <th scope="col" class="px-6 py-3">Consumption</th>
-              {% if meter and meter.meter_type == 'electricity' %}
+              {% if meter and meter.meter_type in ('electricity', 'solar') %}
                 <th scope="col" class="px-6 py-3">Load (kW)</th>
                 <th scope="col" class="px-6 py-3">Voltage (V)</th>
-              {% elif meter and meter.meter_type == 'water' %}
+              {% elif meter and meter.meter_type in ('water', 'hot_water') %}
                 <th scope="col" class="px-6 py-3">Flow Rate (L/h)</th>
                 <th scope="col" class="px-6 py-3">Temperature (°C)</th>
-              {% elif meter and meter.meter_type == 'solar' %}
-                <th scope="col" class="px-6 py-3">Load (kW)</th>
-                <th scope="col" class="px-6 py-3">Voltage (V)</th>
               {% endif %}
               <th scope="col" class="px-6 py-3">Status</th>
             </tr>

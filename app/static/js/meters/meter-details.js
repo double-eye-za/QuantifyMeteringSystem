@@ -2,6 +2,21 @@
 let consumptionChart = null;
 let currentPeriod = "day";
 
+// Helper: check if meter type is water-based
+function isWaterType(meterType) {
+  return meterType === "water" || meterType === "hot_water";
+}
+
+// Helper: get display unit for consumption values
+function getConsumptionUnit() {
+  return isWaterType(window.METER_TYPE) ? "kL" : "kWh";
+}
+
+// Helper: get display unit for readings
+function getReadingUnit() {
+  return isWaterType(window.METER_TYPE) ? "L" : "kWh";
+}
+
 // Transactions state
 let txnCurrentPage = 1;
 let txnTotalPages = 1;
@@ -459,7 +474,7 @@ function updateReadingsTable(data) {
   if (!tbody) return;
 
   if (!data.data || data.data.length === 0) {
-    const colSpan = window.METER_TYPE === "electricity" || window.METER_TYPE === "solar" ? 6 : 6;
+    const colSpan = 6;
     tbody.innerHTML = `
       <tr>
         <td colspan="${colSpan}" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
@@ -470,9 +485,9 @@ function updateReadingsTable(data) {
     return;
   }
 
-  const unit = window.METER_TYPE === "water" ? "L" : "kWh";
+  const unit = getReadingUnit();
   const isElectricity = window.METER_TYPE === "electricity" || window.METER_TYPE === "solar";
-  const isWater = window.METER_TYPE === "water";
+  const isWater = isWaterType(window.METER_TYPE);
 
   tbody.innerHTML = data.data.map(r => {
     const dateTime = r.reading_date_sast || r.reading_date || "—";
@@ -725,7 +740,7 @@ function updateTransactionsTable(data) {
     return;
   }
 
-  const unit = window.METER_TYPE === "water" ? "kL" : "kWh";
+  const unit = getConsumptionUnit();
 
   tbody.innerHTML = data.data.map(txn => {
     const statusClass = txn.status === "completed"
@@ -772,7 +787,7 @@ function updateTransactionsSummary(summary) {
   const totalAmount = document.getElementById("txnTotalAmount");
   const txnCount = document.getElementById("txnCount");
 
-  const unit = window.METER_TYPE === "water" ? "kL" : "kWh";
+  const unit = getConsumptionUnit();
 
   if (totalConsumption) {
     totalConsumption.textContent = `${(summary.total_consumption || 0).toFixed(4)} ${unit}`;
