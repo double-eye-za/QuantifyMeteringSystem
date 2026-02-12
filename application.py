@@ -63,7 +63,7 @@ def create_app() -> Flask:
 
     @app.template_filter("format_number")
     def format_number(value, decimals=0):
-        """Format number with thousand separators (commas)"""
+        """Format number with a thousand separators (commas)"""
         if value is None:
             return "0"
 

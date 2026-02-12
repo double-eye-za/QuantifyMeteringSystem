@@ -1037,8 +1037,11 @@ def meter_relay_control(meter_id: str):
     """
     Send a relay control command to a meter (disconnect/reconnect power).
 
-    This endpoint sends a Modbus command via LoRaWAN to control the relay
-    on an Eastron SDM320C meter through a Milesight UC100 bridge.
+    Supports:
+    - Eastron SDM320C: Write Single Coil via UC100 bridge (fPort 5)
+    - IVY EM114039-02: Write Multiple Registers to register 167 (fPort 10)
+
+    The device type is determined from the meter's lorawan_device_type field.
 
     Expected JSON payload:
     {
@@ -1073,8 +1076,13 @@ def meter_relay_control(meter_id: str):
     if action not in ("on", "off"):
         return jsonify({"error": "Invalid action. Must be 'on' or 'off'"}), 400
 
-    # Send the relay command via ChirpStack
-    success, message = chirpstack_service.send_relay_command(meter.device_eui, action)
+    # Determine device type from meter's lorawan_device_type field
+    device_type = getattr(meter, "lorawan_device_type", None) or "eastron_sdm"
+
+    # Send the relay command via ChirpStack (device-type-aware)
+    success, message = chirpstack_service.send_relay_command(
+        meter.device_eui, action, device_type=device_type
+    )
 
     if success:
         # Log the action
@@ -1085,6 +1093,7 @@ def meter_relay_control(meter_id: str):
             new_values={
                 "device_eui": meter.device_eui,
                 "action": action,
+                "device_type": device_type,
             },
         )
 
@@ -1093,6 +1102,7 @@ def meter_relay_control(meter_id: str):
             "message": f"Relay {action.upper()} command queued successfully",
             "device_eui": meter.device_eui,
             "action": action,
+            "device_type": device_type,
             "note": "Command will be delivered on next device uplink (Class A)"
         }), 200
     else:

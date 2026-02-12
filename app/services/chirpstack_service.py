@@ -19,10 +19,33 @@ from flask import current_app
 logger = logging.getLogger(__name__)
 
 
-# Pre-calculated Modbus commands for SDM320C relay control
+# =============================================================================
+# RELAY COMMAND CONSTANTS
+# =============================================================================
+
+# Eastron SDM320C relay commands (via Milesight UC100 bridge, fPort 5)
 # Format: Slave(01) + Function(05) + Address(0000) + Value + CRC16
 RELAY_OFF_COMMAND = bytes([0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0xCD, 0xCA])
 RELAY_ON_COMMAND = bytes([0x01, 0x05, 0x00, 0x00, 0xFF, 0x00, 0x8C, 0x3A])
+
+# IVY EM114039-02 relay commands (onboard LoRaWAN, fPort 10)
+# Format: Slave(01) + Function(10) + Register(00A7) + Qty(0002) + ByteCount(04) + Value(4 bytes) + CRC16
+# Register 167 (0x00A7) = relay break time in seconds; 0 = close (on), non-zero = break (off)
+# Disconnect: break for 0xFFFFFFFF seconds (~136 years, effectively permanent)
+IVY_RELAY_OFF_COMMAND = bytes([
+    0x01, 0x10, 0x00, 0xA7, 0x00, 0x02, 0x04,
+    0xFF, 0xFF, 0xFF, 0xFF,
+    0xB9, 0xA5,
+])
+# Reconnect: write 0 to close the relay
+IVY_RELAY_ON_COMMAND = bytes([
+    0x01, 0x10, 0x00, 0xA7, 0x00, 0x02, 0x04,
+    0x00, 0x00, 0x00, 0x00,
+    0xB8, 0x31,
+])
+
+# Default fPort for IVY meters (onboard LoRaWAN, no UC100 bridge)
+IVY_FPORT = 10
 
 
 def get_config() -> Dict[str, Any]:
@@ -154,13 +177,22 @@ def send_downlink(
     return False, result
 
 
-def send_relay_command(device_eui: str, action: str) -> Tuple[bool, str]:
+def send_relay_command(
+    device_eui: str,
+    action: str,
+    device_type: str = "eastron_sdm",
+) -> Tuple[bool, str]:
     """
-    Send a relay control command to an Eastron SDM320C meter.
+    Send a relay control command to a meter.
+
+    Supports:
+    - Eastron SDM320C: Write Single Coil (0x05) via UC100 bridge on fPort 5
+    - IVY EM114039-02: Write Multiple Registers (0x10) to register 167 on fPort 10
 
     Args:
-        device_eui: The device EUI of the UC100 bridge
+        device_eui: The device EUI
         action: "on" to restore power, "off" to disconnect power
+        device_type: "eastron_sdm" (default) or "ivy_em114"
 
     Returns:
         Tuple of (success: bool, message: str)
@@ -168,6 +200,15 @@ def send_relay_command(device_eui: str, action: str) -> Tuple[bool, str]:
     if action not in ("on", "off"):
         return False, f"Invalid action: {action}. Must be 'on' or 'off'"
 
+    if device_type == "ivy_em114":
+        payload = IVY_RELAY_OFF_COMMAND if action == "off" else IVY_RELAY_ON_COMMAND
+        port = IVY_FPORT
+        logger.info(
+            f"Sending IVY relay {action.upper()} command to {device_eui} on fPort {port}"
+        )
+        return send_downlink(device_eui, payload, port=port)
+
+    # Default: Eastron SDM320C via UC100 bridge (original behaviour, untouched)
     payload = RELAY_OFF_COMMAND if action == "off" else RELAY_ON_COMMAND
     logger.info(f"Sending relay {action.upper()} command to {device_eui}")
 
