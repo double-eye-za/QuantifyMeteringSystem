@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Unit {{ unit.unit_number }} - Portal{% endblock %}
+{% block page_title %}Unit {{ unit.unit_number }}{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<a href="{{ url_for('portal.portal_units') }}" class="hover:text-primary">My Units</a>
+<span class="mx-2">/</span>
+<span>Unit {{ unit.unit_number }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Unit Info -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Wallet Balance Card -->
+  <div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow-sm p-6 text-white">
+    <h3 class="text-sm font-medium opacity-80 mb-2">Total Balance</h3>
+    <p class="text-3xl font-bold">R {{ "%.2f"|format(wallet.balance if wallet else 0) }}</p>
+    <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+      <div>
+        <span class="opacity-70"><i class="fas fa-bolt mr-1"></i> Electricity</span>
+        <p class="font-semibold">R {{ "%.2f"|format(wallet.electricity_balance if wallet else 0) }}</p>
+      </div>
+      <div>
+        <span class="opacity-70"><i class="fas fa-droplet mr-1"></i> Water</span>
+        <p class="font-semibold">R {{ "%.2f"|format(wallet.water_balance if wallet else 0) }}</p>
+      </div>
+    </div>
+    <div class="mt-4">
+      <a href="{{ url_for('portal.portal_wallet_transactions', unit_id=unit.id) }}" class="text-sm text-white/80 hover:text-white"><i class="fas fa-history mr-1"></i> View Transactions</a>
+    </div>
+  </div>
+
+  <!-- Unit Info -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 lg:col-span-2">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Unit Information</h3>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Estate</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ unit.estate.name if unit.estate }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Unit Number</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Meters -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Meters</h3>
+  {% if meters %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for meter in meters %}
+    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-10 h-10 rounded-lg bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-100 dark:bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-900/20 flex items-center justify-center">
+            <i class="fas fa-{{ 'bolt' if meter.utility_type == 'Electricity' else 'droplet' if meter.utility_type == 'Water' else 'fire' if meter.utility_type == 'Hot Water' else 'sun' }} text-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-500"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ meter.utility_type }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ meter.serial_number }}</p>
+          </div>
+        </div>
+        <span class="w-2 h-2 rounded-full {% if meter.status == 'online' %}bg-green-500{% elif meter.status == 'offline' %}bg-red-500{% else %}bg-gray-400{% endif %}"></span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <span class="text-gray-500 dark:text-gray-400">Current Reading</span>
+          <p class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(meter.current_reading) if meter.current_reading else 'N/A' }}</p>
+        </div>
+        <div>
+          <span class="text-gray-500 dark:text-gray-400">Last Reading</span>
+          <p class="font-medium text-gray-900 dark:text-white">{{ meter.last_reading_date.strftime('%d %b %Y') if meter.last_reading_date else 'N/A' }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-gray-500 dark:text-gray-400">No meters assigned to this unit.</p>
+  {% endif %}
+</div>
+{% endblock %}

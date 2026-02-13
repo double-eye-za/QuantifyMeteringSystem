@@ -87,9 +87,9 @@ function logout() {
 }
 
 async function handleLogin() {
-  const emailInput = document.getElementById("email");
+  const credentialInput = document.getElementById("credential");
   const passwordInput = document.getElementById("password");
-  const emailError = document.getElementById("emailError");
+  const credentialError = document.getElementById("credentialError");
   const passwordError = document.getElementById("passwordError");
   const errorMessage = document.getElementById("errorMessage");
   const successMessage = document.getElementById("successMessage");
@@ -97,7 +97,7 @@ async function handleLogin() {
   const loadingIcon = document.getElementById("loadingIcon");
   const submitButton = document.querySelector('button[type="submit"]');
 
-  hideElement(emailError);
+  hideElement(credentialError);
   hideElement(passwordError);
   hideElement(errorMessage);
   hideElement(successMessage);
@@ -105,12 +105,12 @@ async function handleLogin() {
   // Validate inputs
   let isValid = true;
 
-  if (!emailInput.value) {
-    showElement(emailError);
-    emailInput.classList.add("border-error");
+  if (!credentialInput.value.trim()) {
+    showElement(credentialError);
+    credentialInput.classList.add("border-error");
     isValid = false;
   } else {
-    emailInput.classList.remove("border-error");
+    credentialInput.classList.remove("border-error");
   }
 
   if (!passwordInput.value) {
@@ -135,16 +135,18 @@ async function handleLogin() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: emailInput.value,
+        credential: credentialInput.value.trim(),
         password: passwordInput.value,
       }),
     });
 
     if (response.ok) {
+      const data = await response.json();
       showElement(successMessage);
-      // Redirect to dashboard after successful login
+      // Use redirect URL from server (admin → dashboard, portal → portal dashboard)
+      const redirectUrl = data.redirect || "/api/v1/dashboard";
       setTimeout(function () {
-        window.location.href = "/api/v1/dashboard";
+        window.location.href = redirectUrl;
       }, 1500);
     } else {
       const errorData = await response.json();

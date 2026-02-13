@@ -135,6 +135,40 @@
 
         <!-- Navigation -->
         <nav class="p-4 space-y-2">
+
+          {% if is_portal_user() %}
+          <!-- ===== PORTAL NAVIGATION (Owners / Tenants) ===== -->
+          <a href="{{ url_for('portal.portal_dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if request.endpoint == 'portal.portal_dashboard' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span class="text-sm font-medium">Dashboard</span>
+          </a>
+          <a href="{{ url_for('portal.portal_units') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_unit' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-house w-5"></i>
+            <span class="text-sm font-medium">My Units</span>
+          </a>
+          <a href="{{ url_for('portal.portal_meters') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_meter' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-tachometer-alt w-5"></i>
+            <span class="text-sm font-medium">Meters</span>
+          </a>
+          <a href="{{ url_for('portal.portal_wallet') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_wallet' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-wallet w-5"></i>
+            <span class="text-sm font-medium">Wallet</span>
+          </a>
+          <a href="{{ url_for('portal.portal_messages') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_message' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-envelope w-5"></i>
+            <span class="text-sm font-medium">Messages</span>
+          </a>
+          <a href="{{ url_for('portal.portal_notifications') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_notification' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-bell w-5"></i>
+            <span class="text-sm font-medium">Notifications</span>
+          </a>
+          <a href="{{ url_for('portal.portal_tickets') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_ticket' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-ticket-alt w-5"></i>
+            <span class="text-sm font-medium">Support</span>
+          </a>
+
+          {% else %}
+          <!-- ===== ADMIN NAVIGATION (Staff) ===== -->
           <a
             href="{{ url_for('api_v1.index') }}"
             class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if request.endpoint == 'api_v1.dashboard' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}"
@@ -272,6 +306,7 @@
             <span class="text-sm font-medium">LoRaWAN</span>
           </a>
           {% endif %}
+          {% endif %}
         </nav>
 
         <!-- User Section -->
@@ -279,8 +314,8 @@
           class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
         >
           <a
-            href="{{ url_for('api_v1.profile_page') }}"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors {% if request.endpoint == 'api_v1.profile_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}"
+            href="{% if is_portal_user() %}{{ url_for('portal.portal_profile') }}{% else %}{{ url_for('api_v1.profile_page') }}{% endif %}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors {% if request.endpoint == 'api_v1.profile_page' or request.endpoint == 'portal.portal_profile' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}"
           >
             <i class="fas fa-user w-5"></i>
             <span class="text-sm font-medium">My Profile</span>

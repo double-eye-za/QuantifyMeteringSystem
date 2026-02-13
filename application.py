@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file BEFORE importing Config
 load_dotenv()
 
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from config import Config
 from app.db import db
 from app.routes.v1 import api_v1
@@ -61,6 +61,20 @@ def create_app() -> Flask:
             user, "is_super_admin", False
         )
 
+    @app.template_global()
+    def is_portal_user():
+        """Check if current user is a portal (owner/tenant) user."""
+        if not getattr(current_user, "is_authenticated", False):
+            return False
+        return str(current_user.get_id()).startswith('mobile:')
+
+    @app.template_global()
+    def is_admin_user():
+        """Check if current user is an admin (staff) user."""
+        if not getattr(current_user, "is_authenticated", False):
+            return False
+        return not str(current_user.get_id()).startswith('mobile:')
+
     @app.template_filter("format_number")
     def format_number(value, decimals=0):
         """Format number with a thousand separators (commas)"""
@@ -106,16 +120,23 @@ def create_app() -> Flask:
         # Register home page route
         @app.route('/')
         def home():
-            """Landing page - redirect to login or dashboard"""
+            """Landing page - redirect to login or appropriate dashboard"""
             from flask_login import current_user
             from flask import redirect, url_for, render_template
 
-            # If user is already logged in, go to dashboard
+            # If user is already logged in, route to appropriate dashboard
             if current_user.is_authenticated:
+                if str(current_user.get_id()).startswith('mobile:'):
+                    return redirect(url_for('portal.portal_dashboard'))
                 return redirect(url_for('api_v1.dashboard'))
 
             # Otherwise show welcome page with login button
             return render_template('home.html')
+
+        # Google site verification
+        @app.route('/googlea4f1305222bd625b.html')
+        def google_site_verification():
+            return send_from_directory(app.root_path, 'googlea4f1305222bd625b.html')
 
         # Register API blueprints
         app.register_blueprint(api_v1)
@@ -123,6 +144,10 @@ def create_app() -> Flask:
         # Register mobile API blueprint
         from app.routes.mobile import mobile_api
         app.register_blueprint(mobile_api)
+
+        # Register portal blueprint (owner/tenant web portal)
+        from app.routes.portal import portal
+        app.register_blueprint(portal)
 
         # Configure session timeout from settings
         configure_session_timeout(app)

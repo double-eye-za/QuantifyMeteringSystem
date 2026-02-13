@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Transactions - Unit {{ unit.unit_number }}{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<a href="{{ url_for('portal.portal_wallet') }}" class="hover:text-primary">Wallet</a>
+<span class="mx-2">/</span>
+<span>Unit {{ unit.unit_number }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Balance Summary -->
+<div class="bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg shadow-sm p-6 text-white mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-sm opacity-80">Unit {{ unit.unit_number }} &bull; {{ unit.estate.name if unit.estate }}</p>
+      <p class="text-3xl font-bold mt-1">R {{ "%.2f"|format(wallet.balance if wallet else 0) }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Transaction History</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Balance After</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for txn in transactions %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ txn.initiated_at.strftime('%d %b %Y, %H:%M') if txn.initiated_at }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 text-xs rounded-full {% if 'topup' in txn.transaction_type %}bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400{% elif 'consumption' in txn.transaction_type %}bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400{% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+              {{ txn.transaction_type.replace('_', ' ').title() }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right font-medium {% if 'topup' in txn.transaction_type %}text-green-600{% else %}text-red-600{% endif %}">
+            {{ '+' if 'topup' in txn.transaction_type else '-' }}R {{ "%.2f"|format(txn.amount|abs) }}
+          </td>
+          <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">R {{ "%.2f"|format(txn.balance_after) if txn.balance_after is not none else 'N/A' }}</td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 text-xs rounded-full {% if txn.status == 'completed' %}bg-green-100 text-green-700{% elif txn.status == 'pending' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">{{ txn.status }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if not transactions %}
+  <div class="p-12 text-center">
+    <p class="text-gray-500 dark:text-gray-400">No transactions found for the selected period.</p>
+  </div>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2">
+    {% if pagination.has_prev %}
+    <a href="?page={{ pagination.prev_num }}&days={{ days }}" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Prev</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+    <a href="?page={{ pagination.next_num }}&days={{ days }}" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}My Profile - Portal{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>Profile</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <!-- Personal Information -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div class="flex items-center gap-4 mb-6">
+      <img src="https://ui-avatars.com/api/?name={{ person.first_name }}+{{ person.last_name }}&background=1A73E8&color=fff&size=80" class="w-16 h-16 rounded-full" alt="Profile">
+      <div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ person.first_name }} {{ person.last_name }}</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ mobile_user.phone_number }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">First Name</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ person.first_name }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Last Name</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ person.last_name }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Email</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ person.email or 'Not set' }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Phone</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ person.phone }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Last Login</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ mobile_user.last_login.strftime('%d %B %Y, %H:%M') if mobile_user.last_login else 'N/A' }}</p>
+      </div>
+      <div>
+        <span class="text-gray-500 dark:text-gray-400">Account Created</span>
+        <p class="font-medium text-gray-900 dark:text-white">{{ mobile_user.created_at.strftime('%d %B %Y') if mobile_user.created_at else 'N/A' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Units -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">My Units</h3>
+    {% for unit in units %}
+    <div class="flex items-center justify-between py-3 {% if not loop.last %}border-b border-gray-200 dark:border-gray-700{% endif %}">
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">Unit {{ unit.unit_number }} — {{ unit.estate_name }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{ unit.role | capitalize }}</p>
+      </div>
+      <a href="{{ url_for('portal.portal_unit_detail', unit_id=unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700">View</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Security -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Security</h3>
+    <a href="{{ url_for('portal.portal_change_password') }}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+      <i class="fas fa-key mr-1"></i> Change Password
+    </a>
+  </div>
+</div>
+{% endblock %}

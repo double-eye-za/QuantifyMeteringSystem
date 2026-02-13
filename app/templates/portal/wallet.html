@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Wallet - Portal{% endblock %}
+{% block page_title %}My Wallet{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>Wallet</span>
+{% endblock %}
+
+{% block content %}
+{% for item in wallet_data %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit {{ item.unit.unit_number }}</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ item.unit.estate_name }}</p>
+    </div>
+    <a href="{{ url_for('portal.portal_wallet_transactions', unit_id=item.unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700 font-medium"><i class="fas fa-history mr-1"></i> Transactions</a>
+  </div>
+
+  <!-- Balance Overview -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Total</p>
+      <p class="text-xl font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(item.wallet.balance) }}</p>
+    </div>
+    <div class="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1"><i class="fas fa-bolt text-blue-500 mr-1"></i> Electricity</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(item.wallet.electricity_balance) }}</p>
+    </div>
+    <div class="bg-cyan-50 dark:bg-cyan-900/10 rounded-lg p-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1"><i class="fas fa-droplet text-cyan-500 mr-1"></i> Water</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(item.wallet.water_balance) }}</p>
+    </div>
+    <div class="bg-yellow-50 dark:bg-yellow-900/10 rounded-lg p-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1"><i class="fas fa-sun text-yellow-500 mr-1"></i> Solar</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(item.wallet.solar_balance) }}</p>
+    </div>
+    <div class="bg-orange-50 dark:bg-orange-900/10 rounded-lg p-4 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1"><i class="fas fa-fire text-orange-500 mr-1"></i> Hot Water</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(item.wallet.hot_water_balance) }}</p>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% if not wallet_data %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+  <i class="fas fa-wallet text-4xl text-gray-400 mb-4"></i>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Wallets Found</h3>
+  <p class="text-gray-500 dark:text-gray-400">No wallets are assigned to your units yet.</p>
+</div>
+{% endif %}
+{% endblock %}

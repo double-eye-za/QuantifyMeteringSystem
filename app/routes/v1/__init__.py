@@ -41,6 +41,29 @@ def _unauthorized():
     return redirect(url_for("api_v1.login_page"))
 
 
+@api_v1.before_request
+def _block_portal_users():
+    """Prevent portal (mobile) users from accessing admin routes.
+
+    Portal users who somehow navigate to /api/v1/* pages are redirected
+    to the portal dashboard. Login/logout routes are excluded so the
+    unified login and logout flow still works for both user types.
+    """
+    from flask_login import current_user
+
+    if not current_user.is_authenticated:
+        return  # Let @login_required handle unauthenticated users
+
+    if str(current_user.get_id()).startswith('mobile:'):
+        # Allow portal users to use the shared login/logout routes
+        allowed_endpoints = {
+            'api_v1.login_page', 'api_v1.login', 'api_v1.logout',
+        }
+        if request.endpoint not in allowed_endpoints:
+            flash("Please use the portal to access your account.", "info")
+            return redirect(url_for("portal.portal_dashboard"))
+
+
 @api_v1.errorhandler(401)
 def handle_unauthorized(error):
     """Handle 401 Unauthorized errors"""

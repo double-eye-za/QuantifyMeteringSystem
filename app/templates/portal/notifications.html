@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Notifications - Portal{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>Notifications</span>
+{% endblock %}
+
+{% block content %}
+{% if unread_count > 0 %}
+<div class="flex justify-end mb-4">
+  <form method="POST" action="{{ url_for('portal.portal_mark_all_notifications_read') }}">
+    <button type="submit" class="text-sm text-primary hover:text-blue-700"><i class="fas fa-check-double mr-1"></i> Mark all as read ({{ unread_count }})</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="space-y-3">
+  {% for notif in notifications %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 {% if notif.status != 'read' %}border-l-4 border-l-blue-500{% endif %}">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-full bg-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'red' if 'alert' in (notif.notification_type or '') else 'blue' }}-100 dark:bg-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'red' if 'alert' in (notif.notification_type or '') else 'blue' }}-900/20 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-{{ 'exclamation-triangle' if notif.notification_type == 'low_credit' else 'check-circle' if 'success' in (notif.notification_type or '') else 'exclamation-circle' if 'alert' in (notif.notification_type or '') else 'info-circle' }} text-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'red' if 'alert' in (notif.notification_type or '') else 'blue' }}-500"></i>
+      </div>
+      <div class="flex-1">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ notif.subject }}</h4>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ notif.message }}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ notif.created_at.strftime('%d %b %Y, %H:%M') if notif.created_at }}</p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not notifications %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+  <i class="fas fa-bell-slash text-4xl text-gray-400 mb-4"></i>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Notifications</h3>
+  <p class="text-gray-500 dark:text-gray-400">You're all caught up!</p>
+</div>
+{% endif %}
+{% endblock %}

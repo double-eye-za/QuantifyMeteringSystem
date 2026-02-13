@@ -3,17 +3,21 @@ from __future__ import annotations
 
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 from app.db import db
 
 
-class MobileUser(db.Model):
+class MobileUser(UserMixin, db.Model):
     """
     MobileUser model for mobile app authentication (Owners and Tenants only).
 
     Separate from the web portal User model (for admin/staff).
     Links to Person model and provides authentication credentials.
     Supports temporary passwords that must be changed on first login.
+
+    Extends UserMixin for Flask-Login session support on the web portal.
+    Uses 'mobile:{id}' prefix in get_id() to distinguish from admin User sessions.
     """
     __tablename__ = 'mobile_users'
 
@@ -33,6 +37,35 @@ class MobileUser(db.Model):
 
     def __repr__(self):
         return f'<MobileUser {self.phone_number} (Person ID: {self.person_id})>'
+
+    def get_id(self) -> str:
+        """Return prefixed ID for Flask-Login to distinguish from admin User model.
+
+        The 'mobile:' prefix ensures no collision with User.get_id() which
+        returns a plain integer string. The user_loader in auth.py parses
+        this prefix to know which model to query.
+        """
+        return f'mobile:{self.id}'
+
+    @property
+    def first_name(self) -> str:
+        """Proxy to person.first_name so base.html header works for both user types."""
+        return self.person.first_name if self.person else ''
+
+    @property
+    def last_name(self) -> str:
+        """Proxy to person.last_name so base.html header works for both user types."""
+        return self.person.last_name if self.person else ''
+
+    @property
+    def email(self) -> str:
+        """Proxy to person.email for profile display."""
+        return self.person.email if self.person else ''
+
+    @property
+    def username(self) -> str:
+        """Return phone_number as username equivalent for audit logging."""
+        return self.phone_number
 
     def set_password(self, password: str) -> None:
         """

@@ -11,20 +11,47 @@ from flask import (
 )
 from flask_login import login_user, logout_user, login_required, current_user
 
-from ...models import User
+from ...models import User, MobileUser
 from ...db import db
 from ...utils.audit import log_action
+from ...services.mobile_users import authenticate_mobile_user
+from ...utils.password_generator import validate_phone_number
 from . import api_v1
 from datetime import datetime, timedelta
 from sqlalchemy import func, case
 from sqlalchemy.sql import extract
 from ...models import Transaction, MeterReading, Meter, Unit, Estate
+import re
+
+
+def _is_phone_credential(credential: str) -> bool:
+    """Detect if a login credential looks like a phone number rather than an email/username.
+
+    Returns True for South African phone formats:
+    - +27xxxxxxxxx
+    - 0xxxxxxxxx
+    - Digits with spaces/dashes
+    """
+    cleaned = re.sub(r'[\s\-\(\)]', '', credential)
+    return bool(
+        re.match(r'^\+\d{10,15}$', cleaned) or  # E.164 international
+        re.match(r'^0\d{9}$', cleaned)            # SA local format
+    )
+
+
+def _is_portal_user() -> bool:
+    """Check if the current authenticated user is a portal (mobile) user."""
+    if not current_user.is_authenticated:
+        return False
+    return str(current_user.get_id()).startswith('mobile:')
 
 
 @api_v1.route("/login", methods=["GET"])
 def login_page():
     """Render the login page"""
     if current_user.is_authenticated:
+        if _is_portal_user():
+            return redirect(url_for("portal.portal_dashboard"))
         return redirect(url_for("api_v1.dashboard"))
     return render_template("auth/login.html")
 
@@ -32,7 +59,9 @@ def login_page():
 @api_v1.route("/", methods=["GET"])
 @login_required
 def index():
-    """Main entry point - redirect to dashboard."""
+    """Main entry point - redirect to appropriate dashboard."""
+    if _is_portal_user():
+        return redirect(url_for("portal.portal_dashboard"))
     return redirect(url_for("api_v1.dashboard"))
 
 
@@ -702,56 +731,109 @@ def dashboard():
 @api_v1.post("/auth/login")
 def login():
     payload = request.get_json(force=True) or {}
-    username = payload.get("username") or payload.get("email")
+    # Accept 'credential', 'email', or 'username' — all treated as the identity field
+    credential = payload.get("credential") or payload.get("username") or payload.get("email")
     password = payload.get("password")
-    if not username or not password:
+    if not credential or not password:
         return jsonify({"error": "Invalid credentials", "code": 401}), 401
 
-    user = User.query.filter(
-        (User.username == username) | (User.email == username)
-    ).first()
-    if not user or not user.check_password(password):
-        return jsonify({"error": "Invalid credentials", "code": 401}), 401
+    # --- Detect credential type and authenticate accordingly ---
+    if _is_phone_credential(credential):
+        # Phone number → authenticate as portal/mobile user
+        success, result = authenticate_mobile_user(credential, password)
+        if not success:
+            error_msg = result.get("message", "Invalid credentials") if isinstance(result, dict) else "Invalid credentials"
+            return jsonify({"error": error_msg, "code": 401}), 401
 
-    # Ensure session login even if custom is_active flags are not set during tests
-    logged_in = login_user(user, force=True)
-    if not logged_in:
-        return jsonify({"error": "Invalid credentials", "code": 401}), 401
-    # Ensure session persists under test client
-    if current_app.config.get("TESTING"):
-        session["_user_id"] = str(user.id)
-        session["_fresh"] = True
+        mobile_user = result
+        logged_in = login_user(mobile_user, force=True)
+        if not logged_in:
+            return jsonify({"error": "Invalid credentials", "code": 401}), 401
 
-    log_action(
-        "user.login",
-        entity_type="user",
-        entity_id=user.id,
-        new_values={
-            "username": user.username,
-            "email": user.email,
-            "login_method": "password",
-        },
-    )
+        if current_app.config.get("TESTING"):
+            session["_user_id"] = mobile_user.get_id()
+            session["_fresh"] = True
 
-    # Check if this is a web request (HTML form) or API request (JSON)
-    if request.headers.get("Content-Type") == "application/json":
-        return jsonify({"message": "Logged in", "data": {"user_id": user.id}})
+        log_action(
+            "user.login",
+            entity_type="mobile_user",
+            entity_id=mobile_user.id,
+            new_values={
+                "phone_number": mobile_user.phone_number,
+                "login_method": "password",
+                "user_type": "portal",
+            },
+        )
+
+        # Determine redirect URL
+        if mobile_user.password_must_change:
+            redirect_url = url_for("portal.portal_change_password")
+        else:
+            redirect_url = url_for("portal.portal_dashboard")
+
+        if request.headers.get("Content-Type") == "application/json":
+            return jsonify({
+                "message": "Logged in",
+                "data": {"user_id": mobile_user.id, "user_type": "portal"},
+                "redirect": redirect_url,
+            })
+        else:
+            return redirect(redirect_url)
+
     else:
-        return redirect(url_for("api_v1.dashboard"))
+        # Email/username → authenticate as admin user (existing flow)
+        user = User.query.filter(
+            (User.username == credential) | (User.email == credential)
+        ).first()
+        if not user or not user.check_password(password):
+            return jsonify({"error": "Invalid credentials", "code": 401}), 401
+
+        logged_in = login_user(user, force=True)
+        if not logged_in:
+            return jsonify({"error": "Invalid credentials", "code": 401}), 401
+
+        if current_app.config.get("TESTING"):
+            session["_user_id"] = str(user.id)
+            session["_fresh"] = True
+
+        log_action(
+            "user.login",
+            entity_type="user",
+            entity_id=user.id,
+            new_values={
+                "username": user.username,
+                "email": user.email,
+                "login_method": "password",
+                "user_type": "admin",
+            },
+        )
+
+        redirect_url = url_for("api_v1.dashboard")
+
+        if request.headers.get("Content-Type") == "application/json":
+            return jsonify({
+                "message": "Logged in",
+                "data": {"user_id": user.id, "user_type": "admin"},
+                "redirect": redirect_url,
+            })
+        else:
+            return redirect(redirect_url)
 
 
 @api_v1.route("/auth/logout", methods=["POST", "GET"])
 @login_required
 def logout():
     user_id = current_user.id
-    username = current_user.username
-    email = current_user.email
+    username = getattr(current_user, 'username', None) or getattr(current_user, 'phone_number', 'unknown')
+    email = getattr(current_user, 'email', None) or ''
+    is_portal = _is_portal_user()
+    entity_type = "mobile_user" if is_portal else "user"
 
     logout_user()
 
     log_action(
         "user.logout",
-        entity_type="user",
+        entity_type=entity_type,
         entity_id=user_id,
         new_values={"username": username, "email": email},
     )
