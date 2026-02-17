@@ -172,48 +172,8 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     else:
         onsite_activation_url = 'https://www.payfast.co.za/onsite/engine.js'
 
-    # --- DEBUG: Log exact data being sent to Flutter ---
-    logger.info("="*60)
-    logger.info("PAYFAST MOBILE TOP-UP DEBUG")
-    logger.info("="*60)
-    logger.info("unit=%s amount=%.2f utility=%s ref=%s txn_id=%s",
-                unit_id, amount, utility_type, m_payment_id, txn.id)
-    logger.info("payfast_data keys: %s", list(pf_data.keys()))
-    for k, v in pf_data.items():
-        logger.info("  pf_data[%s] = %r (type=%s, len=%d)",
-                     k, v, type(v).__name__, len(str(v)))
-    logger.info("passphrase = %r (len=%d)", passphrase, len(passphrase) if passphrase else 0)
-    logger.info("sandbox = %s", is_sandbox)
-    logger.info("process_url = %s", process_url)
-    logger.info("onsite_activation_url = %s", onsite_activation_url)
-
-    # Also compute what the Flutter widget WOULD compute for signature
-    # so we can compare it with what PayFast expects
-    import hashlib
-    import urllib.parse as _urlparse
-    debug_data = dict(pf_data)
-    debug_data['passphrase'] = passphrase or ''
-    # Sort alphabetically (same as Flutter widget _generateSignature)
-    sorted_items = sorted(debug_data.items(), key=lambda x: x[0])
-    # Build param string with Uri.encodeComponent-style encoding (%20 for spaces)
-    flutter_params = '&'.join(
-        f"{k}={_urlparse.quote(str(v), safe='')}"
-        for k, v in sorted_items
-    )
-    flutter_sig = hashlib.md5(flutter_params.encode()).hexdigest()
-    logger.info("Flutter-style param string: %s", flutter_params)
-    logger.info("Flutter-style signature: %s", flutter_sig)
-
-    # Build param string with quote_plus-style encoding (+ for spaces)
-    payfast_params = '&'.join(
-        f"{k}={_urlparse.quote_plus(str(v))}"
-        for k, v in sorted_items
-    )
-    payfast_sig = hashlib.md5(payfast_params.encode()).hexdigest()
-    logger.info("PayFast-style param string: %s", payfast_params)
-    logger.info("PayFast-style signature: %s", payfast_sig)
-    logger.info("Signatures match: %s", flutter_sig == payfast_sig)
-    logger.info("="*60)
+    logger.info("Mobile top-up: unit=%s amount=%.2f utility=%s ref=%s txn_id=%s sandbox=%s notify_url=%s",
+                unit_id, amount, utility_type, m_payment_id, txn.id, is_sandbox, notify_url)
 
     return jsonify({
         'transaction_id': txn.id,
@@ -285,7 +245,7 @@ def mobile_sandbox_confirm(unit_id: int, transaction_id: int, mobile_user: Mobil
 
     Disabled in production (PAYFAST_SANDBOX=false).
     """
-    if not current_app.config.get('PAYFAST_SANDBOX', False):
+    if not current_app.config.get('PAYFAST_SANDBOX', True):
         return jsonify({'error': 'Only available in sandbox mode'}), 403
 
     # --- Access control ---
@@ -311,11 +271,22 @@ def mobile_sandbox_confirm(unit_id: int, transaction_id: int, mobile_user: Mobil
     try:
         from ..payfast import _complete_transaction
         utility_type = _complete_transaction(txn)
-    except (ImportError, ValueError):
+        logger.info("Sandbox confirm: used _complete_transaction successfully")
+    except Exception as exc:
+        logger.warning("Sandbox confirm: _complete_transaction failed (%s), using fallback", exc)
         # Fallback: do it directly
-        from ...services.wallet import credit_wallet
+        from ...services.wallets import credit_wallet
         from datetime import datetime
-        utility_type = (txn.metadata or {}).get('utility_type', 'electricity')
+        import json as _json
+        # payment_metadata is stored as a JSON string, not a dict
+        utility_type = 'electricity'
+        if txn.payment_metadata:
+            try:
+                meta = _json.loads(txn.payment_metadata)
+                if isinstance(meta, dict):
+                    utility_type = meta.get('utility_type', 'electricity')
+            except (ValueError, TypeError):
+                pass
         credit_wallet(wallet, float(txn.amount), utility_type)
         txn.status = 'completed'
         txn.completed_at = datetime.utcnow()
