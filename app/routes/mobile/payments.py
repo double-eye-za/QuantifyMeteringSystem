@@ -122,7 +122,16 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     # navigation callbacks directly via onPaymentCompleted/onPaymentCancelled.
     person = mobile_user.person
 
-    notify_url = url_for('mobile_api.mobile_payment_notify', _external=True)
+    # Build notify_url — must be publicly reachable by PayFast's servers.
+    # url_for(_external=True) may produce http://localhost:5000/... when
+    # SERVER_NAME is not configured, so prefer an explicit base URL.
+    payfast_notify_base = current_app.config.get('PAYFAST_NOTIFY_BASE_URL', '')
+    if payfast_notify_base:
+        notify_url = f"{payfast_notify_base.rstrip('/')}/api/payfast/notify"
+    else:
+        notify_url = url_for('payfast.payfast_itn', _external=True)
+
+    logger.info("notify_url = %s", notify_url)
 
     pf_data = {
         'merchant_id': current_app.config['PAYFAST_MERCHANT_ID'],
@@ -257,6 +266,73 @@ def mobile_payment_status(unit_id: int, transaction_id: int, mobile_user: Mobile
         'amount': float(txn.amount) if txn.amount else 0.0,
         'completed_at': txn.completed_at.isoformat() if txn.completed_at else None,
         'transaction_number': txn.transaction_number,
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# 2b. Sandbox confirm — manually complete a pending transaction (sandbox only)
+# ---------------------------------------------------------------------------
+
+@mobile_api.route('/units/<int:unit_id>/topup/<int:transaction_id>/confirm', methods=['POST'])
+@require_mobile_auth
+def mobile_sandbox_confirm(unit_id: int, transaction_id: int, mobile_user: MobileUser):
+    """Manually confirm a pending transaction in sandbox mode.
+
+    The PayFast sandbox may not always deliver ITN webhooks (especially
+    when the server is behind NAT / notify_url is unreachable).  The
+    Flutter app calls this as a fallback after the PayFast widget reports
+    ``onPaymentCompleted`` but the transaction stays pending.
+
+    Disabled in production (PAYFAST_SANDBOX=false).
+    """
+    if not current_app.config.get('PAYFAST_SANDBOX', False):
+        return jsonify({'error': 'Only available in sandbox mode'}), 403
+
+    # --- Access control ---
+    if not can_access_unit(mobile_user.person_id, unit_id):
+        return jsonify({'error': 'Access denied'}), 403
+
+    txn = Transaction.query.get(transaction_id)
+    if not txn:
+        return jsonify({'error': 'Transaction not found'}), 404
+
+    # Verify the transaction belongs to this unit's wallet
+    wallet = Wallet.query.filter_by(unit_id=unit_id).first()
+    if not wallet or txn.wallet_id != wallet.id:
+        return jsonify({'error': 'Transaction does not belong to this unit'}), 403
+
+    if txn.status == 'completed':
+        return jsonify({'status': 'completed', 'message': 'Already completed'}), 200
+
+    if txn.status not in ('pending', 'processing'):
+        return jsonify({'error': f'Transaction is {txn.status}, cannot confirm'}), 400
+
+    # Credit the wallet using the shared helper from the payfast module
+    try:
+        from ..payfast import _complete_transaction
+        utility_type = _complete_transaction(txn)
+    except (ImportError, ValueError):
+        # Fallback: do it directly
+        from ...services.wallet import credit_wallet
+        from datetime import datetime
+        utility_type = (txn.metadata or {}).get('utility_type', 'electricity')
+        credit_wallet(wallet, float(txn.amount), utility_type)
+        txn.status = 'completed'
+        txn.completed_at = datetime.utcnow()
+
+    txn.payment_gateway = 'payfast'
+    txn.payment_gateway_status = 'COMPLETE'
+    txn.payment_gateway_ref = 'SANDBOX-MOBILE-CONFIRM'
+    db.session.commit()
+
+    logger.info("Mobile sandbox confirm: txn=%s amount=%.2f utility=%s",
+                txn.id, float(txn.amount), utility_type)
+
+    return jsonify({
+        'status': 'completed',
+        'message': 'Transaction confirmed (sandbox)',
+        'transaction_id': txn.id,
+        'amount': float(txn.amount),
     }), 200
 
 

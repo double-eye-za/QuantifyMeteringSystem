@@ -44,6 +44,10 @@ class Config:
         "PAYFAST_VALIDATE_URL",
         "https://sandbox.payfast.co.za/eng/query/validate",
     )
+    # Base URL for PayFast notify_url — must be publicly reachable.
+    # Flask's url_for(_external=True) generates localhost when SERVER_NAME
+    # is not set. Set this to your public domain (e.g. https://quantifyit.co.za).
+    PAYFAST_NOTIFY_BASE_URL = os.getenv("PAYFAST_NOTIFY_BASE_URL", "https://quantifyit.co.za")
 
     # Email / Flask-Mail configuration
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
