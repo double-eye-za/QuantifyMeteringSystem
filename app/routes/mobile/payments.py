@@ -166,11 +166,13 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     is_sandbox = current_app.config.get('PAYFAST_SANDBOX', True)
     process_url = current_app.config['PAYFAST_PROCESS_URL']
 
-    # Onsite activation URL — sandbox uses a community-hosted script
-    if is_sandbox:
-        onsite_activation_url = 'https://youngcet.github.io/sandbox_payfast_onsite_payments/'
-    else:
-        onsite_activation_url = 'https://www.payfast.co.za/onsite/engine.js'
+    # Onsite activation URL — self-hosted page that loads PayFast's engine.js
+    # and triggers the payment modal with the correct sandbox/live script.
+    payfast_base = current_app.config.get('PAYFAST_NOTIFY_BASE_URL', 'https://quantifyit.co.za')
+    onsite_activation_url = (
+        f"{payfast_base.rstrip('/')}/api/payfast/onsite-activate"
+        f"?sandbox={'true' if is_sandbox else 'false'}"
+    )
 
     logger.info("Mobile top-up: unit=%s amount=%.2f utility=%s ref=%s txn_id=%s sandbox=%s notify_url=%s",
                 unit_id, amount, utility_type, m_payment_id, txn.id, is_sandbox, notify_url)

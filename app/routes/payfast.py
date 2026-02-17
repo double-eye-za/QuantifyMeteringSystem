@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime
 
-from flask import Blueprint, request, current_app, jsonify
+from flask import Blueprint, request, current_app, jsonify, render_template
 from flask_login import login_required, current_user
 
 from ..db import db
@@ -24,6 +24,21 @@ from ..utils.payfast import validate_itn_signature, verify_itn_with_payfast
 logger = logging.getLogger(__name__)
 
 payfast_bp = Blueprint("payfast", __name__, url_prefix="/api/payfast")
+
+
+@payfast_bp.route("/onsite-activate", methods=["GET"])
+def onsite_activate():
+    """Serve the PayFast onsite activation page for the mobile app.
+
+    This standalone HTML page loads the PayFast onsite engine script and
+    triggers the payment modal.  No authentication required — the uuid
+    query parameter (issued by PayFast) is the only security token.
+
+    Query params (passed through by the Flutter WebView):
+        uuid     – PayFast payment identifier
+        sandbox  – 'true' or 'false' to select the correct engine.js
+    """
+    return render_template("mobile/payfast_onsite.html")
 
 
 def _extract_utility_type(txn: Transaction) -> str:
