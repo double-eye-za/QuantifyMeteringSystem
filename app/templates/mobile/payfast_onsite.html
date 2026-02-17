@@ -46,7 +46,6 @@
         (function() {
             var params = new URLSearchParams(window.location.search);
             var uuid = params.get('uuid');
-            var sandbox = params.get('sandbox');
 
             if (!uuid) {
                 document.getElementById('spinner').style.display = 'none';
@@ -54,8 +53,9 @@
                 return;
             }
 
-            // Determine which PayFast engine script to load
-            var engineUrl = sandbox === 'true'
+            // Sandbox/live mode is set by the server via Jinja2 template variable
+            var isSandbox = {{ 'true' if is_sandbox else 'false' }};
+            var engineUrl = isSandbox
                 ? 'https://sandbox.payfast.co.za/onsite/engine.js'
                 : 'https://www.payfast.co.za/onsite/engine.js';
 
@@ -63,17 +63,14 @@
             var script = document.createElement('script');
             script.src = engineUrl;
             script.onload = function() {
-                // Script loaded — trigger the PayFast payment modal
                 document.getElementById('message').textContent = 'Opening payment window...';
 
                 window.payfast_do_onsite_payment(
                     { uuid: uuid },
                     function(result) {
                         if (result === true) {
-                            // Payment completed successfully
                             window.location.href = 'https://quantifyit.co.za/payment/completed';
                         } else {
-                            // Payment was cancelled or closed
                             window.location.href = 'https://quantifyit.co.za/payment/closed';
                         }
                     }

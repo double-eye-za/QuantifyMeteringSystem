@@ -167,12 +167,12 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     process_url = current_app.config['PAYFAST_PROCESS_URL']
 
     # Onsite activation URL — self-hosted page that loads PayFast's engine.js
-    # and triggers the payment modal with the correct sandbox/live script.
+    # and triggers the payment modal.  The Flutter PayFast package appends
+    # "?uuid=..." to this URL, so sandbox mode is encoded in the path (not
+    # as a query param) to avoid a double-? URL.
     payfast_base = current_app.config.get('PAYFAST_NOTIFY_BASE_URL', 'https://quantifyit.co.za')
-    onsite_activation_url = (
-        f"{payfast_base.rstrip('/')}/api/payfast/onsite-activate"
-        f"?sandbox={'true' if is_sandbox else 'false'}"
-    )
+    sandbox_segment = 'sandbox' if is_sandbox else 'live'
+    onsite_activation_url = f"{payfast_base.rstrip('/')}/api/payfast/onsite-activate/{sandbox_segment}"
 
     logger.info("Mobile top-up: unit=%s amount=%.2f utility=%s ref=%s txn_id=%s sandbox=%s notify_url=%s",
                 unit_id, amount, utility_type, m_payment_id, txn.id, is_sandbox, notify_url)

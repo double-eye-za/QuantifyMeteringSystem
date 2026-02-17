@@ -26,19 +26,21 @@ logger = logging.getLogger(__name__)
 payfast_bp = Blueprint("payfast", __name__, url_prefix="/api/payfast")
 
 
-@payfast_bp.route("/onsite-activate", methods=["GET"])
-def onsite_activate():
+@payfast_bp.route("/onsite-activate/<mode>", methods=["GET"])
+def onsite_activate(mode: str):
     """Serve the PayFast onsite activation page for the mobile app.
 
     This standalone HTML page loads the PayFast onsite engine script and
     triggers the payment modal.  No authentication required — the uuid
     query parameter (issued by PayFast) is the only security token.
 
-    Query params (passed through by the Flutter WebView):
-        uuid     – PayFast payment identifier
-        sandbox  – 'true' or 'false' to select the correct engine.js
+    Path params:
+        mode – 'sandbox' or 'live' (determines which engine.js to load)
+    Query params (appended by the Flutter PayFast package):
+        uuid – PayFast payment identifier
     """
-    return render_template("mobile/payfast_onsite.html")
+    is_sandbox = (mode == 'sandbox')
+    return render_template("mobile/payfast_onsite.html", is_sandbox=is_sandbox)
 
 
 def _extract_utility_type(txn: Transaction) -> str:
