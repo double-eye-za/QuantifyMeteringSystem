@@ -114,16 +114,20 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     db.session.commit()
 
     # --- Build PayFast data for the onsite payment flow ---
-    # The Flutter PayFast widget uses the ONSITE endpoint, which only accepts
-    # the core payment fields. Do NOT include return_url, cancel_url, or
-    # notify_url — those are for the standard redirect flow. The onsite flow
-    # handles callbacks via the activation script HTML page instead.
-    # See: https://pub.dev/packages/payfast (example only sends core fields)
+    # The Flutter PayFast widget regenerates signatures itself using alphabetical
+    # key sorting and Uri.encodeComponent encoding.
+    # IMPORTANT: notify_url MUST be included so PayFast sends the ITN webhook
+    # to complete the transaction and credit the wallet.
+    # return_url and cancel_url are NOT needed — the Flutter widget handles
+    # navigation callbacks directly via onPaymentCompleted/onPaymentCancelled.
     person = mobile_user.person
+
+    notify_url = url_for('mobile_api.mobile_payment_notify', _external=True)
 
     pf_data = {
         'merchant_id': current_app.config['PAYFAST_MERCHANT_ID'],
         'merchant_key': current_app.config['PAYFAST_MERCHANT_KEY'],
+        'notify_url': notify_url,
     }
 
     # Buyer details
@@ -144,10 +148,6 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     pf_data['m_payment_id'] = m_payment_id
     pf_data['amount'] = f"{amount:.2f}"
     pf_data['item_name'] = f"{utility_type.replace('_', '').capitalize()}Topup"
-
-    # Build the notify_url separately — passed to Flutter for use in the
-    # activation script, NOT included in the signature data.
-    notify_url = url_for('mobile_api.mobile_payment_notify', _external=True)
 
     # NOTE: We do NOT generate a signature here. The PayFast Flutter package
     # regenerates the signature itself (using alphabetical key sorting and
