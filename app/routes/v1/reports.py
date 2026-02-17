@@ -24,6 +24,8 @@ from app.models import (
     Wallet,
     Notification,
     MeterAlert,
+    Person,
+    UnitTenancy,
 )
 from app.db import db
 from ...utils.pagination import parse_pagination_params
@@ -705,14 +707,15 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
     reports["meter_health"] = meter_health.all()
 
     # Low Balance & Cut-off Alerts
+    # Join through UnitTenancy → Person to get primary tenant info
     low_balance_alerts = (
         db.session.query(
             Unit.unit_number,
             Estate.name.label("estate_name"),
-            Resident.first_name,
-            Resident.last_name,
-            Resident.email,
-            Resident.phone,
+            Person.first_name,
+            Person.last_name,
+            Person.email,
+            Person.phone,
             Wallet.balance,
             Wallet.low_balance_threshold,
             case(
@@ -723,11 +726,19 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
         )
         .join(Estate, Unit.estate_id == Estate.id)
         .outerjoin(Wallet, Unit.id == Wallet.unit_id)
+        .outerjoin(
+            UnitTenancy,
+            and_(
+                UnitTenancy.unit_id == Unit.id,
+                UnitTenancy.is_primary_tenant == True,
+                UnitTenancy.status == "active",
+                UnitTenancy.move_out_date.is_(None),
+            ),
+        )
+        .outerjoin(Person, Person.id == UnitTenancy.person_id)
         .filter(Unit.is_active == True)
         .filter(Wallet.balance < Wallet.low_balance_threshold)
     )
-    # Note: Removed Resident join as Unit.resident_id no longer exists
-    # Resident info now accessed through Unit.tenancies relationship if needed
 
     if estate_id:
         low_balance_alerts = low_balance_alerts.filter(Unit.estate_id == estate_id)
@@ -1309,6 +1320,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
         "management_snapshot",
         "credit_purchases",
         "solar_generation_vs_usage",
+        "low_balance_alerts",
     ]
     if report_type in landscape_reports:
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
@@ -1539,33 +1551,46 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             headers = [
                 "Unit Number",
                 "Estate",
+                "Resident",
+                "Email",
+                "Phone",
                 "Current Balance",
-                "Low Balance Threshold",
-                "Days Remaining",
+                "Threshold",
+                "Status",
             ]
             report_data = get_system_status_reports(start_date, end_date, estate_id)[
                 "low_balance_alerts"
             ]
             for row in report_data:
+                resident_name = (
+                    f"{row.first_name} {row.last_name}"
+                    if row.first_name
+                    else "Vacant"
+                )
                 data.append(
                     [
                         str(row.unit_number),
                         str(row.estate_name),
+                        resident_name,
+                        str(row.email or "N/A"),
+                        str(row.phone or "N/A"),
                         f"R{row.balance:.2f}" if row.balance else "R0.00",
                         f"R{row.low_balance_threshold:.2f}"
                         if row.low_balance_threshold
                         else "R0.00",
-                        str(row.days_remaining) if row.days_remaining else "0",
+                        str(row.status).replace("_", " ").title(),
                     ]
                 )
 
         elif report_type == "reconnection_history":
             headers = [
+                "Transaction #",
+                "Date",
                 "Unit Number",
                 "Estate",
-                "Disconnection Date",
-                "Reconnection Date",
-                "Duration (Days)",
+                "Type",
+                "Amount",
+                "Description",
             ]
             report_data = get_system_status_reports(start_date, end_date, estate_id)[
                 "reconnection_history"
@@ -1573,15 +1598,15 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             for row in report_data:
                 data.append(
                     [
+                        str(row.transaction_number),
+                        row.completed_at.strftime("%Y-%m-%d %H:%M")
+                        if row.completed_at
+                        else "N/A",
                         str(row.unit_number),
                         str(row.estate_name),
-                        row.disconnection_date.strftime("%Y-%m-%d")
-                        if row.disconnection_date
-                        else "",
-                        row.reconnection_date.strftime("%Y-%m-%d")
-                        if row.reconnection_date
-                        else "",
-                        str(row.duration_days) if row.duration_days else "0",
+                        str(row.transaction_type).title(),
+                        f"R{row.amount:.2f}" if row.amount else "R0.00",
+                        str(row.description or "N/A"),
                     ]
                 )
 

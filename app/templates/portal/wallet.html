@@ -15,7 +15,10 @@
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit {{ item.unit.unit_number }}</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400">{{ item.unit.estate_name }}</p>
     </div>
-    <a href="{{ url_for('portal.portal_wallet_transactions', unit_id=item.unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700 font-medium"><i class="fas fa-history mr-1"></i> Transactions</a>
+    <div class="flex items-center gap-3">
+      <a href="{{ url_for('portal.portal_wallet_topup', unit_id=item.unit.unit_id) }}" class="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"><i class="fas fa-plus mr-1"></i> Top Up</a>
+      <a href="{{ url_for('portal.portal_wallet_transactions', unit_id=item.unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700 font-medium"><i class="fas fa-history mr-1"></i> Transactions</a>
+    </div>
   </div>
 
   <!-- Balance Overview -->

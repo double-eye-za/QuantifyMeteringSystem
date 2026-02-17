@@ -5,4 +5,4 @@ from flask import Blueprint
 mobile_api = Blueprint('mobile_api', __name__, url_prefix='/api/mobile')
 
 # Import routes to register them with the blueprint
-from . import auth, units, notifications, tickets, messages
+from . import auth, units, notifications, tickets, messages, payments

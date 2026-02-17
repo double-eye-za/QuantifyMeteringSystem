@@ -25,6 +25,7 @@ def make_celery(app_name: str = __name__) -> Celery:
         include=[
             'app.tasks.notification_tasks',
             'app.tasks.prepaid_disconnect_tasks',
+            'app.tasks.payment_tasks',
         ]
     )
 
@@ -68,11 +69,24 @@ def make_celery(app_name: str = __name__) -> Celery:
             'schedule': crontab(hour='*/4', minute=30),
             'options': {'queue': 'notifications'}
         },
+        # Expire stale pending PayFast transactions every 30 minutes
+        'expire-stale-payfast': {
+            'task': 'app.tasks.payment_tasks.expire_stale_payfast_transactions',
+            'schedule': crontab(minute='*/30'),
+            'options': {'queue': 'payments'}
+        },
+        # Reconcile PayFast transactions daily at midnight
+        'reconcile-payfast-daily': {
+            'task': 'app.tasks.payment_tasks.reconcile_payfast_transactions',
+            'schedule': crontab(hour=0, minute=0),
+            'options': {'queue': 'payments'}
+        },
     }
 
     celery.conf.task_routes = {
         'app.tasks.notification_tasks.*': {'queue': 'notifications'},
         'app.tasks.prepaid_disconnect_tasks.*': {'queue': 'prepaid'},
+        'app.tasks.payment_tasks.*': {'queue': 'payments'},
     }
 
     return celery

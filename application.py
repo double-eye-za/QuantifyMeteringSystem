@@ -31,6 +31,11 @@ def create_app() -> Flask:
     Migrate(app, db)
     login_manager.init_app(app)
 
+    # Initialise Flask-Mail
+    from flask_mail import Mail
+    mail = Mail(app)
+    app.extensions['mail'] = mail
+
     @app.template_global()
     def has_permission(permission_code: str):
         """Check if current user has a specific permission."""
@@ -148,6 +153,10 @@ def create_app() -> Flask:
         # Register portal blueprint (owner/tenant web portal)
         from app.routes.portal import portal
         app.register_blueprint(portal)
+
+        # Register PayFast ITN webhook blueprint
+        from app.routes.payfast import payfast_bp
+        app.register_blueprint(payfast_bp)
 
         # Configure session timeout from settings
         configure_session_timeout(app)

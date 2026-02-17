@@ -31,9 +31,11 @@
         <tr>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Method</th>
           <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
           <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Balance After</th>
           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Reference</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -45,12 +47,35 @@
               {{ txn.transaction_type.replace('_', ' ').title() }}
             </span>
           </td>
+          <td class="px-4 py-3">
+            {% if txn.payment_method %}
+            <span class="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+              {% if txn.payment_gateway == 'payfast' %}<i class="fas fa-credit-card text-blue-500"></i>{% endif %}
+              {{ txn.payment_method.replace('_', ' ').title() }}
+            </span>
+            {% else %}
+            <span class="text-xs text-gray-400">—</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3 text-right font-medium {% if 'topup' in txn.transaction_type %}text-green-600{% else %}text-red-600{% endif %}">
             {{ '+' if 'topup' in txn.transaction_type else '-' }}R {{ "%.2f"|format(txn.amount|abs) }}
           </td>
           <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">R {{ "%.2f"|format(txn.balance_after) if txn.balance_after is not none else 'N/A' }}</td>
           <td class="px-4 py-3">
-            <span class="px-2 py-1 text-xs rounded-full {% if txn.status == 'completed' %}bg-green-100 text-green-700{% elif txn.status == 'pending' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">{{ txn.status }}</span>
+            {% if txn.status == 'pending' and txn.payment_gateway == 'payfast' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"><i class="fas fa-clock mr-1"></i>Awaiting confirmation</span>
+            {% elif txn.status == 'completed' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">Completed</span>
+            {% elif txn.status == 'pending' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400">Pending</span>
+            {% elif txn.status == 'expired' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Expired</span>
+            {% else %}
+            <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">{{ txn.status|title }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
+            {% if txn.payment_gateway_ref %}{{ txn.payment_gateway_ref }}{% elif txn.reference %}{{ txn.reference }}{% else %}—{% endif %}
           </td>
         </tr>
         {% endfor %}
