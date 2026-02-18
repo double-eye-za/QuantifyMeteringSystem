@@ -9,6 +9,9 @@ gunicorn>=21.2.0
 reportlab>=4.0.0
 python-dotenv>=1.0.0
 
+# Email
+Flask-Mail>=0.10.0
+
 # Celery for background tasks and scheduled jobs
 celery[redis]>=5.3.0
 redis>=5.0.0
