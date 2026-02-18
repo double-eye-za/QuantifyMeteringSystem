@@ -1,0 +1,853 @@
+{% extends "base.html" %}
+{% block title %}Roles & Permissions{% endblock %}
+{% block page_title %}
+Roles & Permissions
+{% endblock %}
+
+{% block breadcrumb %}
+<nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
+  <ol class="flex items-center space-x-2">
+    <li><a href="{{ url_for('api_v1.dashboard') }}" class="hover:underline">Home</a></li>
+    <li>/</li>
+    <li class="text-gray-700 dark:text-gray-300">Roles & Permissions</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+  <!-- Header Row - Create Role Button -->
+  <div class="flex justify-end mb-4">
+    {% if has_permission('roles.create') %}
+    <button
+      id="create-role-open"
+      type="button"
+      class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+    >
+      <i class="fa-solid fa-plus"></i>
+      <span>New Role</span>
+    </button>
+    {% endif %}
+  </div>
+
+    <!-- Filters Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+      <form id="filters" method="GET">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <!-- Left side - Search -->
+          <div class="flex-1 max-w-md">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-solid fa-search text-gray-400 dark:text-gray-500"></i>
+              </div>
+              <input
+                name="search"
+                id="search"
+                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                placeholder="Search roles by name or description..."
+                aria-label="Search by name or description"
+                value="{{ current_filters.search }}"
+              />
+            </div>
+          </div>
+
+          <!-- Right side - Action Buttons -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              onclick="applyFilters()"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+            
+            <button
+              type="button"
+              onclick="clearFilters()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-times mr-2"></i> Clear Filters
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  <!-- Roles Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Role</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Description</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Permission Set</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Users</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for role in roles %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-4 py-3">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-user-shield text-blue-600 dark:text-blue-400"></i>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ role.name }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-900 dark:text-gray-100">{{ role.description or 'No description' }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                  {{ role.permission_name or 'No permissions' }}
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center">
+                <i class="fa-solid fa-users text-gray-400 dark:text-gray-500 mr-2"></i>
+                <span class="text-sm text-gray-900 dark:text-gray-100">{{ role.user_count }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center space-x-2">
+                {% if has_permission('roles.edit') %}
+                <button
+                  data-role='{{role | tojson}}'
+                  class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  title="Edit role"
+                >
+                  <i class="fa-solid fa-pen-to-square mr-1"></i>
+                  Edit
+                </button>
+                {% endif %}
+                {% if has_permission('roles.delete') and not role.is_system_role and role.user_count == 0 %}
+                <button
+                  data-role-id="{{role.id}}"
+                  data-role-data='{{role | tojson}}'
+                  class="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-400 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                  title="Delete role"
+                >
+                  <i class="fa-solid fa-trash mr-1"></i>
+                  Delete
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          <tr id="no-results-row" class="hidden">
+            <td colspan="5" class="p-6 text-center text-gray-500 dark:text-gray-400">
+              No results found
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> roles
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('api_v1.roles_page', page=(pagination.prev_page or 1), per_page=pagination.per_page, search=current_filters.search) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.roles_page', page=(pagination.next_page or pagination.page), per_page=pagination.per_page, search=current_filters.search) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+    <!-- Mobile and Tablet View - Cards -->
+    <div class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% for role in roles %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center">
+            <div class="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-4">
+              <i class="fa-solid fa-user-shield text-blue-600 dark:text-blue-400 text-lg"></i>
+                                </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ role.name }}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ role.user_count }} users assigned</p>
+                            </div>
+                        </div>
+                    </div>
+
+        <div class="mb-4">
+          <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">{{ role.description or 'No description provided' }}</p>
+          <div class="flex items-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+              <i class="fa-solid fa-shield mr-1"></i>
+              {{ role.permission_name or 'No permissions' }}
+            </span>
+                                </div>
+                            </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+          <div class="flex items-center space-x-2">
+        {% if has_permission('roles.edit') %}
+        <button
+          type="button"
+              data-role-mobile='{{ role | tojson }}'
+              class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+        >
+              <i class="fa-solid fa-pen-to-square mr-2"></i>
+          Edit
+        </button>
+        {% endif %}
+        {% if has_permission('roles.delete') and not role.is_system_role %}
+        <button
+          type="button"
+          data-role-id="{{role.id}}"
+          data-role-data='{{role | tojson}}'
+              class="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm font-medium rounded-lg text-red-700 dark:text-red-400 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+          title="Delete role"
+        >
+              <i class="fa-solid fa-trash mr-2"></i>
+          Delete
+        </button>
+        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+    {% endfor %}
+    <div id="no-results-card" class="hidden col-span-full p-6 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-600">
+      No results found
+                        </div>
+                    </div>
+
+    <!-- Edit Role Modal -->
+  <div
+    id="edit-modal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-2xl shadow-2xl relative max-h-[90vh] overflow-hidden p-6 transition-colors duration-200">
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+                                <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Role</h2>
+                                </div>
+        <button
+          id="edit-close"
+            class="p-2 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200"
+          aria-label="Close"
+        >
+            <i class="fa-solid fa-xmark text-gray-500 dark:text-gray-400"></i>
+                                </button>
+                            </div>
+
+        <div class="p-2 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <form id="edit-form" class="space-y-6">
+        <input type="hidden" id="edit-id" />
+            
+            <!-- Basic Information -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <i class="fa-solid fa-info-circle text-blue-600 mr-2"></i>
+                Basic Information
+              </h3>
+              
+        <div>
+                <label for="edit-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Role Name
+                </label>
+          <input
+            id="edit-name"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter role name"
+            required
+          />
+                                </div>
+              
+        <div>
+                <label for="edit-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+            id="edit-description"
+                  rows="3"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
+                  placeholder="Enter role description"
+                ></textarea>
+                                </div>
+                            </div>
+
+            <!-- Permissions Section -->
+            <div class="space-y-4">
+                </div>
+          </form>
+                                </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <button
+            id="edit-cancel"
+            type="button"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="edit-form"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Save Changes
+          </button>
+                            </div>
+                        </div>
+                    </div>
+
+    <!-- Create Role Modal -->
+    <div
+      id="create-modal"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-2xl shadow-2xl relative max-h-[90vh] overflow-hidden p-6 transition-colors duration-200">
+        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+                                <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Role</h2>
+                                </div>
+          <button
+            id="create-close"
+            class="p-2 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200"
+            aria-label="Close"
+          >
+            <i class="fa-solid fa-xmark text-gray-500 dark:text-gray-400"></i>
+                                </button>
+                            </div>
+        <div class="p-2 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <form id="create-form" class="space-y-6">
+            
+            <!-- Basic Information -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <i class="fa-solid fa-info-circle text-blue-600 mr-2"></i>
+                Basic Information
+              </h3>
+              
+              <div>
+                <label for="create-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Role Name
+                </label>
+                <input
+                  id="create-name"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                  placeholder="Enter role name"
+                  required
+                />
+                            </div>
+
+              <div>
+                <label for="create-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="create-description"
+                  rows="3"
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
+                  placeholder="Enter role description"
+                ></textarea>
+                        </div>
+                    </div>
+
+            <!-- Permissions Section -->
+            
+          </form>
+                            </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <button
+            id="create-cancel"
+            type="button"
+            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+                    Cancel
+                </button>
+          <button
+            type="submit"
+            form="create-form"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            Create Role
+                </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+<!-- Role Delete Confirmation Modal -->
+<div id="role-confirm-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl relative transition-colors duration-200">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-trash text-red-600 dark:text-red-400"></i>
+                    </div>
+                            <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete Role</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+        </div>
+      </div>
+      <button
+        id="role-confirm-close"
+        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200"
+        aria-label="Close"
+      >
+        <i class="fa-solid fa-times text-gray-500 dark:text-gray-400"></i>
+      </button>
+    </div>
+
+    <!-- Modal Content -->
+            <div class="p-6">
+      <p class="text-gray-700 dark:text-gray-300 mb-4">
+        Are you sure you want to delete this role? All users with this role will lose their permissions.
+      </p>
+      <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+        <div class="flex items-center space-x-3">
+          <div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-shield-halved text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div>
+            <p id="confirm-role-name" class="font-medium text-gray-900 dark:text-gray-100">Role Name</p>
+            <p id="confirm-role-description" class="text-sm text-gray-500 dark:text-gray-400">Role description</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+      <button
+        id="role-confirm-cancel"
+        type="button"
+        class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+      >
+                    Cancel
+                </button>
+      <button
+        id="role-confirm-action"
+        type="button"
+        class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+      >
+        Delete Role
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Tailwind safelist for dynamic toggle classes injected via JS -->
+<div class="hidden">
+  <div class="peer"></div>
+  <div class="w-12 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="../../static/js/flash.js"></script>
+    <script>
+const BASE_URL = '/api/v1';
+// Expose modules/actions map from server
+window.modulesActions = {{ modules_actions | tojson | safe }};
+
+// Modal management
+function showCreateModal() {
+    document.getElementById('create-modal').classList.remove('hidden');
+    document.getElementById('create-modal').classList.add('flex');
+}
+
+function hideCreateModal() {
+    document.getElementById('create-modal').classList.add('hidden');
+    document.getElementById('create-modal').classList.remove('flex');
+    document.getElementById('create-form').reset();
+}
+
+function showEditModal() {
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-modal').classList.add('flex');
+}
+
+function hideEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+    document.getElementById('edit-modal').classList.remove('flex');
+    document.getElementById('edit-form').reset();
+}
+
+function showConfirmModal(title, message, action) {
+    document.getElementById('confirm-role-name').textContent = title;
+    document.getElementById('confirm-role-description').textContent = message;
+    document.getElementById('role-confirm-modal').classList.remove('hidden');
+    document.getElementById('role-confirm-modal').classList.add('flex');
+    
+    // Store action for later execution
+    document.getElementById('role-confirm-action').onclick = action;
+}
+
+function hideConfirmModal() {
+    document.getElementById('role-confirm-modal').classList.add('hidden');
+    document.getElementById('role-confirm-modal').classList.remove('flex');
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Create modal
+    document.getElementById('create-role-open').addEventListener('click', showCreateModal);
+    document.getElementById('create-close').addEventListener('click', hideCreateModal);
+    document.getElementById('create-cancel').addEventListener('click', hideCreateModal);
+    
+    // Edit modal
+    document.getElementById('edit-close').addEventListener('click', hideEditModal);
+    document.getElementById('edit-cancel').addEventListener('click', hideEditModal);
+    
+    // Confirm modal
+    document.getElementById('role-confirm-close').addEventListener('click', hideConfirmModal);
+    document.getElementById('role-confirm-cancel').addEventListener('click', hideConfirmModal);
+    
+    // Build dynamic accordion for permissions
+    function buildPermissionsAccordion(currentPerms) {
+        const modules = window.modulesActions || {};
+        const wrapper = document.createElement('div');
+        wrapper.className = 'space-y-2';
+        
+        // Permission descriptions and icons mapping
+        const permissionInfo = {
+            'users': {
+                'view': { icon: 'fa-eye', desc: 'View user accounts and profiles' },
+                'create': { icon: 'fa-user-plus', desc: 'Create new user accounts' },
+                'edit': { icon: 'fa-user-edit', desc: 'Edit user information' },
+                'delete': { icon: 'fa-user-times', desc: 'Delete user accounts' },
+                'enable': { icon: 'fa-user-check', desc: 'Enable/activate users' },
+                'disable': { icon: 'fa-user-slash', desc: 'Disable/deactivate users' }
+            },
+            'roles': {
+                'view': { icon: 'fa-shield-halved', desc: 'View roles and permissions' },
+                'create': { icon: 'fa-plus-circle', desc: 'Create new roles' },
+                'edit': { icon: 'fa-edit', desc: 'Edit role permissions' },
+                'delete': { icon: 'fa-trash', desc: 'Delete roles' }
+            },
+            'audit': {
+                'view': { icon: 'fa-history', desc: 'View audit logs and activity' }
+            },
+            'estates': {
+                'view': { icon: 'fa-building', desc: 'View estates and properties' },
+                'create': { icon: 'fa-plus', desc: 'Create new estates' },
+                'edit': { icon: 'fa-edit', desc: 'Edit estate details' },
+                'delete': { icon: 'fa-trash', desc: 'Delete estates' }
+            },
+            'units': {
+                'view': { icon: 'fa-home', desc: 'View units and apartments' },
+                'create': { icon: 'fa-plus', desc: 'Create new units' },
+                'edit': { icon: 'fa-edit', desc: 'Edit unit information' },
+                'delete': { icon: 'fa-trash', desc: 'Delete units' }
+            },
+            'meters': {
+                'view': { icon: 'fa-tachometer-alt', desc: 'View meters and readings' },
+                'create': { icon: 'fa-plus', desc: 'Add new meters' },
+                'edit': { icon: 'fa-edit', desc: 'Edit meter settings' },
+                'delete': { icon: 'fa-trash', desc: 'Remove meters' }
+            },
+            'billing': {
+                'view': { icon: 'fa-file-invoice', desc: 'View billing and invoices' },
+            },
+            'reports': {
+                'view': { icon: 'fa-chart-bar', desc: 'View reports and analytics' },
+                'create': { icon: 'fa-plus', desc: 'Generate new reports' },
+                'edit': { icon: 'fa-edit', desc: 'Edit report settings' },
+                'delete': { icon: 'fa-trash', desc: 'Delete reports' }
+            },
+            'settings': {
+                'view': { icon: 'fa-cog', desc: 'View system settings' },
+                'edit': { icon: 'fa-edit', desc: 'Modify system settings' },
+            },
+            'rate_tables': {
+                'view': { icon: 'fa-table', desc: 'View rate tables' },
+                'create': { icon: 'fa-plus', desc: 'Create rate tables' },
+                'edit': { icon: 'fa-edit', desc: 'Edit rate tables' },
+                'delete': { icon: 'fa-trash', desc: 'Delete rate tables' }
+            }
+        };
+        
+        Object.keys(modules).forEach((moduleName) => {
+            const actions = modules[moduleName] || [];
+            const section = document.createElement('div');
+            section.className = 'rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600';
+            const header = document.createElement('button');
+            header.type = 'button';
+            header.className = 'w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200';
+            header.innerHTML = `<span class="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">${moduleName.replaceAll('_',' ')}</span><i class=\"fa-solid fa-chevron-down text-gray-500\"></i>`;
+            const content = document.createElement('div');
+            content.className = 'hidden p-4 bg-white dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600';
+            const list = document.createElement('div');
+            list.className = 'grid grid-cols-1 gap-3';
+            actions.forEach((action) => {
+                const key = `${moduleName}.${action}`;
+                const checked = !!(currentPerms && currentPerms[moduleName] && currentPerms[moduleName][action]);
+                const info = permissionInfo[moduleName] && permissionInfo[moduleName][action] ? permissionInfo[moduleName][action] : { icon: 'fa-circle', desc: `${action} ${moduleName}` };
+                
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200';
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid ${info.icon} text-gray-400 dark:text-gray-500"></i>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">${action} ${moduleName.replaceAll('_',' ')}</span>
+                    </div>
+                `;
+                
+                const label = document.createElement('label');
+                label.className = 'relative inline-flex items-center cursor-pointer';
+                
+                // Create input checkbox
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.className = 'permission-toggle sr-only peer';
+                input.setAttribute('data-permission', key);
+                if (checked) input.checked = true;
+                
+                // Create toggle switch div
+                const toggleDiv = document.createElement('div');
+                toggleDiv.className = 'w-12 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500';
+                
+                label.appendChild(input);
+                label.appendChild(toggleDiv);
+                row.appendChild(label);
+                list.appendChild(row);
+            });
+            content.appendChild(list);
+            section.appendChild(header);
+            section.appendChild(content);
+            wrapper.appendChild(section);
+            header.addEventListener('click', () => {
+                content.classList.toggle('hidden');
+                const icon = header.querySelector('i');
+                if (icon) icon.classList.toggle('rotate-180');
+            });
+        });
+        return wrapper;
+    }
+
+    // Edit buttons
+    document.querySelectorAll('[data-role]').forEach(button => {
+        button.addEventListener('click', function() {
+            const role = JSON.parse(this.dataset.role);
+            populateEditForm(role);
+            // Inject dynamic permissions accordion
+            const existing = document.getElementById('edit-permissions-dynamic');
+            if (existing) existing.remove();
+            const container = document.createElement('div');
+            container.id = 'edit-permissions-dynamic';
+            container.className = 'mt-4';
+            const header = document.createElement('h3');
+            header.className = 'text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center';
+            header.innerHTML = '<i class="fa-solid fa-shield-halved text-green-600 mr-2"></i>Permissions';
+            container.appendChild(header);
+            container.appendChild(buildPermissionsAccordion(role.permissions || {}));
+            document.getElementById('edit-form').appendChild(container);
+            showEditModal();
+        });
+    });
+    
+    // Delete buttons
+    document.querySelectorAll('[data-role-id]').forEach(button => {
+        if (button.textContent.includes('Delete')) {
+            button.addEventListener('click', function() {
+                const roleId = this.dataset.roleId;
+                const role = JSON.parse(this.dataset.roleData);
+                
+                showConfirmModal(
+                    role.name,
+                    role.description || 'No description provided',
+                    () => deleteRole(roleId)
+                );
+            });
+        }
+    });
+    
+    // Build dynamic permissions on create modal open
+    const createOpen = document.getElementById('create-role-open');
+    if (createOpen) {
+        createOpen.addEventListener('click', () => {
+            const existing = document.getElementById('create-permissions-dynamic');
+            if (existing) existing.remove();
+            const container = document.createElement('div');
+            container.id = 'create-permissions-dynamic';
+            container.className = 'mt-4';
+            const header = document.createElement('h3');
+            header.className = 'text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center';
+            header.innerHTML = '<i class="fa-solid fa-shield-halved text-green-600 mr-2"></i>Permissions';
+            container.appendChild(header);
+            container.appendChild(buildPermissionsAccordion({}));
+            document.getElementById('create-form').appendChild(container);
+        });
+    }
+
+    // Form submissions
+    document.getElementById('create-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createRole();
+    });
+    
+    document.getElementById('edit-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateRole();
+    });
+});
+
+function populateEditForm(role) {
+    document.getElementById('edit-id').value = role.id;
+    document.getElementById('edit-name').value = role.name;
+    document.getElementById('edit-description').value = role.description || '';
+    
+    // Set permission toggles - handle nested permissions structure
+    const permissions = role.permissions || {};
+    document.querySelectorAll('.permission-toggle').forEach(toggle => {
+        const permissionKey = toggle.dataset.permission; // e.g., "users.view"
+        const [module, action] = permissionKey.split('.');
+        
+        // Check nested structure: permissions[module][action]
+        const isChecked = permissions[module] && permissions[module][action] === true;
+        toggle.checked = isChecked;
+    });
+}
+
+function collectPermissions() {
+    const flat = {};
+    document.querySelectorAll('.permission-toggle, .create-permission-toggle').forEach(toggle => {
+        const permission = toggle.dataset.permission;
+        flat[permission] = toggle.checked;
+    });
+    // Convert flat map (module.action) to nested structure
+    const nested = {};
+    Object.entries(flat).forEach(([key, val]) => {
+        const [module, action] = key.split('.');
+        if (!nested[module]) nested[module] = {};
+        nested[module][action] = !!val;
+    });
+    return nested;
+}
+
+async function createRole() {
+    const formData = {
+        name: document.getElementById('create-name').value,
+        description: document.getElementById('create-description').value,
+        permissions: collectPermissions()
+    };
+    
+    try {
+        const response = await fetch(`${BASE_URL}/api/roles`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideCreateModal();
+            window.location.reload();
+            showFlashMessage('Role created successfully', 'success', true);
+        } else {
+            showFlashMessage(result.error || 'Failed to create role', 'error', true);
+        }
+    } catch (error) {
+        showFlashMessage('Failed to create role', 'error', true);
+    }
+}
+
+async function updateRole() {
+    const roleId = document.getElementById('edit-id').value;
+    const formData = {
+        name: document.getElementById('edit-name').value,
+        description: document.getElementById('edit-description').value,
+        permissions: collectPermissions()
+    };
+    
+    try {
+        const response = await fetch(`${BASE_URL}/api/roles/${roleId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideEditModal();
+            window.location.reload();
+            showFlashMessage('Role updated successfully', 'success', true);
+            } else {
+           showFlashMessage(result.error || 'Failed to update role', 'error', true);
+        }
+    } catch (error) {
+       showFlashMessage('Failed to update role', 'error', true);
+    }
+}
+
+async function deleteRole(roleId) {
+    try {
+        const response = await fetch(`${BASE_URL}/api/roles/${roleId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideConfirmModal();
+            window.location.reload();
+            showFlashMessage('Role deleted successfully', 'success', true);
+        } else {
+            showFlashMessage(result.error || 'Failed to delete role', 'error', true);
+        }
+    } catch (error) {
+        showFlashMessage('Failed to delete role', 'error', true);
+            }
+        }
+
+    
+    function applyFilters() {
+      const form = document.getElementById('filters');
+      form.submit();
+    }
+
+    function clearFilters() {
+      
+      window.location.href = '/api/v1/roles';
+    }
+
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('search');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyFilters();
+          }
+        });
+      }
+    });
+    </script>
+{% endblock %}

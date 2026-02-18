@@ -1,0 +1,594 @@
+{% extends "base.html" %} {% block title %}Edit Rate Table{% endblock %} {%
+block page_title %}Edit Rate Table{% endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.rate_tables_page') }}" class="hover:text-primary"
+  >Rate Tables</a
+>
+<span class="mx-1">/</span>
+<span>Edit</span>
+{% endblock %} {% block content %}
+<div class="p-6">
+  <!-- Step Progress -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <div
+          class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold"
+        >
+          1
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">
+            Basic Info
+          </p>
+          <p class="text-xs text-gray-500">Name and type</p>
+        </div>
+      </div>
+      <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+      <div class="flex items-center">
+        <div
+          id="step2"
+          class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold"
+        >
+          2
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Rate Structure
+          </p>
+          <p class="text-xs text-gray-400">Define pricing</p>
+        </div>
+      </div>
+      <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+      <div class="flex items-center">
+        <div
+          id="step3"
+          class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold"
+        >
+          3
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Review
+          </p>
+          <p class="text-xs text-gray-400">Confirm details</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Basic Information -->
+  <div
+    id="step1Content"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+  >
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Basic Information
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >Name</label
+        >
+        <input
+          id="rtName"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >Resource Type</label
+        >
+        <select
+          id="rtUtility"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option value="electricity">Electricity</option>
+          <option value="water">Water</option>
+          <option value="solar">Solar</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >Effective From</label
+        >
+        <input
+          id="rtFrom"
+          type="date"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >Effective To</label
+        >
+        <input
+          id="rtTo"
+          type="date"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+          >Category</label
+        >
+        <select
+          id="rtCategory"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option>Residential</option>
+          <option>Commercial</option>
+          <option>Industrial</option>
+          <option>Subsidized</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="rtActive" type="checkbox" class="h-4 w-4" />
+        <label class="text-sm text-gray-700 dark:text-gray-300">Active</label>
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1"
+        >Description</label
+      >
+      <textarea
+        id="rtDescription"
+        rows="3"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+      ></textarea>
+    </div>
+  </div>
+
+  <!-- Step 2: Rate Structure -->
+  <div
+    id="step2Content"
+    class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+  >
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Rate Structure
+    </h2>
+
+    <div class="mb-6">
+      <label
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+        >Select Pricing Model(s)</label
+      >
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="tieredPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('tiered')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-layer-group text-blue-500 mr-2"></i>Tiered
+                Pricing
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates for consumption levels
+              </p>
+            </div>
+          </label>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="flatPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('flat')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-equals text-purple-500 mr-2"></i>Flat Rate
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Single rate for all consumption
+              </p>
+            </div>
+          </label>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="touPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('tou')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-clock text-yellow-500 mr-2"></i>Time of Use
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates by time of day
+              </p>
+            </div>
+          </label>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="seasonalPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('seasonal')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates by season
+              </p>
+            </div>
+          </label>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="fixedPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('fixed')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Fixed monthly/daily fee
+              </p>
+            </div>
+          </label>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="demandPricing"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+              onchange="toggleModel('demand')"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand
+                Charge
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Based on peak demand (kW)
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tiered Section -->
+    <div
+      id="tieredSection"
+      class="hidden mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        Tiered Configuration
+      </h3>
+      <div id="tieredRates" class="space-y-3"></div>
+      <button
+        onclick="addTierRow()"
+        class="mt-3 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        <i class="fas fa-plus mr-1"></i>Add Tier
+      </button>
+    </div>
+
+    <!-- Flat Section -->
+    <div
+      id="flatSection"
+      class="hidden mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        Flat Rate
+      </h3>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
+        <input
+          id="flatRate"
+          type="number"
+          step="0.01"
+          class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+        <span class="text-sm text-gray-700 dark:text-gray-300">per unit</span>
+      </div>
+    </div>
+
+    <!-- TOU Section -->
+    <div
+      id="touSection"
+      class="hidden mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        Time of Use
+      </h3>
+      <div id="touRates" class="space-y-3"></div>
+      <button
+        onclick="addTouRow()"
+        class="mt-3 px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+      >
+        <i class="fas fa-plus mr-1"></i>Add Period
+      </button>
+    </div>
+
+    <!-- Seasonal Section -->
+    <div
+      id="seasonalSection"
+      class="hidden mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal
+        Configuration
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
+            >Summer (Dec - Feb)</label
+          >
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
+            <input
+              type="number"
+              step="0.01"
+              id="summerRate"
+              class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+          </div>
+        </div>
+        <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
+            >Winter (Jun - Aug)</label
+          >
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
+            <input
+              type="number"
+              step="0.01"
+              id="winterRate"
+              class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fixed Charge Section -->
+    <div
+      id="fixedSection"
+      class="hidden mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge Configuration
+      </h3>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-medium text-gray-900 dark:text-white"
+          >Charge:</span
+        >
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
+        <input
+          type="number"
+          step="0.01"
+          id="fixedChargeRate"
+          placeholder="Amount"
+          class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        />
+        <select
+          class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option>per month</option>
+          <option>per day</option>
+          <option>per year</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Demand Charge Section -->
+    <div
+      id="demandSection"
+      class="hidden mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand Charge
+        Configuration
+      </h3>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Demand Charge:</span
+          >
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            id="demandChargeRate"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="text-sm text-gray-900 dark:text-white"
+            >per kW of peak demand</span
+          >
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Measurement:</span
+          >
+          <select
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option>15-minute peak</option>
+            <option>30-minute peak</option>
+            <option>Monthly peak</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Review -->
+  <div
+    id="step3Content"
+    class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+  >
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Review
+    </h2>
+    <p class="text-sm text-gray-600 dark:text-gray-300">
+      Review your settings, then save.
+    </p>
+  </div>
+
+  <!-- Nav Buttons -->
+  <div class="flex justify-between mt-6">
+    <a
+      href="{{ url_for('api_v1.rate_tables_page') }}"
+      class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
+      >Cancel</a
+    >
+    <div class="ml-auto flex gap-2">
+      <button
+        onclick="previousStep()"
+        id="prevBtn"
+        class="hidden px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
+      >
+        Previous
+      </button>
+      <button
+        onclick="nextStep()"
+        id="nextBtn"
+        class="px-6 py-2 bg-primary text-white rounded-lg"
+      >
+        Next
+      </button>
+      <button
+        id="saveBtn"
+        class="hidden px-6 py-2 bg-green-600 text-white rounded-lg"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/edit-rate-table.js') }}"></script>
+<script>
+  // Rate table data passed from server
+  const BASE_URL = "/api/v1"
+  const initial = {{ rate_table | tojson }};
+  console.log("Initial rate table data:", initial);
+
+  async function loadDetails() {
+    let d = null;
+    try {
+      let res = await fetch(`${BASE_URL}/api/rate-tables/${initial.id}/details`);
+      let js;
+      try { js = await res.json(); } catch { js = { error: 'Invalid response' }; }
+      if (!res.ok) {
+
+        res = await fetch(`/api/v1/rate-tables/${initial.id}/details`);
+        try {
+          js = await res.json(); } catch { js = { error: 'Invalid response' }; }
+        if (!res.ok) {
+          showFlashMessage(js.error || 'Failed to load', 'error');
+          return;
+        }
+      }
+      d = js.data || {};
+    } catch (e) {
+      showFlashMessage('Failed to load', 'error');
+      return;
+    }
+    document.getElementById('rtName').value = d.name || '';
+    document.getElementById('rtUtility').value = d.utility_type || 'electricity';
+    document.getElementById('rtFrom').value = (d.effective_from || '').substring(0,10);
+    document.getElementById('rtTo').value = (d.effective_to || '').substring(0,10);
+    document.getElementById('rtActive').checked = !!d.is_active;
+    document.getElementById('rtDescription').value = d.description || '';
+
+    // Populate models
+    const tiers = d.tiers || (d.rate_structure && d.rate_structure.tiers) || [];
+    if (tiers && tiers.length){
+      document.getElementById('tieredPricing').checked = true; toggleModel('tiered');
+      // Clear then add rows
+      document.getElementById('tieredRates').innerHTML = '';
+      tiers.forEach(t => addTierRow({from: t.from, to: t.to, rate: t.rate}));
+    }
+    const flat = d.rate_structure && d.rate_structure.flat_rate;
+    if (flat !== undefined){
+      document.getElementById('flatPricing').checked = true; toggleModel('flat');
+      document.getElementById('flatRate').value = flat;
+    }
+    const tou = d.time_of_use || (d.rate_structure && d.rate_structure.time_of_use) || [];
+    if (tou && tou.length){
+      document.getElementById('touPricing').checked = true; toggleModel('tou');
+      document.getElementById('touRates').innerHTML = '';
+      tou.forEach(p => addTouRow(p));
+    }
+
+    const seasonal = d.rate_structure && d.rate_structure.seasonal;
+    if (seasonal && (seasonal.summer > 0 || seasonal.winter > 0)){
+      document.getElementById('seasonalPricing').checked = true; toggleModel('seasonal');
+      document.getElementById('summerRate').value = seasonal.summer || '';
+      document.getElementById('winterRate').value = seasonal.winter || '';
+    }
+
+    const fixed = d.rate_structure && d.rate_structure.fixed_charge;
+    if (fixed && fixed > 0){
+      document.getElementById('fixedPricing').checked = true; toggleModel('fixed');
+      document.getElementById('fixedChargeRate').value = fixed;
+    }
+
+    const demand = d.rate_structure && d.rate_structure.demand_charge;
+    if (demand && demand > 0){
+      document.getElementById('demandPricing').checked = true; toggleModel('demand');
+      document.getElementById('demandChargeRate').value = demand;
+    }
+  }
+
+  async function saveChanges() {
+    try {
+      // Get rate table ID from URL or initial data
+      const rateTableId = initial?.id || window.location.pathname.split('/').pop();
+
+      const payload = {
+        name: document.getElementById('rtName')?.value || '',
+        utility_type: document.getElementById('rtUtility')?.value || 'electricity',
+        effective_from: document.getElementById('rtFrom')?.value || null,
+        effective_to: document.getElementById('rtTo')?.value || null,
+        is_active: document.getElementById('rtActive')?.checked || false,
+        rate_structure: collectStructure()
+      };
+
+      console.log('Saving rate table:', rateTableId, payload);
+
+      const resp = await fetch(`${BASE_URL}/api/rate-tables/${rateTableId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const out = await resp.json();
+      if (!resp.ok) throw new Error(out.error || 'Save failed');
+      showFlashMessage('Rate table updated', 'success', true);
+      window.location = `${BASE_URL}/rate-tables`;
+    } catch (e) {
+      console.error('Save error:', e);
+      showFlashMessage(e.message || 'Failed to save rate table', 'error');
+    }
+  }
+</script>
+{% endblock %}

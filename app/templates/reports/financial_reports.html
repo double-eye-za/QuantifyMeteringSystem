@@ -1,0 +1,208 @@
+<!-- Financial Reports -->
+<div class="space-y-6">
+  <!-- Revenue Summary -->
+  {% if revenue_summary %}
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Revenue Summary
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            R {{ (revenue_summary.total_revenue or 0) | format_number(2) }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Total Revenue
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ revenue_summary.total_transactions or 0 }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Total Transactions
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            R {{ (revenue_summary.electricity_revenue or 0) | format_number(2)
+            }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Electricity Revenue
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-gray-900 dark:text-white">
+            R {{ (revenue_summary.water_revenue or 0) | format_number(2) }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            Water Revenue
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Credit Purchase Report -->
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Credit Purchase Report
+        </h3>
+        <div class="flex space-x-2">
+          <button
+            onclick="exportReport('credit_purchases', 'csv')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-csv mr-2"></i>CSV
+          </button>
+          <button
+            onclick="exportReport('credit_purchases', 'pdf')"
+            class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <i class="fas fa-file-pdf mr-2"></i>PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead
+          class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+        >
+          <tr>
+            <th class="px-6 py-3">Transaction Number</th>
+            <th class="px-6 py-3">Date</th>
+            <th class="px-6 py-3">Unit</th>
+            <th class="px-6 py-3">Estate</th>
+            <th class="px-6 py-3">Amount</th>
+            <th class="px-6 py-3">Payment Method</th>
+            <th class="px-6 py-3">Status</th>
+            <th class="px-6 py-3">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if credit_purchases %} {% for row in credit_purchases %}
+          <tr
+            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+          >
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.transaction_number }}
+            </td>
+            <td class="px-6 py-4">
+              {{ row.completed_at.strftime('%Y-%m-%d %H:%M') if row.completed_at
+              else 'N/A' }}
+            </td>
+            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+              {{ row.unit_number }}
+            </td>
+            <td class="px-6 py-4">{{ row.estate_name }}</td>
+            <td class="px-6 py-4 font-semibold text-green-600">
+              R {{ (row.amount or 0) | format_number(2) }}
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.payment_method == 'eft' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif row.payment_method == 'card' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.payment_method.title() }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="px-2 py-1 text-xs rounded-full {% if row.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif row.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif row.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}"
+              >
+                {{ row.status.title() }}
+              </span>
+            </td>
+            <td class="px-6 py-4">{{ row.description or 'N/A' }}</td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="8"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No credit purchase data available for the selected period
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination for Credit Purchases -->
+    {% if credit_purchases_pagination %}
+    <div
+      class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
+    >
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        Showing
+        <span class="font-medium"
+          >{{ ((credit_purchases_pagination.page - 1) *
+          credit_purchases_pagination.per_page + 1) if
+          credit_purchases_pagination.total > 0 else 0 }}</span
+        >
+        to
+        <span class="font-medium"
+          >{{ credit_purchases_pagination.page *
+          credit_purchases_pagination.per_page if
+          credit_purchases_pagination.page *
+          credit_purchases_pagination.per_page <
+          credit_purchases_pagination.total else
+          credit_purchases_pagination.total }}</span
+        >
+        of
+        <span class="font-medium">{{ credit_purchases_pagination.total }}</span>
+        results
+      </div>
+      <div class="flex items-center gap-2">
+        <a
+          href="?category={{ category }}&page={{ credit_purchases_pagination.page - 1 }}{% if current_estate %}&estate_id={{ current_estate }}{% endif %}{% if current_date_range %}&date_range={{ current_date_range }}{% endif %}"
+          class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not credit_purchases_pagination.has_prev }}"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <span class="px-3 py-1 bg-primary text-white rounded-lg"
+          >{{ credit_purchases_pagination.page }}</span
+        >
+        <a
+          href="?category={{ category }}&page={{ credit_purchases_pagination.page + 1 }}{% if current_estate %}&estate_id={{ current_estate }}{% endif %}{% if current_date_range %}&date_range={{ current_date_range }}{% endif %}"
+          class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not credit_purchases_pagination.has_next }}"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Revenue Trends Chart -->
+  {% if credit_purchases %}
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Revenue Trends
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="relative h-64">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+<!-- Chart.js and all JavaScript is handled by the parent reports.html template -->

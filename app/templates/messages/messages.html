@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Messages - Quantify Metering System{% endblock %}
+{% block page_title %}Messages{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Messages</span>
+{% endblock %}
+{% block content %}
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Total Messages</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.broadcast }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Broadcast</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.estate }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Estate</div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.individual }}</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">Individual</div>
+    </div>
+  </div>
+
+  <!-- Header Row -->
+  <div class="flex justify-between items-center mb-4">
+    <div></div>
+    {% if has_permission('messages.create') %}
+    <a href="{{ url_for('api_v1.compose_message_page') }}" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+      <i class="fas fa-plus mr-2"></i>New Message
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <!-- Left side - Search -->
+      <div class="flex-1 max-w-md">
+        <div class="relative">
+          <input
+            name="q"
+            id="searchInput"
+            value="{{ current_filters.q or '' }}"
+            type="text"
+            placeholder="Search by subject..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+          <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+        </div>
+      </div>
+
+      <!-- Right side - Filters -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- Type Filter -->
+        <select
+          id="typeFilter"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="">All Types</option>
+          <option value="broadcast" {% if current_filters.type=='broadcast' %}selected{% endif %}>Broadcast</option>
+          <option value="estate" {% if current_filters.type=='estate' %}selected{% endif %}>Estate</option>
+          <option value="individual" {% if current_filters.type=='individual' %}selected{% endif %}>Individual</option>
+        </select>
+
+        <!-- Estate Filter -->
+        <select
+          id="estateFilter"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+        >
+          <option value="">All Estates</option>
+          {% for estate in estates %}
+          <option value="{{ estate.id }}" {% if current_filters.estate_id==estate.id %}selected{% endif %}>{{ estate.name }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Clear Filters Button -->
+        <button
+          type="button"
+          id="clearFiltersBtn"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+        >
+          <i class="fas fa-times mr-2"></i>Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Subject</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Type</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Recipients</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Read Rate</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Sent</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for message in messages %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onclick="window.location.href='{{ url_for('api_v1.message_detail_page', message_id=message.id) }}'">
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs">{{ message.subject }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">by {{ message.sender_name }}</div>
+            </td>
+            <td class="px-4 py-3">
+              {% set type_colors = {
+                'broadcast': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+                'estate': 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400',
+                'individual': 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400'
+              } %}
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ type_colors.get(message.message_type, 'bg-gray-100 text-gray-800') }}">
+                {% if message.message_type == 'broadcast' %}<i class="fas fa-bullhorn mr-1"></i>{% endif %}
+                {% if message.message_type == 'estate' %}<i class="fas fa-building mr-1"></i>{% endif %}
+                {% if message.message_type == 'individual' %}<i class="fas fa-user mr-1"></i>{% endif %}
+                {{ message.message_type_display }}
+              </span>
+              {% if message.estate_name %}
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ message.estate_name }}</div>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-900 dark:text-white">{{ message.recipient_count }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden max-w-[100px]">
+                  <div class="h-full bg-green-500 rounded-full" style="width: {{ message.read_percentage }}%"></div>
+                </div>
+                <span class="text-xs text-gray-600 dark:text-gray-400">{{ message.read_percentage }}%</span>
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ message.read_count }} read</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-900 dark:text-gray-300">{{ message.sent_at[:10] if message.sent_at else '-' }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ message.sent_at[11:16] if message.sent_at else '' }}</div>
+            </td>
+            <td class="px-4 py-3" onclick="event.stopPropagation()">
+              <div class="flex items-center gap-2">
+                <a href="{{ url_for('api_v1.message_detail_page', message_id=message.id) }}" class="text-primary hover:underline text-sm">
+                  <i class="fas fa-eye"></i>
+                </a>
+                {% if has_permission('messages.delete') %}
+                <button onclick="deleteMessage({{ message.id }})" class="text-red-600 hover:text-red-800 text-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+              <i class="fas fa-envelope text-4xl mb-2 opacity-50"></i>
+              <p>No messages found</p>
+              {% if has_permission('messages.create') %}
+              <a href="{{ url_for('api_v1.compose_message_page') }}" class="text-primary hover:underline text-sm mt-2 inline-block">
+                Send your first message
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> messages
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('api_v1.messages_page', page=(pagination.prev_page or 1), q=current_filters.q, type=current_filters.type, estate_id=current_filters.estate_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.messages_page', page=(pagination.next_page or pagination.page), q=current_filters.q, type=current_filters.type, estate_id=current_filters.estate_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script>
+  // Filter functionality
+  const searchInput = document.getElementById('searchInput');
+  const typeFilter = document.getElementById('typeFilter');
+  const estateFilter = document.getElementById('estateFilter');
+  const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+  function applyFilters() {
+    const params = new URLSearchParams();
+    if (searchInput.value) params.set('q', searchInput.value);
+    if (typeFilter.value) params.set('type', typeFilter.value);
+    if (estateFilter.value) params.set('estate_id', estateFilter.value);
+    window.location.href = '{{ url_for("api_v1.messages_page") }}?' + params.toString();
+  }
+
+  let searchTimeout;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(applyFilters, 500);
+  });
+
+  typeFilter.addEventListener('change', applyFilters);
+  estateFilter.addEventListener('change', applyFilters);
+
+  clearFiltersBtn.addEventListener('click', () => {
+    window.location.href = '{{ url_for("api_v1.messages_page") }}';
+  });
+
+  async function deleteMessage(messageId) {
+    if (!confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/v1/api/messages/' + messageId, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showFlashMessage('Message deleted successfully', 'success', true);
+        location.reload();
+      } else {
+        showFlashMessage(data.error || 'Failed to delete message', 'error');
+      }
+    } catch (error) {
+      showFlashMessage('An error occurred', 'error');
+      console.error(error);
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,1087 @@
+{% extends "base.html" %} {% block title %}Estate Management - Quantify Metering
+System{% endblock %} {% block page_title %}Estate Management{% endblock %} {%
+block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Estates</span>
+{% endblock %} {% block extra_css %}
+<style>
+  /* Chart canvas styling */
+  #dailyTrendChart,
+  #monthlyChart {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+  }
+</style>
+{% endblock %} {% block head_resources %} {% endblock %} {% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          Total Estates
+        </p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.estates }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Active</p>
+      </div>
+      <div
+        class="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-building text-primary"></i>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Units</p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.units }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Across all estates</p>
+      </div>
+      <div
+        class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-home text-success"></i>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          Total Meters
+        </p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.meters }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          {{ totals.unit_meters }} unit + {{ totals.bulk_meters }} bulk
+        </p>
+      </div>
+      <div
+        class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-tachometer-alt text-purple-600"></i>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          Active DC450s
+        </p>
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ totals.dc450s }}
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Communicating</p>
+      </div>
+      <div
+        class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-network-wired text-info"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estates List -->
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Residential Estates
+      </h2>
+      {% if has_permission('estates.create') %}
+      <button
+        onclick="showAddEstateModal()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+      >
+        <i class="fas fa-plus mr-2"></i> Add Estate
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Estate Cards -->
+  <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {% for estate in estates %}
+    <div
+      class="border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      data-estate='{{ estate | tojson }}'
+    >
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ estate.name }}
+          </h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {{ estate.address or '' }}{% if estate.city %}, {{ estate.city }}{%
+            endif %}
+          </p>
+        </div>
+        <span
+          class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs rounded-full"
+          >{{ 'Active' if estate.is_active else 'Inactive' }}</span
+        >
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Units</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">
+            {{ estate.total_units or 0 }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ meter_configs[estate.id].total }}</p>
+        </div>
+      </div>
+
+      <div class="border-b border-gray-200 dark:border-gray-700 pt-4"></div>
+
+      <!-- Meter Configuration -->
+      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-4 mt-4">
+        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          Meter Configuration
+        </p>
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600 dark:text-gray-400">
+              <i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity
+              Meters
+            </span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ meter_configs[estate.id].elec }}</span
+            >
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600 dark:text-gray-400">
+              <i class="fas fa-tint text-blue-500 mr-1"></i> Water Meters
+            </span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ meter_configs[estate.id].water }}</span
+            >
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600 dark:text-gray-400">
+              <i class="fas fa-solar-panel text-orange-500 mr-1"></i> Solar
+              Meters
+            </span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ meter_configs[estate.id].solar }}</span
+            >
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600 dark:text-gray-400">
+              <i class="fas fa-hot-tub text-red-500 mr-1"></i> Hot Water Meters
+            </span>
+            <span class="font-medium text-gray-900 dark:text-white"
+              >{{ meter_configs[estate.id].hot_water }}</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Info -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400">Manager:</span>
+          <span class="text-xs font-medium text-gray-900 dark:text-white"
+            >{{ estate.contact_name or '' }}</span
+          >
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 dark:text-gray-400">Contact:</span>
+          <span class="text-xs font-medium text-gray-900 dark:text-white"
+            >{{ estate.contact_phone or '' }}</span
+          >
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 mt-4">
+        <button
+          onclick="viewEstateDetails(this)"
+          class="flex-1 px-3 py-2 bg-primary hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+        >
+          <i class="fas fa-eye mr-1"></i> View Details
+        </button>
+        {% if has_permission('estates.edit') %}
+        <button
+          onclick="editEstate(this)"
+          class="px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-colors"
+        >
+          <i class="fas fa-edit"></i>
+        </button>
+        {% endif %} {% if has_permission('estates.delete') %}
+        <button
+          onclick="confirmDeleteEstate(this)"
+          class="px-3 py-2 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-sm rounded-lg transition-colors"
+          title="Delete Estate"
+        >
+          <i class="fas fa-trash"></i>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Delete Estate Confirmation Modal -->
+<div
+  id="deleteEstateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4"
+>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Delete Estate
+      </h3>
+    </div>
+    <div class="p-4 text-sm text-gray-700 dark:text-gray-300">
+      Deleting this estate will also delete all units under it. This action
+      cannot be undone. Are you sure you want to proceed?
+    </div>
+    <div
+      class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2"
+    >
+      <button
+        type="button"
+        onclick="hideDeleteEstate()"
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onclick="performDeleteEstate()"
+        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+      >
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Meter Summary -->
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-6"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Bulk Meter Overview
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Total complex consumption monitoring
+    </p>
+  </div>
+  <div class="p-6">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700 text-xs">
+          <tr>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Estate
+            </th>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Meter Type
+            </th>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Meter ID
+            </th>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Current Reading
+            </th>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Status
+            </th>
+            <th
+              class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300"
+            >
+              Last Update
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% if bulk_meters_data %} {% for meter in bulk_meters_data %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
+              {{ meter.estate_name }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <span class="flex items-center gap-1">
+                <i
+                  class="{{ meter.meter_type_icon }} {{ meter.meter_type_color }}"
+                ></i>
+                <span class="text-gray-900 dark:text-gray-300"
+                  >{{ meter.meter_type }}</span
+                >
+              </span>
+            </td>
+            <td
+              class="px-4 py-3 text-sm font-mono text-gray-900 dark:text-gray-300"
+            >
+              {{ meter.serial_number }}
+            </td>
+            <td
+              class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
+            >
+              {% if meter.current_reading is not none %} {{
+              meter.current_reading | format_number(2) }} {{ meter.reading_unit
+              }} {% else %}
+              <span class="text-gray-400">No reading</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if meter.status == 'online' %}
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+              >
+                Online
+              </span>
+              {% elif meter.status == 'offline' %}
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
+              >
+                Offline
+              </span>
+              {% else %}
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400"
+              >
+                Error
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+              {% if meter.last_update %} {{ meter.last_update.strftime('%b %d,
+              %Y %H:%M') }} {% elif meter.last_communication %} {{
+              meter.last_communication.strftime('%b %d, %Y %H:%M') }} {% else %}
+              <span class="text-gray-400">Never</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %} {% else %}
+          <tr>
+            <td
+              colspan="6"
+              class="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+            >
+              <div class="flex flex-col items-center">
+                <i
+                  class="fas fa-tachometer-alt text-4xl text-gray-300 dark:text-gray-600 mb-2"
+                ></i>
+                <p class="text-sm">No bulk meters configured</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  Bulk meters will appear here once assigned to estates
+                </p>
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Estate Modal -->
+<div
+  id="addEstateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <!-- Modal Header -->
+    <div
+      class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+          Add New Estate
+        </h2>
+        <button
+          onclick="closeAddEstateModal()"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <form onsubmit="saveNewEstate(event)" class="p-6">
+      <!-- Estate Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Estate Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="estate_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Willow Creek Estate"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Address <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="address"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 123 Main Road, Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              City <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="city"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Postal Code
+            </label>
+            <input
+              type="text"
+              name="postal_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 2000"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Total Units <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="total_units"
+              required
+              min="1"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Code
+            </label>
+            <input
+              type="text"
+              name="estate_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., WC001"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Contact Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Manager Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="manager_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., John Smith"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Contact Number <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              name="contact_number"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., +27 11 123 4567"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              name="manager_email"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., manager@estate.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Configuration -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Billing Configuration
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Markup (%)
+            </label>
+            <input
+              id="edit_electricity_markup"
+              type="number"
+              name="electricity_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 20"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on electricity tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Markup (%)
+            </label>
+            <input
+              id="edit_water_markup"
+              type="number"
+              name="water_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 0"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on water tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Solar Free Allocation (kWh)
+            </label>
+            <input
+              id="edit_solar_free_kwh"
+              type="number"
+              name="solar_free_kwh"
+              step="0.01"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Free kWh per unit per month
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Low Balance Threshold (ZAR)
+            </label>
+            <input
+              type="number"
+              name="low_balance_threshold"
+              step="0.01"
+              min="0"
+              value="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Alert when balance drops below
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Table Assignment -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Rate Tables
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Rate Table
+            </label>
+            <select
+              name="electricity_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              {% for rt in electricity_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Rate Table
+            </label>
+            <select
+              name="water_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              {% for rt in water_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Notes -->
+      <div class="mb-6">
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Notes / Comments
+        </label>
+        <textarea
+          name="notes"
+          rows="3"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+          placeholder="Any additional information about this estate..."
+        ></textarea>
+      </div>
+
+      <!-- Modal Footer -->
+      <div
+        class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+      >
+        <button
+          type="button"
+          onclick="closeAddEstateModal()"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <i class="fas fa-plus mr-2"></i> Create Estate
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Estate Modal -->
+<div
+  id="editEstateModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+>
+  <div
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+  >
+    <!-- Modal Header -->
+    <div
+      class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+          Edit Estate
+        </h2>
+        <button
+          onclick="closeEditEstateModal()"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <form onsubmit="saveEditedEstate(event)" class="p-6">
+      <!-- Estate Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Estate Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_estate_name"
+              type="text"
+              name="estate_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Willow Creek Estate"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Address <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_address"
+              type="text"
+              name="address"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 123 Main Road, Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              City <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_city"
+              type="text"
+              name="city"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., Johannesburg"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Postal Code
+            </label>
+            <input
+              id="edit_postal_code"
+              type="text"
+              name="postal_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 2000"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Total Units <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_total_units"
+              type="number"
+              name="total_units"
+              required
+              min="1"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Estate Code
+            </label>
+            <input
+              id="edit_estate_code"
+              type="text"
+              name="estate_code"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., WC001"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Contact Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Manager Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_manager_name"
+              type="text"
+              name="manager_name"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., John Smith"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Contact Number <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="edit_contact_number"
+              type="tel"
+              name="contact_number"
+              required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., +27 11 123 4567"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Email Address
+            </label>
+            <input
+              id="edit_manager_email"
+              type="email"
+              name="manager_email"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., manager@estate.com"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Configuration -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Billing Configuration
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Markup (%)
+            </label>
+            <input
+              id="edit_electricity_markup_field"
+              type="number"
+              name="electricity_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 20"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on electricity tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Markup (%)
+            </label>
+            <input
+              id="edit_water_markup_field"
+              type="number"
+              name="water_markup"
+              step="0.01"
+              min="0"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 0"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Markup on water tariff
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Solar Free Allocation (kWh)
+            </label>
+            <input
+              id="edit_solar_free_kwh_field"
+              type="number"
+              name="solar_free_kwh"
+              step="0.01"
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="e.g., 50"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Free kWh per unit per month
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Table Assignment -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+          Rate Tables
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Electricity Rate Table
+            </label>
+            <select
+              id="edit_electricity_rate_table"
+              name="electricity_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              {% for rt in electricity_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Water Rate Table
+            </label>
+            <select
+              id="edit_water_rate_table"
+              name="water_rate_table"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="">Select rate table...</option>
+              {% for rt in water_rate_tables %}
+              <option value="{{ rt.id }}">{{ rt.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div
+        class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+      >
+        <button
+          type="button"
+          onclick="closeEditEstateModal()"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <i class="fas fa-save mr-2"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="../../static/js/flash.js"></script>
+<script src="../../static/js/estates/estates.js"></script>
+{% endblock %}

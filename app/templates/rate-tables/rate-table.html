@@ -1,0 +1,510 @@
+{% extends "base.html" %} {% block title %}Rate Tables - Quantify Metering
+System{% endblock %} {% block page_title %}Rate Tables{% endblock %} {% block
+breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Rate Tables</span>
+{% endblock %} {% block content %}
+<div class="flex items-center justify-between mb-6">
+  <p class="text-sm text-gray-600 dark:text-gray-400">
+    Manage base rates and assign them to estates with custom markups
+  </p>
+  {% if has_permission('rate_tables.create') %}
+  <a
+    href="{{ url_for('api_v1.rate_table_builder_page') }}"
+    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700"
+  >
+    <i class="fas fa-plus mr-2"></i>New Rate Table
+  </a>
+  {% endif %}
+                    </div>
+  <!-- Available Rate Tables (dynamic) -->
+                <div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Available Rate Tables
+    </h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {% for rt in rate_tables %}
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-2">
+                                <div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">{{ rt.name }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Utility: {{ rt.utility_type|capitalize }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+            <span class="px-2 py-1 text-xs rounded-full {{ 'bg-green-100 text-green-800' if rt.is_active else 'bg-gray-100 text-gray-700' }}">{{ 'Active' if rt.is_active else 'Inactive' }}</span>
+            {% if has_permission('rate_tables.edit') %}
+            <button title="Edit" onclick="gotoEditRateTable({{ rt.id }})" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-300"><i class="fas fa-pen"></i></button>
+            {% endif %}
+            {% if has_permission('rate_tables.delete') %}
+            <button title="Delete" onclick="openDeleteRateTable({{ rt.id }}, '{{ rt.name|escape }}')" class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400"><i class="fas fa-trash"></i></button>
+            {% endif %}
+                                </div>
+                            </div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 mb-3">
+          Effective: {{ rt.effective_from }}{% if rt.effective_to %} - {{ rt.effective_to }}{% endif %}
+                                </div>
+
+        {% set tiers = rate_table_tiers.get(rt.id) %}
+        {% if tiers and tiers|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Tiers</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+              <div class="px-3 py-2">Description</div>
+                                        </div>
+            {% for t in tiers %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from }}{% if t.to %}–{{ t.to }}{% else %}+{% endif %}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ t.rate | format_number(2) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% else %}
+        {# Fallback: render tiers/energy rates from inline rate_structure if present #}
+        {% set rs = rt.rate_structure or {} %}
+        {% if rs.tiers and rs.tiers|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Tiers</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+              <div class="px-3 py-2">Description</div>
+                                </div>
+            {% for t in rs.tiers %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ t.from or t.from_kwh }}{% if t.to or t.to_kwh %}–{{ t.to or t.to_kwh }}{% else %}+{% endif %}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ t.currency or 'R' }} {{ (t.rate or t.rate_per_kwh) | format_number(2) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ t.description or '-' }}</div>
+                            </div>
+            {% endfor %}
+                            </div>
+                        </div>
+        {% elif rs.energy_rates and rs.energy_rates|length %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Energy Rates</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Tier</div>
+              <div class="px-3 py-2">Range</div>
+              <div class="px-3 py-2 text-right">Rate (Incl. VAT)</div>
+                                </div>
+            {% for r in rs.energy_rates %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ r.tier or r.name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ r.range or r.from_to or '-' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ r.currency or 'R' }} {{ (r.incl_vat or r.rate) | format_number(2) }}</div>
+                                </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
+        {% endif %}
+
+        {% set tou = time_of_use_rates.get(rt.id) %}
+        {% if tou and tou|length %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-clock text-blue-500 mr-1"></i>Time-of-Use</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-4 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Period</div>
+              <div class="px-3 py-2">Hours</div>
+              <div class="px-3 py-2">Days</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+                                        </div>
+            {% for p in tou %}
+            <div class="grid grid-cols-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.start_time }}–{{ p.end_time }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ 'Weekdays' if p.weekdays else '' }}{{ ' / ' if p.weekdays and p.weekends else '' }}{{ 'Weekends' if p.weekends else '' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ p.rate | format_number(2) }}</div>
+                                        </div>
+            {% endfor %}
+                                    </div>
+                                </div>
+        {% else %}
+        {% if rs and rs.time_of_use and rs.time_of_use|length %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-clock text-blue-500 mr-1"></i>Time-of-Use</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-4 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Period</div>
+              <div class="px-3 py-2">Hours</div>
+              <div class="px-3 py-2">Days</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+                            </div>
+            {% for p in rs.time_of_use %}
+            <div class="grid grid-cols-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ p.period_name }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.hours or (p.start_time ~ '–' ~ p.end_time) }}</div>
+              <div class="px-3 py-2 text-gray-600 dark:text-gray-400">{{ p.days or '-' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ p.currency or 'R' }} {{ (p.rate or p.rate_per_kwh) | format_number(2) }}</div>
+                            </div>
+            {% endfor %}
+                                </div>
+                            </div>
+        {% endif %}
+        {% endif %}
+        
+        {# Seasonal rates from rate_structure if present #}
+        {% if rs and rs.seasonal %}
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-calendar-alt text-green-500 mr-1"></i>Seasonal Rates</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Season</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+            </div>
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">Summer (Dec - Feb)</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.seasonal.summer | format_number(2) }}</div>
+            </div>
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">Winter (Jun - Aug)</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.seasonal.winter | format_number(2) }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        {# Flat rate from rate_structure if present #}
+        {% if rs and rs.flat_rate %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-equals text-purple-500 mr-1"></i>Flat Rate</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.flat_rate | format_number(2) }}/kWh</div>
+        </div>
+        {% endif %}
+        
+        {# Fixed charge from rate_structure if present #}
+        {% if rs and rs.fixed_charge %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-lock text-red-500 mr-1"></i>Fixed Charge</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.fixed_charge | format_number(2) }}/month</div>
+        </div>
+        {% endif %}
+        
+        {# Demand charge from rate_structure if present #}
+        {% if rs and rs.demand_charge %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-chart-line text-orange-500 mr-1"></i>Demand Charge</p>
+          <div class="px-3 py-2 text-gray-900 dark:text-white">R {{ rs.demand_charge | format_number(2) }}/kW</div>
+        </div>
+        {% endif %}
+
+        {# Fixed/Additional charges from rate_structure if present #}
+        {% if rs and rs.fixed_charges and rs.fixed_charges|length %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-plug text-indigo-400 mr-1"></i>Fixed Charges</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Charge Type</div>
+              <div class="px-3 py-2 text-right">Amount (Incl. VAT)</div>
+                                        </div>
+            {% for c in rs.fixed_charges %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ (c.incl_vat or c.amount) | format_number(2) }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
+
+        {% if rs and rs.additional_charges and rs.additional_charges|length %}
+        <div class="mt-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-receipt text-sky-400 mr-1"></i>Additional Charges</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-3 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Charge Type</div>
+              <div class="px-3 py-2 text-right">Excl. VAT</div>
+              <div class="px-3 py-2 text-right">Incl. VAT</div>
+                                        </div>
+            {% for c in rs.additional_charges %}
+            <div class="grid grid-cols-3 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ c.name or c.charge_type }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.excl_vat is not none and c.excl_vat | format_number(2) or 'TBC' }}</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ c.currency or 'R' }} {{ c.incl_vat is not none and c.incl_vat | format_number(2) or 'TBC' }}</div>
+                                        </div>
+            {% endfor %}
+                                        </div>
+                                    </div>
+        {% endif %}
+                                </div>
+      {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Estate Assignments -->
+                <div>
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Estate Rate Assignments
+    </h2>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Estate
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Rate Table
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Electricity Markup
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Water Markup
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Free Solar
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Service Fee
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
+              Actions
+            </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for e in estates %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td class="px-6 py-4">
+                                        <div>
+                <p class="font-medium text-gray-900 dark:text-white">{{ e.name }}</p>
+                <p class="text-xs text-gray-500">Code: {{ e.code }}</p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Electricity</label>
+                  <select id="elec_rate_{{ e.id }}" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select --</option>
+                    {% for rt in electricity_rate_tables %}
+                    <option value="{{ rt.id }}" {{ 'selected' if e.electricity_rate_table_id == rt.id else '' }}>{{ rt.name }}</option>
+                    {% endfor %}
+                                        </select>
+                                        </div>
+                                        <div>
+                  <label class="block text-xs text-gray-500 mb-1">Water</label>
+                  <select id="water_rate_{{ e.id }}" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select --</option>
+                    {% for rt in water_rate_tables %}
+                    <option value="{{ rt.id }}" {{ 'selected' if e.water_rate_table_id == rt.id else '' }}>{{ rt.name }}</option>
+                    {% endfor %}
+                                        </select>
+                                        </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="elec_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.electricity_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="water_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.water_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="solar_free_{{ e.id }}" type="number" step="0.01" value="{{ e.solar_free_allocation_kwh or 0 }}" class="w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">kWh</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+              <button onclick="saveEstateAssignment({{ e.id }})" class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-blue-700">Save</button>
+                                    </td>
+                                </tr>
+          {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Individual Unit Overrides -->
+                <div class="mt-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Individual Unit Overrides
+    </h2>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <div class="mb-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          Override estate rates for specific units (e.g., pensioners, commercial
+          units)
+        </p>
+                            
+                            <div class="flex gap-4">
+          <select id="overrideEstate"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">Select Estate</option>
+            {% for e in estates %}
+            <option value="{{ e.id }}">{{ e.name }}</option>
+            {% endfor %}
+                                </select>
+                                
+          <select id="overrideUnitId"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">Select Unit</option>
+          </select>
+
+          <select id="overrideRateTable"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">Select Rate Table</option>
+            {% for rt in rate_tables %}
+            <option value="{{ rt.id }}">{{ rt.name }}</option>
+            {% endfor %}
+                                </select>
+                                
+          <button id="applyOverrideBtn"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 text-sm"
+          >
+                                    Apply Override
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Current Overrides -->
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Current Overrides
+        </p>
+        <div id="currentOverrides" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Preview Calculator -->
+                <div class="mt-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      Rate Preview Calculator
+    </h2>
+                    
+    <div
+      class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6"
+    >
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <select id="previewEstate"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option value="">Select Estate</option>
+          {% for e in estates %}
+          <option value="{{ e.id }}">{{ e.name }}</option>
+          {% endfor %}
+                            </select>
+                            
+                            <div class="flex items-center gap-2">
+          <input id="previewKwh"
+            type="number"
+            value="250"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+                                <span class="text-sm text-gray-900 dark:text-white">kWh</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+          <input id="previewKl"
+            type="number"
+            value="12"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+                                <span class="text-sm text-gray-900 dark:text-white">kL</span>
+                            </div>
+
+        <button id="previewCalcBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm">Preview</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Electricity Cost
+          </p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewElecTotal">R 0.00</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400" id="previewElecMarkupText">
+            Incl. markup + VAT
+          </p>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Water Cost
+          </p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewWaterTotal">R 0.00</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400" id="previewWaterMarkupText">
+            Incl. markup + VAT
+          </p>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Service Fee
+          </p>
+          <p class="text-lg font-bold text-gray-900 dark:text-white" id="previewServiceFee">R 0.00</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Monthly fixed</p>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Total Bill
+          </p>
+          <p class="text-lg font-bold text-primary" id="previewTotal">R 0.00</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">For this month</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Delete Rate Table Modal -->
+<div id="deleteRateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+    <div class="flex items-center mb-4">
+      <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+      </div>
+    </div>
+    <div class="text-center">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Delete Rate Table</h3>
+      <p id="deleteRateText" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        Are you sure you want to delete this rate table? This action cannot be undone.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button onclick="hideDeleteRateTable()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">
+          Delete
+        </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/rate-table.js') }}"></script>
+{% endblock %}

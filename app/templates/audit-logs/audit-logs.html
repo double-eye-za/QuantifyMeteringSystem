@@ -1,0 +1,347 @@
+{% extends "base.html" %} {% block title %}Audit Log - Admin System{% endblock
+  %} {% block page_title %}Audit Log{% endblock %} {% block breadcrumb %}
+  <a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+                                  <span class="mx-1">/</span>
+                                  <span>Audit Log</span>
+  {% endblock %} {% block content %}
+              <main class="flex-1 overflow-y-auto p-6">
+                  <!-- Filters Bar -->
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6"
+    >
+      <form id="auditFilters" method="get" action="{{ url_for('api_v1.audit_logs_page') }}">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <!-- Left side - Filters -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Date Range -->
+            <div class="flex items-end gap-4">
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">From</label>
+                <input 
+                  name="start_date" 
+                  value="{{ current_filters.start_date or '' }}"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">To</label>
+                <input 
+                  name="end_date" 
+                  value="{{ current_filters.end_date or '' }}"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <!-- Action Type -->
+            <div>
+              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Action</label>
+              <select 
+                id="actionFilter"
+                name="action" 
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="" {% if not current_filters.action %}selected{% endif %}>All Actions</option>
+                
+                <optgroup label="User Management">
+                  <option value="user.create" {% if current_filters.action=='user.create' %}selected{% endif %}>User Created</option>
+                  <option value="user.update" {% if current_filters.action=='user.update' %}selected{% endif %}>User Updated</option>
+                  <option value="user.delete" {% if current_filters.action=='user.delete' %}selected{% endif %}>User Deleted</option>
+                  <option value="user.enable" {% if current_filters.action=='user.enable' %}selected{% endif %}>User Enabled</option>
+                  <option value="user.disable" {% if current_filters.action=='user.disable' %}selected{% endif %}>User Disabled</option>
+                </optgroup>
+                
+                <optgroup label="Authentication">
+                  <option value="user.login" {% if current_filters.action=='user.login' %}selected{% endif %}>User Login</option>
+                  <option value="user.logout" {% if current_filters.action=='user.logout' %}selected{% endif %}>User Logout</option>
+                  <option value="user.password_change" {% if current_filters.action=='user.password_change' %}selected{% endif %}>Password Changed</option>
+                  <option value="user.profile.update" {% if current_filters.action=='user.profile.update' %}selected{% endif %}>Profile Updated</option>
+                  <option value="user.profile.password_change" {% if current_filters.action=='user.profile.password_change' %}selected{% endif %}>Profile Password Changed</option>
+                </optgroup>
+                
+                <optgroup label="Role Management">
+                  <option value="role.create" {% if current_filters.action=='role.create' %}selected{% endif %}>Role Created</option>
+                  <option value="role.update" {% if current_filters.action=='role.update' %}selected{% endif %}>Role Updated</option>
+                  <option value="role.delete" {% if current_filters.action=='role.delete' %}selected{% endif %}>Role Deleted</option>
+                </optgroup>
+                
+                <optgroup label="Estate Management">
+                  <option value="estate.create" {% if current_filters.action=='estate.create' %}selected{% endif %}>Estate Created</option>
+                  <option value="estate.update" {% if current_filters.action=='estate.update' %}selected{% endif %}>Estate Updated</option>
+                  <option value="estate.delete" {% if current_filters.action=='estate.delete' %}selected{% endif %}>Estate Deleted</option>
+                  <option value="estate.rate_assignment.update" {% if current_filters.action=='estate.rate_assignment.update' %}selected{% endif %}>Estate Rate Assignment Updated</option>
+                </optgroup>
+                
+                <optgroup label="Unit Management">
+                  <option value="unit.create" {% if current_filters.action=='unit.create' %}selected{% endif %}>Unit Created</option>
+                  <option value="unit.update" {% if current_filters.action=='unit.update' %}selected{% endif %}>Unit Updated</option>
+                  <option value="unit.delete" {% if current_filters.action=='unit.delete' %}selected{% endif %}>Unit Deleted</option>
+                </optgroup>
+                
+                <optgroup label="Resident Management">
+                  <option value="resident.create" {% if current_filters.action=='resident.create' %}selected{% endif %}>Resident Created</option>
+                  <option value="resident.update" {% if current_filters.action=='resident.update' %}selected{% endif %}>Resident Updated</option>
+                  <option value="resident.delete" {% if current_filters.action=='resident.delete' %}selected{% endif %}>Resident Deleted</option>
+                </optgroup>
+                
+                <optgroup label="Meter Management">
+                  <option value="meter.create" {% if current_filters.action=='meter.create' %}selected{% endif %}>Meter Created</option>
+                  <option value="meter.update" {% if current_filters.action=='meter.update' %}selected{% endif %}>Meter Updated</option>
+                  <option value="meter.delete" {% if current_filters.action=='meter.delete' %}selected{% endif %}>Meter Deleted</option>
+                </optgroup>
+                
+                <optgroup label="Rate Tables">
+                  <option value="rate_table.create" {% if current_filters.action=='rate_table.create' %}selected{% endif %}>Rate Table Created</option>
+                  <option value="rate_table.update" {% if current_filters.action=='rate_table.update' %}selected{% endif %}>Rate Table Updated</option>
+                  <option value="rate_table.delete" {% if current_filters.action=='rate_table.delete' %}selected{% endif %}>Rate Table Deleted</option>
+                </optgroup>
+                
+                <optgroup label="Financial Operations">
+                  <option value="wallet.topup" {% if current_filters.action=='wallet.topup' %}selected{% endif %}>Wallet Topup</option>
+                  <option value="transaction.reverse" {% if current_filters.action=='transaction.reverse' %}selected{% endif %}>Transaction Reversed</option>
+                </optgroup>
+                
+                <optgroup label="System Settings">
+                  <option value="settings.general.update" {% if current_filters.action=='settings.general.update' %}selected{% endif %}>General Settings Updated</option>
+                  <option value="settings.security.update" {% if current_filters.action=='settings.security.update' %}selected{% endif %}>Security Settings Updated</option>
+                  <option value="settings.notifications.update" {% if current_filters.action=='settings.notifications.update' %}selected{% endif %}>Notification Settings Updated</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- User Filter -->
+            <div>
+              <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">User</label>
+              <select 
+                id="userFilter"
+                name="user_id" 
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="" {% if not current_filters.user_id %}selected{% endif %}>All Users</option>
+                {% for u in users %}
+                <option value="{{ u.id }}" {% if current_filters.user_id==u.id %}selected{% endif %}>{{ u.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Right side - Action Buttons -->
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              onclick="applyFilters()"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+            
+            <button
+              type="button"
+              onclick="clearFilters()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-times mr-2"></i> Clear Filters
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  
+                  <!-- Audit Log Table -->
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+    >
+                      <div class="overflow-x-auto">
+                          <table class="w-full">
+          <thead
+            class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600"
+          >
+            <tr>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Timestamp
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                User
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Action
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Resource
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                IP Address
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Details
+              </th>
+                                  </tr>
+                              </thead>
+                              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for log in logs %}
+                                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900 dark:text-gray-300">{{ log.created_at }}</div>
+                                      </td>
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                          <div class="flex items-center">
+                                              <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                                        <span class="text-gray-600 dark:text-gray-300 text-xs font-medium">{{ (log.user_name or 'U')[:2] }}</span>
+                                              </div>
+                                              <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ log.user_name or 'Unknown' }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">ID {{ log.user_id or '-' }}</p>
+                                              </div>
+                                          </div>
+                                      </td>
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-sm text-gray-900 dark:text-gray-300">{{ log.action }}</span>
+                                      </td>
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="text-sm text-gray-900 dark:text-gray-300">{{ log.entity_type }}{{ '/' ~ log.entity_id if log.entity_id else '' }}</span>
+                                      </td>
+                                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">{{ log.ip_address or '-' }}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                    <button onclick="viewLog('{{ log.id }}')" class="text-primary hover:underline text-sm">View</button>
+                                      </td>
+                                  </tr>
+                                {% endfor %}
+                              </tbody>
+                          </table>
+                      </div>
+  
+                      <!-- Pagination -->
+                      <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                          <div class="flex items-center justify-between">
+                              <div class="text-sm text-gray-700 dark:text-gray-300">
+            Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+            to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+            of <span class="font-medium">{{ pagination.total }}</span> logs
+                              </div>
+                              <div class="flex items-center gap-2">
+            <a href="{{ url_for('api_v1.audit_logs_page', page=(pagination.prev_page or 1), per_page=pagination.per_page, action=current_filters.action, user_id=current_filters.user_id, start_date=current_filters.start_date, end_date=current_filters.end_date) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+                                      <i class="fas fa-chevron-left"></i>
+            </a>
+            <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+            <a href="{{ url_for('api_v1.audit_logs_page', page=(pagination.next_page or pagination.page), per_page=pagination.per_page, action=current_filters.action, user_id=current_filters.user_id, start_date=current_filters.start_date, end_date=current_filters.end_date) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+                                      <i class="fas fa-chevron-right"></i>
+            </a>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+  
+  <!-- Details Modal -->
+    <div
+      id="detailsModal"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Audit Log Details
+            </h3>
+            <button
+              onclick="hideDetails()"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div>
+              <h4
+                class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Event Information
+              </h4>
+              <div
+                class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2"
+              >
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Event ID:</span>
+                  <span id="event-id" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Timestamp:</span>
+                  <span id="event-ts" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Action:</span>
+                  <span id="event-action" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">IP Address:</span>
+                  <span id="event-ip" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+              </div>
+            </div>
+  
+            <div>
+              <h4
+                class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              >
+                User Information
+              </h4>
+              <div
+                class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-2"
+              >
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">User:</span>
+                  <span id="event-user" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">User Agent:</span>
+                  <span id="event-ua" class="text-sm font-medium text-gray-900 dark:text-white">-</span>
+                </div>
+              </div>
+            </div>
+  
+            <div>
+              <h4
+                class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Changes Made
+              </h4>
+              <div id="changesContent" class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 text-xs text-gray-700 dark:text-gray-300 overflow-x-auto"></div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end"
+        >
+          <button
+            onclick="hideDetails()"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+          >
+            Close
+          </button>
+          </div>
+      </div>
+    </div>
+  </main>
+  {% endblock %}
+  
+  {% block extra_js %}
+      <script src="../../static/js/audit-logs/audit-logs.js"></script>
+  {% endblock %}
+  

@@ -1,0 +1,406 @@
+{% extends "base.html" %} {% block title %}Meters Dashboard - Quantify Metering
+System{% endblock %} {% block page_title %}Meters Dashboard{% endblock %} {%
+block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Meters</span>
+{% endblock %} {% block content %}
+        <!-- Real-time Status Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        >Total Meters</span
+      >
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">&nbsp;</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        >Active</span
+      >
+                    <i class="fas fa-circle text-green-500"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.active }}</div>
+    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Active</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        >Low Credit</span
+      >
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.low_credit }}</div>
+    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Below threshold</p>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
+        >Alerts</span
+      >
+                    <i class="fas fa-bell text-red-600"></i>
+                </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.alerts }}</div>
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+      Requires attention
+    </p>
+            </div>
+        </div>
+
+        <!-- Header Row - Action Buttons -->
+        <div class="flex justify-end mb-4">
+          <div class="flex items-center gap-3">
+            <a
+              href="/api/v1/meters/export"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm transition-colors"
+              title="Export to PDF"
+            >
+              <i class="fas fa-file-pdf"></i>
+              Export PDF
+            </a>
+            {% if has_permission('meters.create') %}
+            <a
+              href="{{ url_for('api_v1.lorawan_devices_page') }}?action=add"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-plus mr-2"></i>Add New Meter
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div id="meterFilters">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <!-- Left side - Search -->
+              <div class="flex-1 max-w-md">
+                <div class="relative">
+                  <input
+                    id="searchInput"
+                    name="search"
+                    value="{{ current_filters.search or '' }}"
+                    type="text"
+                    placeholder="Search device, serial, unit, estate..."
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
+                  <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+                </div>
+              </div>
+
+              <!-- Right side - Filters and Clear -->
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Estate Filter -->
+                <select
+                  id="estateFilter"
+                  name="estate_id"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Estates</option>
+                  {% for e in estates %}
+                  <option value="{{ e.id }}" {% if current_filters.estate_id==e.id %}selected{% endif %}>{{ e.name }}</option>
+                  {% endfor %}
+                </select>
+
+                <!-- Meter Type Filter -->
+                <select
+                  id="meterTypeFilter"
+                  name="meter_type"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Types</option>
+                  {% for t in meter_types %}
+                  <option value="{{ t.value }}" {% if current_filters.meter_type==t.value %}selected{% endif %}>{{ t.label }}</option>
+                  {% endfor %}
+                </select>
+
+                <!-- Communication Status Filter -->
+                <select
+                  id="commStatusFilter"
+                  name="communication_status"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Comm</option>
+                  <option value="online" {% if current_filters.communication_status=='online' %}selected{% endif %}>Online</option>
+                  <option value="offline" {% if current_filters.communication_status=='offline' %}selected{% endif %}>Offline</option>
+                  <option value="error" {% if current_filters.communication_status=='error' %}selected{% endif %}>Error</option>
+                </select>
+
+                <!-- Credit Status Filter -->
+                <select
+                  id="creditStatusFilter"
+                  name="credit_status"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                >
+                  <option value="">All Credit</option>
+                  <option value="ok" {% if current_filters.credit_status=='ok' %}selected{% endif %}>Active</option>
+                  <option value="low" {% if current_filters.credit_status=='low' %}selected{% endif %}>Low Credit</option>
+                  <option value="disconnected" {% if current_filters.credit_status=='disconnected' %}selected{% endif %}>Disconnected</option>
+                </select>
+
+                <!-- Clear Filters Button -->
+                <button
+                  type="button"
+                  id="clearFiltersBtn"
+                  class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+                >
+                  <i class="fas fa-times mr-2"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-time Meters Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Live Meter Readings
+      </h2>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-circle text-green-500 text-xs mr-1 animate-pulse"></i>
+                            Live
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+      <thead
+        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+      >
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Device EUI</th>
+                            <th scope="col" class="px-6 py-3">Unit/Location</th>
+                            <th scope="col" class="px-6 py-3">Type</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Credit</th>
+                            <th scope="col" class="px-6 py-3">Consumption</th>
+                            <th scope="col" class="px-6 py-3">Last Reading</th>
+                            <th scope="col" class="px-6 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metersTableBody">
+        {% set current_estate_id = namespace(value='__initial__') %}
+        {% set estate_name_ns = namespace(value='') %}
+        {% for m in meters %}
+        {% set unit = m.unit %}
+        {% set assigned_estate = m.assigned_estate %}
+        {# Determine estate ID for this meter #}
+        {% set meter_estate_id = unit.estate_id if unit else (assigned_estate.id if assigned_estate else 'unassigned') %}
+
+        {# Insert estate header row when estate changes #}
+        {% if meter_estate_id != current_estate_id.value %}
+          {% set current_estate_id.value = meter_estate_id %}
+          {% if meter_estate_id == 'unassigned' %}
+            {% set estate_name_ns.value = 'Unassigned' %}
+            {% set estate_meter_count = estate_meter_counts.get('unassigned', 0) %}
+          {% else %}
+            {% set estate_name_ns.value = '' %}
+            {% for e in estates %}
+              {% if e.id == meter_estate_id %}
+                {% set estate_name_ns.value = e.name %}
+              {% endif %}
+            {% endfor %}
+            {% set estate_meter_count = estate_meter_counts.get(meter_estate_id, 0) %}
+          {% endif %}
+        <tr class="estate-header-row bg-gradient-to-r {{ 'from-gray-500 to-gray-400 dark:from-gray-600 dark:to-gray-500' if meter_estate_id == 'unassigned' else 'from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600' }}">
+          <td colspan="8" class="px-6 py-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas {{ 'fa-question-circle' if meter_estate_id == 'unassigned' else 'fa-building' }} text-white/80"></i>
+                <span class="text-sm font-semibold text-white">{{ estate_name_ns.value }}</span>
+              </div>
+              <span class="text-xs text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{{ estate_meter_count }} meter{{ 's' if estate_meter_count != 1 else '' }}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% set est_name = '' %}
+        {% for e in estates %}{% if unit and e.id==unit.estate_id %}{% set est_name = e.name %}{% endif %}{% endfor %}
+        {% set balance = 0 %}
+        {% if m.wallet %}
+          {% if m.meter_type=='electricity' %}{% set balance = m.wallet.electricity_balance %}
+          {% elif m.meter_type=='water' %}{% set balance = m.wallet.water_balance %}
+          {% elif m.meter_type=='hot_water' %}{% set balance = m.wallet.hot_water_balance %}
+          {% elif m.meter_type=='solar' %}{% set balance = m.wallet.solar_balance %}
+          {% endif %}
+        {% endif %}
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" data-meter='{{ m | tojson }}'>
+          <td class="px-6 py-4 font-mono text-xs text-gray-900 dark:text-white">{{ m.device_eui or m.serial_number }}</td>
+                            <td class="px-6 py-4">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">
+              {% if unit %}
+                {{ unit.unit_number }}
+              {% elif m.assigned_estate %}
+                {{ m.assigned_estate.name }}
+              {% else %}
+                Unassigned
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ unit.estate_name if unit else '' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if m.meter_type=='electricity' else ('bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' if m.meter_type=='water' else ('bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if m.meter_type=='solar' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300')) }}">
+              <i class="fas {{ 'fa-bolt' if m.meter_type=='electricity' else ('fa-tint' if m.meter_type=='water' else ('fa-solar-panel' if m.meter_type=='solar' else 'fa-battery-full')) }} mr-1"></i>{{ m.meter_type|replace('_',' ')|title }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+            {% set cs = m.credit_status %}
+            <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if m.is_active else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}">
+              <i class="fas {{ 'fa-circle' if m.is_active else 'fa-minus-circle' }} mr-1"></i>{{ 'Active' if m.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+            <div class="text-sm font-semibold {{ 'text-gray-900 dark:text-white' if cs=='ok' else ('text-yellow-600 dark:text-yellow-400' if cs=='low' else 'text-red-600') }}">R {{ (balance or 0) | format_number(2) }}</div>
+            <div class="text-xs text-gray-500">&nbsp;</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-500">--</div>
+            <div class="text-xs text-gray-500">&nbsp;</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <div class="text-sm text-gray-900 dark:text-white">{{ m.last_reading_date or '--' }}</div>
+            <div class="text-xs {{ 'text-green-600' if m.communication_status=='online' else 'text-gray-500' }}">{{ m.communication_status|capitalize }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+            <a class="text-primary hover:text-blue-700 mr-3" title="View Details" href="{{ url_for('api_v1.meter_details_page', meter_id=m.device_eui or m.id) }}"><i class="fas fa-eye"></i></a>
+            {% if has_permission('meters.edit') %}
+            <button class="text-primary hover:text-blue-700 mr-3" title="Edit" onclick="openEditMeter(this)"><i class="fas fa-edit"></i></button>
+            {% endif %}
+            {% if has_permission('meters.delete') %}
+            <button class="text-red-600 dark:text-red-400 hover:text-red-700" title="Delete" onclick="confirmDeleteMeter(this)"><i class="fas fa-trash"></i></button>
+            {% endif %}
+                            </td>
+                        </tr>
+        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> results
+                    </span>
+                    <div class="flex space-x-1">
+        <a href="{{ url_for('api_v1.meters_page', page=(pagination.prev_page or 1), per_page=20, estate_id=current_filters.estate_id, meter_type=current_filters.meter_type, communication_status=current_filters.communication_status, credit_status=current_filters.credit_status) }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">Previous</a>
+        <span class="px-3 py-2 text-sm bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.meters_page', page=(pagination.next_page or pagination.page), per_page=20, estate_id=current_filters.estate_id, meter_type=current_filters.meter_type, communication_status=current_filters.communication_status, credit_status=current_filters.credit_status) }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">Next</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Meter Modal -->
+        <div id="editMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Meter</h3>
+              <button onclick="hideEditMeter()" class="text-gray-600 dark:text-gray-300"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="editMeterForm" onsubmit="event.preventDefault(); submitEditMeter();" class="p-4 space-y-4">
+              <input type="hidden" name="id" />
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Device EUI / IMEI</label>
+                  <input name="device_eui" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono" placeholder="16 hex characters for LoRaWAN" />
+                  <p class="text-xs text-gray-500 mt-1">DevEUI from ChirpStack or IMEI for 4G devices</p>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Serial Number <span class="text-red-600">*</span></label>
+                  <input name="serial_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Meter Type <span class="text-red-600">*</span></label>
+                  <select name="meter_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+                    <option value="electricity">Electricity</option>
+                    <option value="bulk_electricity">Bulk Electricity</option>
+                    <option value="water">Water</option>
+                    <option value="hot_water">Hot Water</option>
+                    <option value="solar">Solar</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Estate</label>
+                  <select name="estate_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select Estate --</option>
+                    {% for e in estates %}
+                    <option value="{{ e.id }}">{{ e.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Assign to Unit</label>
+                  <select name="unit_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Unassigned --</option>
+                    {% for u in units %}
+                    <option value="{{ u.id }}" data-estate-id="{{ u.estate_id }}" data-has-electricity="{{ '1' if u.has_electricity else '0' }}" data-has-water="{{ '1' if u.has_water else '0' }}" data-has-solar="{{ '1' if u.has_solar else '0' }}" data-has-hot-water="{{ '1' if u.has_hot_water else '0' }}">Unit {{ u.unit_number }} ({{ u.estate_name }})</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Installation Date</label>
+                  <input name="installation_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label class="text-sm text-gray-700 dark:text-gray-300">Status</label>
+                  <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="hideEditMeter()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded">Cancel</button>
+                <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteMeterModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Meter</h3>
+            </div>
+            <div class="p-4 text-sm text-gray-700 dark:text-gray-300">Are you sure you want to delete this meter? This action cannot be undone.</div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button type="button" onclick="hideDeleteMeter()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button type="button" onclick="performDeleteMeter()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Delete</button>
+            </div>
+          </div>
+        </div>
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/table-filters.js') }}"></script>
+<script>
+  // Pass permissions to JavaScript for dynamic row rendering
+  window.METER_PERMISSIONS = {
+    canEdit: {{ 'true' if has_permission('meters.edit') else 'false' }},
+    canDelete: {{ 'true' if has_permission('meters.delete') else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/meters/meters.js') }}"></script>
+{% endblock %}

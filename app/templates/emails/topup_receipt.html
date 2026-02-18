@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Received</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f3f4f6;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;">Quantify Metering</h1>
+              <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Payment Confirmation</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 16px; color: #374151; font-size: 16px;">Hi {{ first_name }},</p>
+              <p style="margin: 0 0 24px; color: #374151; font-size: 15px; line-height: 1.5;">Your <strong>{{ utility_type }}</strong> wallet has been successfully topped up. Here are the details:</p>
+
+              <!-- Details Card -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 13px; width: 140px;">Amount</td>
+                        <td style="padding: 8px 0; color: #111827; font-size: 15px; font-weight: 600;">R {{ "%.2f"|format(amount) }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb;">Utility</td>
+                        <td style="padding: 8px 0; color: #111827; font-size: 14px; border-top: 1px solid #e5e7eb;">{{ utility_type }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb;">Transaction #</td>
+                        <td style="padding: 8px 0; color: #111827; font-size: 14px; font-family: monospace; border-top: 1px solid #e5e7eb;">{{ transaction_number }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb;">New Balance</td>
+                        <td style="padding: 8px 0; color: #059669; font-size: 15px; font-weight: 600; border-top: 1px solid #e5e7eb;">R {{ "%.2f"|format(new_balance) }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 24px; color: #6b7280; font-size: 14px; line-height: 1.5;">You can view your full transaction history in the portal under Wallet &rarr; Transactions.</p>
+
+              <p style="margin: 0; color: #374151; font-size: 14px;">Thank you,<br><strong>Quantify Metering</strong></p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

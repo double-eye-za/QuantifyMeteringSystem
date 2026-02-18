@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Support Tickets - Portal{% endblock %}
+{% block page_title %}Support{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>Support</span>
+{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('portal.portal_tickets') }}" class="px-3 py-1.5 text-sm rounded-lg {% if not filter_status %}bg-primary text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">All</a>
+    <a href="{{ url_for('portal.portal_tickets', status='open') }}" class="px-3 py-1.5 text-sm rounded-lg {% if filter_status == 'open' %}bg-primary text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">Open ({{ stats.get('open', 0) }})</a>
+    <a href="{{ url_for('portal.portal_tickets', status='in_progress') }}" class="px-3 py-1.5 text-sm rounded-lg {% if filter_status == 'in_progress' %}bg-primary text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">In Progress ({{ stats.get('in_progress', 0) }})</a>
+    <a href="{{ url_for('portal.portal_tickets', status='resolved') }}" class="px-3 py-1.5 text-sm rounded-lg {% if filter_status == 'resolved' %}bg-primary text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %}">Resolved ({{ stats.get('resolved', 0) }})</a>
+  </div>
+  <a href="{{ url_for('portal.portal_ticket_create') }}" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-700"><i class="fas fa-plus mr-1"></i> New Ticket</a>
+</div>
+
+<div class="space-y-3">
+  {% for ticket in tickets %}
+  <a href="{{ url_for('portal.portal_ticket_detail', ticket_id=ticket.id) }}" class="block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-mono text-primary">{{ ticket.ticket_number }}</span>
+      <span class="px-2 py-1 text-xs rounded-full {% if ticket.status == 'open' %}bg-blue-100 text-blue-700{% elif ticket.status == 'in_progress' %}bg-yellow-100 text-yellow-700{% elif ticket.status == 'resolved' %}bg-green-100 text-green-700{% elif ticket.status == 'closed' %}bg-gray-100 text-gray-700{% else %}bg-gray-100 text-gray-700{% endif %}">{{ ticket.status.replace('_', ' ').title() }}</span>
+    </div>
+    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ ticket.subject }}</h4>
+    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <span><i class="fas fa-clock mr-1"></i> {{ ticket.created_at.strftime('%d %b %Y') if ticket.created_at }}</span>
+      {% if ticket.category %}<span><i class="fas fa-tag mr-1"></i> {{ ticket.category.name }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if not tickets %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+  <i class="fas fa-ticket-alt text-4xl text-gray-400 mb-4"></i>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Tickets</h3>
+  <p class="text-gray-500 dark:text-gray-400 mb-4">You haven't created any support tickets yet.</p>
+  <a href="{{ url_for('portal.portal_ticket_create') }}" class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-700"><i class="fas fa-plus mr-1"></i> Create Ticket</a>
+</div>
+{% endif %}
+{% endblock %}

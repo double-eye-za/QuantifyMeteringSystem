@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ message.subject }} - Portal{% endblock %}
+{% block page_title %}Message{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<a href="{{ url_for('portal.portal_messages') }}" class="hover:text-primary">Messages</a>
+<span class="mx-2">/</span>
+<span>{{ message.subject[:30] }}{{ '...' if message.subject|length > 30 }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ message.subject }}</h2>
+    <div class="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+      <span><i class="fas fa-clock mr-1"></i> {{ message.created_at.strftime('%d %B %Y at %H:%M') if message.created_at }}</span>
+      <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{ message.message_type | capitalize if message.message_type }}</span>
+    </div>
+  </div>
+  <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+    {{ message.content }}
+  </div>
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('portal.portal_messages') }}" class="text-sm text-primary hover:text-blue-700"><i class="fas fa-arrow-left mr-1"></i> Back to Messages</a>
+</div>
+{% endblock %}

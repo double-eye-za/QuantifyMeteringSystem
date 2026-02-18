@@ -1,0 +1,24 @@
+[Unit]
+Description=Quantify Metering Frontend - User Application
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/QuantifyMeteringSystem
+Environment="PATH=/opt/QuantifyMeteringSystem/venv/bin"
+ExecStart=/opt/QuantifyMeteringSystem/venv/bin/python application.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quantify-frontend
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Residents - Quantify Metering System{% endblock %}
+{% block page_title %}Residents{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Residents</span>
+{% endblock %}
+{% block content %}
+  <!-- Header Row - Add Resident Button -->
+  <div class="flex justify-end mb-4">
+    {% if has_permission('residents.create') %}
+    <button 
+      type="button" 
+      onclick="showCreateResident()" 
+      class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+    >
+      <i class="fas fa-plus mr-2"></i> Add Resident
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <form id="filters" method="get" action="{{ url_for('api_v1.residents_page') }}">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Left side - Search -->
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <input 
+              name="q" 
+              id="searchInput"
+              value="{{ current_filters.q or '' }}" 
+              type="text" 
+              placeholder="Search name, email, phone" 
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" 
+            />
+            <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+          </div>
+        </div>
+
+        <!-- Right side - Filters and Buttons -->
+        <div class="flex items-center gap-3">
+          <!-- Unit Filter -->
+          <select 
+            id="unitFilter"
+            name="unit_id" 
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Units</option>
+            {% for unit in units %}
+            <option value="{{ unit.id }}" {% if current_filters.unit_id==unit.id %}selected{% endif %}>
+              {{ unit.unit_number }} - {{ unit.estate_name }}
+            </option>
+            {% endfor %}
+          </select>
+
+          <!-- Status Filter -->
+          <select 
+            id="statusFilter"
+            name="is_active" 
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option value="">All Status</option>
+            <option value="true" {% if current_filters.is_active=='true' %}selected{% endif %}>Active</option>
+            <option value="false" {% if current_filters.is_active=='false' %}selected{% endif %}>Inactive</option>
+          </select>
+
+          <!-- Action Buttons -->
+          <button
+            type="button"
+            onclick="applyFilters()"
+            class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+          >
+            <i class="fas fa-filter mr-2"></i> Apply Filters
+          </button>
+          
+          <button
+            type="button"
+            onclick="clearFilters()"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+          >
+            <i class="fas fa-times mr-2"></i> Clear Filters
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Residents Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Resident</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Contact</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Unit Assigned</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for r in residents %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-resident='{{ r | tojson }}'>
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ r.first_name }} {{ r.last_name }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ r.id_number or '' }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-900 dark:text-gray-300">{{ r.email }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ r.phone }}</div>
+            </td>
+            <td class="px-4 py-3">
+              {% if r.unit %}
+              <div class="text-sm text-gray-900 dark:text-white">Unit {{ r.unit.unit_number }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ r.unit.estate_name }}</div>
+              {% else %}
+              <span class="text-xs text-gray-500 dark:text-gray-400">Unassigned</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400' if r.is_active else 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">{{ r.status|capitalize if r.status else ('Active' if r.is_active else 'Inactive') }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3 text-sm">
+                {% if has_permission('residents.edit') %}
+                <button class="text-primary hover:underline" onclick="openEditResident(this)"><i class="fas fa-edit mr-1"></i>Edit</button>
+                {% endif %}
+                {% if has_permission('residents.delete') %}
+                <button class="text-red-600 dark:text-red-400 hover:underline" onclick="confirmDeleteResident(this)"><i class="fas fa-trash mr-1"></i>Delete</button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="text-sm text-gray-700 dark:text-gray-300">
+        Showing <span class="font-medium">{{ ((pagination.page-1)*pagination.per_page)+1 if pagination.total>0 else 0 }}</span>
+        to <span class="font-medium">{{ (pagination.page*pagination.per_page) if (pagination.page*pagination.per_page) < pagination.total else pagination.total }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> residents
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('api_v1.residents_page', page=(pagination.prev_page or 1), q=current_filters.q, is_active=current_filters.is_active, unit_id=current_filters.unit_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.prev_page }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <span class="px-3 py-1 bg-primary text-white rounded-lg">{{ pagination.page }}</span>
+        <a href="{{ url_for('api_v1.residents_page', page=(pagination.next_page or pagination.page), q=current_filters.q, is_active=current_filters.is_active, unit_id=current_filters.unit_id) }}" class="px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ 'pointer-events-none opacity-50' if not pagination.next_page }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Resident Modal -->
+  <div id="residentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 id="residentModalTitle" class="text-lg font-semibold text-gray-900 dark:text-white">New Resident</h3>
+        <button onclick="hideResidentModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      </div>
+      <form id="residentForm" class="p-4 space-y-4" onsubmit="event.preventDefault(); submitResident();">
+        <input type="hidden" name="id" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">First Name <span class="text-red-600">*</span></label>
+            <input name="first_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Last Name <span class="text-red-600">*</span></label>
+            <input name="last_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Email <span class="text-red-600">*</span></label>
+            <input name="email" type="email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Mobile Number <span class="text-red-600">*</span></label>
+            <input name="phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">ID Number <span class="text-red-600">*</span></label>
+            <input name="id_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Alternate Phone</label>
+            <input name="alternate_phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Move-in Date</label>
+            <input name="lease_start_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Lease End Date</label>
+            <input name="lease_end_date" type="date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Status</label>
+            <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <option value="active" selected>Active</option>
+              <option value="pending">Pending</option>
+              <option value="vacated">Vacated</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Emergency Contact Name</label>
+            <input name="emergency_contact_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300">Emergency Contact Phone</label>
+            <input name="emergency_contact_phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          </div>
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="hideResidentModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="residentDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Resident</h3>
+      </div>
+      <div class="p-4 text-sm text-gray-700 dark:text-gray-300">Are you sure you want to delete this resident? This action cannot be undone.</div>
+      <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+        <button type="button" onclick="hideResidentDelete()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+        <button type="button" onclick="performResidentDelete()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">Delete</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+<script src="../../static/js/flash.js" ></script>
+<script src="../../static/js/residents/residents.js"></script>
+{% endblock %}
+
+
+

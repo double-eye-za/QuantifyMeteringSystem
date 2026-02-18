@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}PayFast Transactions - Admin{% endblock %}
+{% block page_title %}PayFast Transactions{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.index') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.billing_page') }}" class="hover:text-primary">Billing</a>
+<span class="mx-1">/</span>
+<span>PayFast</span>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+        <i class="fas fa-credit-card text-blue-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Last {{ days }} days</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ total_payfast }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Total PayFast Transactions</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+        <i class="fas fa-clock text-yellow-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-yellow-600">Attention</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ pending_count }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Pending / Unconfirmed</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+        <i class="fas fa-exclamation-triangle text-red-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Issues</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ failed_count }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Failed / Expired</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <form method="GET" class="flex flex-wrap items-center gap-4">
+    <div>
+      <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Status</label>
+      <select name="status" onchange="this.form.submit()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Period</label>
+      <select name="days" onchange="this.form.submit()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+        <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+      </select>
+    </div>
+    <div class="ml-auto">
+      <label class="text-xs text-transparent block mb-1">.</label>
+      <a href="{{ url_for('api_v1.payfast_reconciliation_page') }}" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-clipboard-check mr-2 text-blue-500"></i>Reconciliation
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Transactions Table -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Txn #</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Amount</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Gateway Status</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">PF Reference</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Method</th>
+          <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for txn in transactions %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50" id="row-{{ txn.id }}">
+          <td class="px-4 py-3 text-xs font-mono text-gray-700 dark:text-gray-300">{{ txn.transaction_number }}</td>
+          <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ txn.created_at.strftime('%d %b %Y, %H:%M') if txn.created_at }}</td>
+          <td class="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">R {{ "%.2f"|format(txn.amount) }}</td>
+          <td class="px-4 py-3">
+            {% if txn.status == 'completed' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">Completed</span>
+            {% elif txn.status == 'pending' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400">Pending</span>
+            {% elif txn.status == 'expired' %}
+            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Expired</span>
+            {% else %}
+            <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">{{ txn.status|title }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ txn.payment_gateway_status or '—' }}</td>
+          <td class="px-4 py-3 text-xs font-mono text-gray-500 dark:text-gray-400">{{ txn.payment_gateway_ref or '—' }}</td>
+          <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ (txn.payment_method or '—').replace('_', ' ').title() }}</td>
+          <td class="px-4 py-3 text-center">
+            {% if txn.status in ('pending', 'failed', 'expired') %}
+            <div class="flex items-center justify-center gap-2">
+              {% if txn.payment_gateway_ref %}
+              <button onclick="retryPayfast({{ txn.id }}, 'check')" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title="Verify with PayFast">
+                <i class="fas fa-sync-alt mr-1"></i>Verify
+              </button>
+              {% endif %}
+              {% if is_super_admin() %}
+              <button onclick="retryPayfast({{ txn.id }}, 'force_complete')" class="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors" title="Force complete (admin override)">
+                <i class="fas fa-check-double mr-1"></i>Force
+              </button>
+              {% endif %}
+            </div>
+            {% elif txn.status == 'completed' %}
+            <span class="text-xs text-green-500"><i class="fas fa-check"></i></span>
+            {% else %}
+            <span class="text-xs text-gray-400">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if not transactions %}
+  <div class="p-12 text-center">
+    <i class="fas fa-credit-card text-4xl text-gray-300 mb-4"></i>
+    <p class="text-gray-500 dark:text-gray-400">No PayFast transactions found for the selected filters.</p>
+  </div>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2">
+    {% if pagination.has_prev %}
+    <a href="?page={{ pagination.prev_num }}&status={{ status_filter }}&days={{ days }}" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Prev</a>
+    {% endif %}
+    <span class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+    <a href="?page={{ pagination.next_num }}&status={{ status_filter }}&days={{ days }}" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Result modal -->
+<div id="retry-result" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
+    <div id="retry-result-content"></div>
+    <button onclick="document.getElementById('retry-result').classList.add('hidden')" class="mt-4 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
+      Close
+    </button>
+  </div>
+</div>
+
+<script>
+function retryPayfast(txnId, action) {
+  if (action === 'force_complete' && !confirm('Are you sure you want to force-complete this transaction? The wallet will be credited immediately.')) {
+    return;
+  }
+
+  fetch('/api/v1/transactions/' + txnId + '/retry-payfast', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: action }),
+  })
+  .then(function(response) { return response.json().then(function(data) { return { ok: response.ok, data: data }; }); })
+  .then(function(result) {
+    var content = document.getElementById('retry-result-content');
+    if (result.data.message) {
+      if (result.data.amount) {
+        content.innerHTML = '<div class="text-center"><i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i><p class="font-semibold text-gray-900 dark:text-white">' + result.data.message + '</p><p class="text-sm text-gray-500 mt-1">R' + result.data.amount.toFixed(2) + ' credited to ' + result.data.utility_type + '</p></div>';
+        // Update row status
+        setTimeout(function() { location.reload(); }, 1500);
+      } else {
+        content.innerHTML = '<div class="text-center"><i class="fas fa-info-circle text-4xl text-yellow-500 mb-3"></i><p class="font-semibold text-gray-900 dark:text-white">' + result.data.message + '</p></div>';
+      }
+    } else {
+      content.innerHTML = '<div class="text-center"><i class="fas fa-times-circle text-4xl text-red-500 mb-3"></i><p class="font-semibold text-gray-900 dark:text-white">' + (result.data.error || 'Unknown error') + '</p></div>';
+    }
+    document.getElementById('retry-result').classList.remove('hidden');
+  })
+  .catch(function(err) {
+    alert('Request failed: ' + err.message);
+  });
+}
+</script>
+{% endblock %}

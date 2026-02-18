@@ -1,0 +1,792 @@
+{% extends "base.html" %} {% block title %}Rate Table Builder - Quantify
+Metering System{% endblock %} {% block page_title %}Rate Table Builder{%
+endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.rate_tables_page') }}" class="hover:text-primary"
+  >Rate Tables</a
+>
+<span class="mx-1">/</span>
+<span>Create New</span>
+{% endblock %} {% block content %}
+<div class="p-6">
+  <!-- Step Progress -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <div
+          class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold"
+        >
+          1
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-900 dark:text-white">
+            Basic Info
+          </p>
+          <p class="text-xs text-gray-500">Name and type</p>
+        </div>
+      </div>
+      <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+      <div class="flex items-center">
+        <div
+          id="step2"
+          class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold"
+        >
+          2
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Rate Structure
+          </p>
+          <p class="text-xs text-gray-400">Define pricing</p>
+        </div>
+      </div>
+      <div class="flex-1 mx-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+      <div class="flex items-center">
+        <div
+          id="step3"
+          class="w-10 h-10 bg-gray-300 dark:bg-gray-600 text-white rounded-full flex items-center justify-center font-bold"
+        >
+          3
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Review
+          </p>
+          <p class="text-xs text-gray-400">Confirm details</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Basic Information -->
+  <div
+    id="step1Content"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+  >
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-info-circle text-primary mr-2"></i>Basic Information
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Rate Table Name <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="rateName"
+          placeholder="e.g., Residential Complex 2025"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Resource Type <span class="text-red-500">*</span>
+        </label>
+        <select
+          id="resourceType"
+          onchange="updateRateTypes()"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        >
+          <option value="">Select Resource</option>
+          <option value="electricity">Electricity</option>
+          <option value="water">Water</option>
+          <option value="service">Service Fee</option>
+        </select>
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Effective Date <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          id="effectiveDate"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Effective To
+        </label>
+        <input
+          type="date"
+          id="effectiveTo"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+        >
+          Category
+        </label>
+        <select
+          id="category"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+        >
+          <option>Residential</option>
+          <option>Commercial</option>
+          <option>Industrial</option>
+          <option>Subsidized</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      >
+        Description
+      </label>
+      <textarea
+        id="description"
+        rows="3"
+        placeholder="Brief description of this rate table"
+        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary"
+      ></textarea>
+    </div>
+  </div>
+
+  <!-- Step 2: Rate Structure Configuration -->
+  <div
+    id="step2Content"
+    class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6"
+  >
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-calculator text-primary mr-2"></i>Rate Structure
+      Configuration
+    </h2>
+
+    <!-- Pricing Model Selection -->
+    <div class="mb-6">
+      <label
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
+      >
+        Select Pricing Model(s) - You can combine multiple models
+      </label>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Tiered Pricing -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="tieredPricing"
+              onchange="togglePricingModel('tiered')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-layer-group text-blue-500 mr-2"></i>Tiered
+                Pricing
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates for consumption levels (e.g., 0-50 kWh, 51-100
+                kWh)
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Time of Use -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="touPricing"
+              onchange="togglePricingModel('tou')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-clock text-yellow-500 mr-2"></i>Time of Use
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates by time of day (peak, off-peak, standard)
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Seasonal -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="seasonalPricing"
+              onchange="togglePricingModel('seasonal')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Different rates by season (summer, winter)
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Flat Rate -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="flatPricing"
+              onchange="togglePricingModel('flat')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-equals text-purple-500 mr-2"></i>Flat Rate
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Single rate for all consumption
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Fixed Charge -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="fixedPricing"
+              onchange="togglePricingModel('fixed')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Fixed monthly/daily fee regardless of usage
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Demand Charge -->
+        <div
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+        >
+          <label class="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              id="demandPricing"
+              onchange="togglePricingModel('demand')"
+              class="mt-1 rounded border-gray-300 dark:border-gray-600"
+            />
+            <div class="ml-3">
+              <p class="font-medium text-gray-900 dark:text-white">
+                <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand
+                Charge
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Based on peak demand (kW)
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Rate Configuration Sections -->
+    <!-- Tiered Pricing Section -->
+    <div
+      id="tieredSection"
+      class="hidden mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-layer-group text-blue-500 mr-2"></i>Tiered Rate
+        Configuration
+      </h3>
+      <div id="tieredRates" class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-20 text-gray-900 dark:text-white"
+            >Tier 1:</span
+          >
+          <input
+            type="number"
+            placeholder="From"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="0"
+            disabled
+          />
+          <span class="text-gray-900 dark:text-white">-</span>
+          <input
+            type="number"
+            placeholder="To"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="50"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">kWh</span>
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="1.50"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+        </div>
+      </div>
+      <button
+        onclick="addTier()"
+        class="mt-3 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        <i class="fas fa-plus mr-1"></i>Add Tier
+      </button>
+    </div>
+
+    <!-- Time of Use Section -->
+    <div
+      id="touSection"
+      class="hidden mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-clock text-yellow-500 mr-2"></i>Time of Use
+        Configuration
+      </h3>
+      <div class="space-y-3">
+        <!-- Peak Hours -->
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Peak Hours:</span
+          >
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="06:00"
+          />
+          <span class="text-gray-900 dark:text-white">to</span>
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="10:00"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="3.50"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+        </div>
+        <!-- Standard Hours -->
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Standard:</span
+          >
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="10:00"
+          />
+          <span class="text-gray-900 dark:text-white">to</span>
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="18:00"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="2.50"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+        </div>
+        <!-- Off-Peak -->
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-24 text-gray-900 dark:text-white"
+            >Off-Peak:</span
+          >
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="18:00"
+          />
+          <span class="text-gray-900 dark:text-white">to</span>
+          <input
+            type="time"
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="06:00"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">@</span>
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="1.50"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+        </div>
+      </div>
+      <button
+        onclick="addTimeSlot()"
+        class="mt-3 px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+      >
+        <i class="fas fa-plus mr-1"></i>Add Time Period
+      </button>
+    </div>
+
+    <!-- Seasonal Section -->
+    <div
+      id="seasonalSection"
+      class="hidden mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Seasonal
+        Configuration
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
+            >Summer (Dec - Feb)</label
+          >
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
+            <input
+              type="number"
+              step="0.01"
+              class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              value="2.80"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+          </div>
+        </div>
+        <div class="p-3 border border-green-200 dark:border-green-700 rounded">
+          <label
+            class="block text-sm font-medium mb-2 text-gray-900 dark:text-white"
+            >Winter (Jun - Aug)</label
+          >
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-900 dark:text-white">R</span>
+            <input
+              type="number"
+              step="0.01"
+              class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              value="3.20"
+            />
+            <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flat Rate Section -->
+    <div
+      id="flatSection"
+      class="hidden mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-equals text-purple-500 mr-2"></i>Flat Rate
+        Configuration
+      </h3>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-medium text-gray-900 dark:text-white"
+          >Rate:</span
+        >
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Rate"
+          class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          value="2.50"
+        />
+        <select
+          class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option>/kWh</option>
+          <option>/kL</option>
+          <option>/unit</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Fixed Charge Section -->
+    <div
+      id="fixedSection"
+      class="hidden mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-lock text-red-500 mr-2"></i>Fixed Charge Configuration
+      </h3>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-medium text-gray-900 dark:text-white"
+          >Charge:</span
+        >
+        <span class="text-sm text-gray-900 dark:text-white">R</span>
+        <input
+          type="number"
+          step="0.01"
+          placeholder="Amount"
+          class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          value="150.00"
+        />
+        <select
+          class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option>per month</option>
+          <option>per day</option>
+          <option>per year</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Demand Charge Section -->
+    <div
+      id="demandSection"
+      class="hidden mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-chart-line text-orange-500 mr-2"></i>Demand Charge
+        Configuration
+      </h3>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Demand Charge:</span
+          >
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Rate"
+            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            value="50.00"
+          />
+          <span class="text-sm text-gray-900 dark:text-white"
+            >per kW of peak demand</span
+          >
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium w-32 text-gray-900 dark:text-white"
+            >Measurement:</span
+          >
+          <select
+            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option>15-minute peak</option>
+            <option>30-minute peak</option>
+            <option>Monthly peak</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Preview and Additional Settings -->
+  <div id="step3Content" class="hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-cog text-primary mr-2"></i>Additional Settings
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Markup Settings -->
+        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            Markup & Taxes
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Apply Markup</label
+              >
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="applyMarkup"
+                  checked
+                  class="rounded"
+                />
+                <input
+                  type="number"
+                  value="20"
+                  class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+                <span class="text-sm text-gray-900 dark:text-white">%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Include VAT</label
+              >
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="includeVAT"
+                  checked
+                  class="rounded"
+                />
+                <span class="text-sm text-gray-900 dark:text-white">15%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Free Allocations -->
+        <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            Free Allocations
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Free Units</label
+              >
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  value="0"
+                  class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+                <select
+                  class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                >
+                  <option>kWh/month</option>
+                  <option>kL/month</option>
+                  <option>units/month</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm text-gray-900 dark:text-white"
+                >Applies to</label
+              >
+              <select
+                class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option>All units</option>
+                <option>Specific category</option>
+                <option>Custom selection</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rate Preview -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-eye text-primary mr-2"></i>Rate Table Preview
+      </h2>
+
+      <div
+        class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6"
+      >
+        <div id="previewContent" class="space-y-4">
+          <!-- Preview will be dynamically generated here -->
+          <p class="text-gray-600 dark:text-gray-400">
+            Configure your rate structure to see the preview...
+          </p>
+        </div>
+      </div>
+
+      <!-- Sample Calculations -->
+      <div class="mt-6">
+        <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-3">
+          Sample Bill Calculations
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Low Usage (50 kWh)
+            </p>
+            <p id="sampleBillLow" class="text-xl font-bold text-gray-900 dark:text-white">
+              R 0.00
+            </p>
+            <p class="text-xs text-gray-500">incl. markup + VAT</p>
+          </div>
+          <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Average (250 kWh)
+            </p>
+            <p id="sampleBillMid" class="text-xl font-bold text-gray-900 dark:text-white">
+              R 0.00
+            </p>
+            <p class="text-xs text-gray-500">incl. markup + VAT</p>
+          </div>
+          <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              High Usage (500 kWh)
+            </p>
+            <p id="sampleBillHigh" class="text-xl font-bold text-gray-900 dark:text-white">
+              R 0.00
+            </p>
+            <p class="text-xs text-gray-500">incl. markup + VAT</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="flex justify-between mt-6">
+    <button
+      onclick="previousStep()"
+      id="prevBtn"
+      class="hidden px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+    >
+      <i class="fas fa-arrow-left mr-2"></i>Previous
+    </button>
+    <button
+      onclick="nextStep()"
+      id="nextBtn"
+      class="ml-auto px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700"
+    >
+      Next<i class="fas fa-arrow-right ml-2"></i>
+    </button>
+    <button
+      id="createBtn"
+      class="hidden ml-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+      onclick="createRateTable()"
+    >
+      Save Rate Table
+    </button>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rate-tables/rate-table-builder.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,438 @@
+{% extends "base.html" %} {% block title %}Billing Management - Quantify
+Metering System{% endblock %} {% block page_title %}Billing Management{%
+endblock %} {% block breadcrumb %}
+<a href="{{ url_for('api_v1.index') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Billing</span>
+{% endblock %} {% block content %}
+<!-- Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-wallet text-green-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Total</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R {{ total_balances | format_number(0) }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">All Wallet Balances</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-arrow-up text-primary text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Today</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R {{ todays_topups | format_number(0) }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Today's Top-ups</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-arrow-down text-purple-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-gray-500">Today</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">R {{ todays_usage | format_number(0) }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Today's Usage</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-exclamation text-yellow-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Alert</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ low_balance_units }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Low Balance Units</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div class="flex items-center justify-between mb-2">
+      <div
+        class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center"
+      >
+        <i class="fas fa-power-off text-red-500 text-sm"></i>
+      </div>
+      <span class="text-xs text-red-600">Critical</span>
+    </div>
+    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ zero_balance_units }}</p>
+    <p class="text-xs text-gray-600 dark:text-gray-400">Zero Balance</p>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
+  <div class="border-b border-gray-200 dark:border-gray-700">
+    <nav class="flex space-x-8 px-6" aria-label="Tabs">
+      <button
+        id="wallet-tab"
+        class="py-4 px-1 border-b-2 border-primary text-primary font-medium text-sm tab-button"
+        data-tab="wallet-overview"
+      >
+        Wallet Overview
+      </button>
+      <button
+        id="recent-tab"
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm tab-button"
+        data-tab="recent-transactions"
+      >
+        Recent Transactions
+      </button>
+      <button
+        id="topup-tab"
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm tab-button"
+        data-tab="topup-history"
+      >
+        Top-up History
+      </button>
+      <a
+        href="{{ url_for('api_v1.payfast_transactions_page') }}"
+        class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm inline-flex items-center gap-1"
+      >
+        <i class="fas fa-credit-card text-xs"></i> PayFast
+      </a>
+    </nav>
+  </div>
+
+  <!-- Wallet Overview Content -->
+  <div id="wallet-overview" class="tab-content p-6">
+    <!-- Filters Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+      <form id="walletFilters" method="get" action="{{ url_for('api_v1.billing_page') }}">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          
+          <div class="flex-1 max-w-md">
+            <div class="relative">
+              <input 
+                id="searchInput"
+                name="search" 
+                value="{{ current_search or '' }}" 
+                type="text" 
+                placeholder="Search by unit, estate, or tenant..." 
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" 
+              />
+              <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"></i>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            
+            <select 
+              id="estateFilter"
+              name="estate" 
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+            >
+              <option value="all">All Estates</option>
+              {% for estate in estates %}
+              <option value="{{ estate.id }}" {% if current_estate == estate.id|string %}selected{% endif %}>{{ estate.name }}</option>
+              {% endfor %}
+            </select>
+
+            <!-- Status Filter -->
+            <select 
+              id="statusFilter"
+              name="status" 
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              <option value="all">All Status</option>
+              <option value="active" {% if current_status == "active" %}selected{% endif %}>Active</option>
+              <option value="low" {% if current_status == "low" %}selected{% endif %}>Low Balance</option>
+              <option value="zero" {% if current_status == "zero" %}selected{% endif %}>Zero Balance</option>
+            </select>
+
+            <button
+              type="button"
+              onclick="applyFilters()"
+              class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+            
+            <button
+              type="button"
+              onclick="clearFilters()"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
+            >
+              <i class="fas fa-times mr-2"></i> Clear Filters
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Wallet Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Unit
+            </th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Estate
+            </th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">
+              Tenant
+            </th>
+            <th class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+              Balance
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Status
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Last Top-up
+            </th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for wallet, unit, estate, last_topup_date in wallets %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              {{ unit.unit_number }}
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ estate.name }}
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {% if unit.resident %}
+                {{ unit.resident.first_name }} {{ unit.resident.last_name }}
+              {% else %}
+                Vacant
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-semibold {% if wallet.balance <= 0 %}text-red-600{% elif wallet.balance < wallet.low_balance_threshold %}text-yellow-600{% else %}text-green-600{% endif %}">
+              R {{ wallet.balance | format_number(2) }}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if wallet.balance <= 0 %}
+                <span class="px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-xs rounded-full">Disconnected</span>
+              {% elif wallet.balance < wallet.low_balance_threshold %}
+                <span class="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-xs rounded-full">Low</span>
+              {% else %}
+                <span class="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-xs rounded-full">Active</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center text-xs text-gray-900 dark:text-gray-300">
+              {% if last_topup_date %}
+                {{ last_topup_date.strftime('%b %d, %Y') }}
+              {% else %}
+                Never
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button
+                  class="p-1 text-primary hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  title="Top-up"
+                >
+                  <i class="fas fa-plus"></i>
+                </button>
+                <button
+                  class="p-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  title="View Statement"
+                  onclick="window.location.href='{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}'"
+                >
+                  <i class="fas fa-file-invoice"></i>
+                </button>
+                {% if wallet.balance < wallet.low_balance_threshold %}
+                <button
+                  class="p-1 text-yellow-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
+                  title="Send Alert"
+                >
+                  <i class="fas fa-bell"></i>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Transactions Content -->
+  <div id="recent-transactions" class="tab-content p-6 hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Date</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Unit</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Estate</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Type</th>
+            <th class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">Amount</th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">Status</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Description</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for transaction, unit, estate in recent_transactions %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ transaction.completed_at.strftime('%b %d, %Y %H:%M') if transaction.completed_at else 'Pending' }}
+            </td>
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              {{ unit.unit_number }}
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ estate.name }}
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                {{ transaction.transaction_type.replace('_', ' ').title() }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-right font-semibold {% if transaction.transaction_type == 'topup' %}text-green-600{% else %}text-red-600{% endif %}">
+              {% if transaction.transaction_type == 'topup' %}+{% else %}-{% endif %}R {{ transaction.amount | format_number(2) }}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 {% if transaction.status == 'completed' %}bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200{% elif transaction.status == 'pending' %}bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200{% else %}bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200{% endif %} text-xs rounded-full">
+                {{ transaction.status.title() }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ transaction.description or transaction.reference or '-' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top-up History Content -->
+  <div id="topup-history" class="tab-content p-6 hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Date</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Unit</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Estate</th>
+            <th class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">Amount</th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">Payment Method</th>
+            <th class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">Status</th>
+            <th class="px-4 py-3 text-left text-gray-700 dark:text-gray-300">Reference</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for transaction, unit, estate in topup_history %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ transaction.completed_at.strftime('%b %d, %Y %H:%M') if transaction.completed_at else 'Pending' }}
+            </td>
+            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+              {{ unit.unit_number }}
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ estate.name }}
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-green-600">
+              +R {{ transaction.amount | format_number(2) }}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full">
+                {{ transaction.payment_method.title() if transaction.payment_method else 'System' }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 {% if transaction.status == 'completed' %}bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200{% elif transaction.status == 'pending' %}bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200{% else %}bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200{% endif %} text-xs rounded-full">
+                {{ transaction.status.title() }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-900 dark:text-white">
+              {{ transaction.reference or transaction.transaction_number }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Send Notifications -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 h-[250px] flex flex-col">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-bell text-yellow-500 mr-2"></i>Bulk Notifications
+    </h3>
+    <div class="flex flex-col flex-grow space-y-3">
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+       <option value="all">All Units</option>
+        <option value="low_balance">Low Wallet Balance Units ({{ low_balance_units }})</option>
+        <option value="zero_balance">Zero Wallet Balance Units ({{ zero_balance_units }})</option>
+      </select>
+      <textarea
+        placeholder="Message..."
+        rows="2"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      ></textarea>
+    </div>
+    <div class="mt-4">
+      <button
+        class="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+      >
+        Send Notifications
+      </button>
+    </div>
+  </div>
+
+  <!-- Generate Statements -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 h-[250px] flex flex-col">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <i class="fas fa-file-invoice text-blue-500 mr-2"></i>Bulk Statements
+    </h3>
+    <div class="flex flex-col flex-grow space-y-3">
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+        {% for month in months %}
+        <option value="{{ month.value }}">{{ month.label }}</option>
+        {% endfor %}
+      </select>
+      
+      <select
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+      >
+        <option value="all">All Estates</option>
+        {% for estate in estates %}
+        <option value="{{ estate.id }}">{{ estate.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mt-4">
+      <button
+        class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm"
+      >
+        Generate & Email
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/billing/billing.js') }}"></script>
+{% endblock %}

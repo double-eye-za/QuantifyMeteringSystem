@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Quantify Metering System{% endblock %}</title>
+
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          if (!saved) {
+            saved = "light";
+          }
+          if (saved === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1A73E8",
+              secondary: "#F9FAFB",
+              neutral: "#212121",
+              success: "#28A745",
+              warning: "#FFC107",
+              error: "#DC3545",
+              info: "#17A2B8",
+            },
+            fontFamily: {
+              sans: [
+                "Inter",
+                "Roboto",
+                "system-ui",
+                "-apple-system",
+                "sans-serif",
+              ],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Google Fonts -->
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+      /* Placeholder styling for dark mode */
+      input::placeholder {
+        color: #9ca3af;
+      }
+
+      .dark input::placeholder {
+        color: #6b7280;
+      }
+
+      input[type="date"],
+      input[type="datetime-local"],
+      input[type="month"],
+      input[type="time"],
+      input[type="week"] {
+        color-scheme: light;
+      }
+
+      .dark input[type="date"]::-webkit-calendar-picker-indicator,
+      .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+      .dark input[type="month"]::-webkit-calendar-picker-indicator,
+      .dark input[type="time"]::-webkit-calendar-picker-indicator,
+      .dark input[type="week"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+        cursor: pointer;
+      }
+
+      .dark input[type="date"]::-moz-calendar-picker-indicator,
+      .dark input[type="datetime-local"]::-moz-calendar-picker-indicator,
+      .dark input[type="month"]::-moz-calendar-picker-indicator,
+      .dark input[type="time"]::-moz-calendar-picker-indicator,
+      .dark input[type="week"]::-moz-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+        cursor: pointer;
+      }
+    </style>
+
+    <!-- Additional CSS -->
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div
+      id="flash-container"
+      class="fixed top-0 inset-x-0 z-50 flex justify-center pt-3 pointer-events-none"
+    >
+      <div
+        id="flash-root"
+        class="w-full flex flex-col items-center gap-2"
+      ></div>
+    </div>
+    <!-- Main Container -->
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside
+        id="sidebar"
+        class="fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40"
+      >
+        <!-- Logo -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+            >
+              <i class="fas fa-bolt text-white"></i>
+            </div>
+            <span class="font-bold text-lg text-gray-900 dark:text-white"
+              >Quantify Metering</span
+            >
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4 space-y-1 overflow-y-auto" style="max-height: calc(100vh - 170px);">
+
+          {% if is_portal_user() %}
+          <!-- ===== PORTAL NAVIGATION (Owners / Tenants) ===== -->
+          <a href="{{ url_for('portal.portal_dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if request.endpoint == 'portal.portal_dashboard' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span class="text-sm font-medium">Dashboard</span>
+          </a>
+          <a href="{{ url_for('portal.portal_units') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_unit' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-house w-5"></i>
+            <span class="text-sm font-medium">My Units</span>
+          </a>
+          <a href="{{ url_for('portal.portal_meters') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_meter' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-tachometer-alt w-5"></i>
+            <span class="text-sm font-medium">Meters</span>
+          </a>
+          <a href="{{ url_for('portal.portal_wallet') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_wallet' in (request.endpoint or '') or 'payment' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-wallet w-5"></i>
+            <span class="text-sm font-medium">Wallet</span>
+          </a>
+          <a href="{{ url_for('portal.portal_messages') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_message' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-envelope w-5"></i>
+            <span class="text-sm font-medium">Messages</span>
+          </a>
+          <a href="{{ url_for('portal.portal_notifications') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_notification' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-bell w-5"></i>
+            <span class="text-sm font-medium">Notifications</span>
+          </a>
+          <a href="{{ url_for('portal.portal_tickets') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if 'portal.portal_ticket' in (request.endpoint or '') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-ticket-alt w-5"></i>
+            <span class="text-sm font-medium">Support</span>
+          </a>
+
+          {% else %}
+          <!-- ===== ADMIN NAVIGATION (Staff) ===== -->
+
+          <!-- Dashboard — always visible, top-level -->
+          <a href="{{ url_for('api_v1.index') }}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 {% if request.endpoint == 'api_v1.dashboard' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+            <i class="fas fa-gauge-high w-5"></i>
+            <span class="text-sm font-medium">Dashboard</span>
+          </a>
+
+          <!-- ── Property Group ── -->
+          {% if has_permission('estates.view') or has_permission('units.view') or has_permission('persons.view') %}
+          <button onclick="toggleNavGroup('property')"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-3">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-building w-4 text-gray-400"></i>
+              Property
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" id="chevron-property"></i>
+          </button>
+          <div id="nav-group-property" class="hidden space-y-0.5 ml-3 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+            {% if has_permission('estates.view') %}
+            <a href="{{ url_for('api_v1.estates_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.estates_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-building w-4"></i> Estates
+            </a>
+            {% endif %}
+            {% if has_permission('units.view') %}
+            <a href="{{ url_for('api_v1.units_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.units_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-house w-4"></i> Units
+            </a>
+            {% endif %}
+            {% if has_permission('persons.view') %}
+            <a href="{{ url_for('api_v1.persons_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.persons_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-users w-4"></i> Persons
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- ── Metering Group ── -->
+          {% if has_permission('meters.view') or has_permission('rate_tables.view') %}
+          <button onclick="toggleNavGroup('metering')"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-3">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-tachometer-alt w-4 text-gray-400"></i>
+              Metering
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" id="chevron-metering"></i>
+          </button>
+          <div id="nav-group-metering" class="hidden space-y-0.5 ml-3 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+            {% if has_permission('meters.view') %}
+            <a href="{{ url_for('api_v1.meters_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.meters_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-tachometer-alt w-4"></i> Meters
+            </a>
+            {% endif %}
+            {% if has_permission('rate_tables.view') %}
+            <a href="{{ url_for('api_v1.rate_tables_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.rate_tables_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-table w-4"></i> Rate Tables
+            </a>
+            {% endif %}
+            {% if has_permission('meters.view') %}
+            <a href="{{ url_for('api_v1.lorawan_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if 'lorawan' in request.endpoint %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-broadcast-tower w-4"></i> LoRaWAN
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- ── Financial Group ── -->
+          <button onclick="toggleNavGroup('financial')"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-3">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-wallet w-4 text-gray-400"></i>
+              Financial
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" id="chevron-financial"></i>
+          </button>
+          <div id="nav-group-financial" class="hidden space-y-0.5 ml-3 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+            <a href="{{ url_for('api_v1.billing_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.billing_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-file-invoice-dollar w-4"></i> Billing
+            </a>
+            <a href="{{ url_for('api_v1.payfast_transactions_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint in ('api_v1.payfast_transactions_page', 'api_v1.payfast_reconciliation_page') %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-credit-card w-4"></i> PayFast
+            </a>
+            <a href="{{ url_for('api_v1.reports_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.reports_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-chart-line w-4"></i> Reports
+            </a>
+          </div>
+
+          <!-- ── Communication Group ── -->
+          {% if has_permission('tickets.view') or has_permission('messages.view') %}
+          <button onclick="toggleNavGroup('communication')"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-3">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-comments w-4 text-gray-400"></i>
+              Communication
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" id="chevron-communication"></i>
+          </button>
+          <div id="nav-group-communication" class="hidden space-y-0.5 ml-3 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+            {% if has_permission('tickets.view') %}
+            <a href="{{ url_for('api_v1.tickets_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.tickets_page' or request.endpoint == 'api_v1.ticket_detail_page' or request.endpoint == 'api_v1.ticket_categories_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-ticket-alt w-4"></i> Support Tickets
+            </a>
+            {% endif %}
+            {% if has_permission('messages.view') %}
+            <a href="{{ url_for('api_v1.messages_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.messages_page' or request.endpoint == 'api_v1.compose_message_page' or request.endpoint == 'api_v1.message_detail_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-envelope w-4"></i> Messages
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- ── System Group ── -->
+          {% if has_permission('users.view') or has_permission('roles.view') or has_permission('settings.view') or has_permission('audit_logs.view') %}
+          <button onclick="toggleNavGroup('system')"
+            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-3">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-cogs w-4 text-gray-400"></i>
+              System
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400 transition-transform duration-200" id="chevron-system"></i>
+          </button>
+          <div id="nav-group-system" class="hidden space-y-0.5 ml-3 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+            {% if has_permission('users.view') %}
+            <a href="{{ url_for('api_v1.users_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.users_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-users w-4"></i> Users
+            </a>
+            {% endif %}
+            {% if has_permission('roles.view') %}
+            <a href="{{ url_for('api_v1.roles_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.roles_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-user-shield w-4"></i> Roles
+            </a>
+            {% endif %}
+            {% if has_permission('users.view') %}
+            <a href="{{ url_for('api_v1.invites_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.invites_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-envelope-open-text w-4"></i> Mobile Invites
+            </a>
+            {% endif %}
+            {% if has_permission('settings.view') %}
+            <a href="{{ url_for('api_v1.settings_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.settings_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-cog w-4"></i> Settings
+            </a>
+            {% endif %}
+            {% if has_permission('audit_logs.view') %}
+            <a href="{{ url_for('api_v1.audit_logs_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.audit_logs_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-clipboard-list w-4"></i> Audit Log
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% endif %}
+        </nav>
+
+        <!-- User Section -->
+        <div
+          class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+        >
+          <a
+            href="{% if is_portal_user() %}{{ url_for('portal.portal_profile') }}{% else %}{{ url_for('api_v1.profile_page') }}{% endif %}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors {% if request.endpoint == 'api_v1.profile_page' or request.endpoint == 'portal.portal_profile' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}"
+          >
+            <i class="fas fa-user w-5"></i>
+            <span class="text-sm font-medium">My Profile</span>
+          </a>
+          <button
+            id="logoutButton"
+            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+          >
+            <i class="fas fa-right-from-bracket w-5"></i>
+            <span class="text-sm font-medium">Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Mobile Sidebar Overlay -->
+      <div
+        id="sidebarOverlay"
+        class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"
+        onclick="toggleSidebar()"
+      ></div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col md:ml-64">
+        <!-- Header -->
+        <header
+          class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <!-- Mobile menu button -->
+              <button
+                onclick="toggleSidebar()"
+                class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+              >
+                <i class="fas fa-bars"></i>
+              </button>
+
+              <!-- Page Title -->
+              <div>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+                  {% block page_title %}Dashboard{% endblock %}
+                </h1>
+                <nav class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {% block breadcrumb %}
+                  <a
+                    href="{{ url_for('api_v1.index') }}"
+                    class="hover:text-primary"
+                    >Home</a
+                  >
+                  {% endblock %}
+                </nav>
+              </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center gap-2">
+              <!-- Dashboard Controls (only show on dashboard page) -->
+              <div
+                id="dashboardControls"
+                class="hidden flex items-center gap-2"
+              >
+                <!-- Period Selector -->
+                <select
+                  id="periodSelector"
+                  onchange="updateDashboardData()"
+                  class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                </select>
+
+                <!-- Refresh Button -->
+                <button
+                  class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                >
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+
+              <!-- Theme Toggle -->
+              <button
+                id="themeToggle"
+                class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+              >
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline"></i>
+              </button>
+
+              <!-- User Info -->
+              <div
+                class="flex items-center gap-2 pl-3 border-l border-gray-200 dark:border-gray-700"
+              >
+                <img
+                  src="https://ui-avatars.com/api/?name={{ (current_user.first_name ~ '+' ~ current_user.last_name) if current_user.is_authenticated else 'User' }}&background=1A73E8&color=fff"
+                  alt="{{ (current_user.first_name ~ ' ' ~ current_user.last_name) if current_user.is_authenticated else 'User' }}"
+                  class="w-8 h-8 rounded-full"
+                />
+                <span
+                  class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >{{ (current_user.first_name ~ ' ' ~ current_user.last_name)
+                  if current_user.is_authenticated else '' }}</span
+                >
+                <button
+                  id="logoutButtonHeader"
+                  class="ml-2 p-1 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
+                  title="Logout"
+                >
+                  <i class="fas fa-sign-out-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6">
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    <!-- Auth.js -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+    <!-- Base JavaScript -->
+    <script>
+      // Theme Toggle
+      const themeToggle = document.getElementById("themeToggle");
+      const html = document.documentElement;
+
+      // Apply saved theme already done in head; ensure storage stays in sync
+      (function ensureThemeSync() {
+        try {
+          const saved = localStorage.getItem("theme");
+          if (saved === "dark") html.classList.add("dark");
+          if (saved === "light") html.classList.remove("dark");
+        } catch (e) {}
+      })();
+
+      themeToggle.addEventListener("click", () => {
+        html.classList.toggle("dark");
+        const currentTheme = html.classList.contains("dark") ? "dark" : "light";
+        try {
+          localStorage.setItem("theme", currentTheme);
+        } catch (e) {}
+      });
+
+      // Sidebar Toggle
+      function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        sidebar.classList.toggle("-translate-x-full");
+        overlay.classList.toggle("hidden");
+      }
+
+      // Nav Group Toggle (collapsible sidebar groups)
+      function toggleNavGroup(group) {
+        var el = document.getElementById('nav-group-' + group);
+        var chevron = document.getElementById('chevron-' + group);
+        if (!el) return;
+        var isHidden = el.classList.contains('hidden');
+        el.classList.toggle('hidden');
+        if (chevron) {
+          chevron.style.transform = isHidden ? 'rotate(90deg)' : '';
+        }
+        // Persist state to localStorage
+        try {
+          var state = JSON.parse(localStorage.getItem('navGroups') || '{}');
+          state[group] = isHidden; // true = now expanded
+          localStorage.setItem('navGroups', JSON.stringify(state));
+        } catch(e) {}
+      }
+
+      // Logout functionality - handled by auth.js
+      document.addEventListener("DOMContentLoaded", function () {
+        // Add logout event listeners to all logout buttons
+        const logoutButtons = document.querySelectorAll(
+          "#logoutButton, #logoutButtonHeader"
+        );
+        logoutButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            logout();
+          });
+        });
+
+        // Restore nav group states & auto-expand group containing active page
+        try {
+          var savedState = JSON.parse(localStorage.getItem('navGroups') || '{}');
+          document.querySelectorAll('[id^="nav-group-"]').forEach(function(el) {
+            var group = el.id.replace('nav-group-', '');
+            var chevron = document.getElementById('chevron-' + group);
+            // Auto-expand if group contains the active (highlighted) page
+            var hasActive = el.querySelector('.text-primary');
+            if (hasActive || savedState[group]) {
+              el.classList.remove('hidden');
+              if (chevron) chevron.style.transform = 'rotate(90deg)';
+            }
+          });
+        } catch(e) {}
+
+        // Show dashboard controls only on dashboard page
+        // const dashboardControls = document.getElementById("dashboardControls");
+        // if (dashboardControls) {
+        //   // Check if we're on the dashboard page
+        //   const currentPath = window.location.pathname;
+        //   if (
+        //     currentPath.includes("/dashboard") ||
+        //     currentPath === "/" ||
+        //     currentPath === "/api/v1/dashboard"
+        //   ) {
+        //     dashboardControls.classList.remove("hidden");
+        //   }
+        // }
+      });
+    </script>
+
+    <!-- Additional JavaScript -->
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

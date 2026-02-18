@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}PayFast Reconciliation - Admin{% endblock %}
+{% block page_title %}PayFast Reconciliation{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.index') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.billing_page') }}" class="hover:text-primary">Billing</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.payfast_transactions_page') }}" class="hover:text-primary">PayFast</a>
+<span class="mx-1">/</span>
+<span>Reconciliation</span>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_txns }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Total (48h)</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <p class="text-2xl font-bold text-green-600">{{ completed }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <p class="text-2xl font-bold text-yellow-600">{{ pending }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Pending</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <p class="text-2xl font-bold text-red-600">{{ failed }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Failed / Expired</p>
+  </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <p class="text-2xl font-bold text-blue-600">{{ reconciled }}</p>
+    <p class="text-xs text-gray-500 dark:text-gray-400">Auto-Reconciled</p>
+  </div>
+</div>
+
+<!-- Manual Run -->
+{% if is_super_admin() %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Manual Reconciliation</h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Trigger a reconciliation run now. The task checks all PayFast transactions from the last 48 hours
+        against PayFast's validation endpoint and auto-fixes any missed completions.
+      </p>
+    </div>
+    <button id="run-recon-btn" onclick="runReconciliation()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap ml-4">
+      <i class="fas fa-sync-alt mr-1"></i> Run Now
+    </button>
+  </div>
+  <p id="recon-result" class="text-xs mt-2 hidden"></p>
+</div>
+{% endif %}
+
+<!-- Reconciliation History -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Reconciliation History (Last 14 days)</h3>
+  </div>
+
+  {% if recon_notifications %}
+  <div class="divide-y divide-gray-200 dark:divide-gray-700">
+    {% for notif in recon_notifications %}
+    <div class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            {% if notif.priority == 'high' %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              <i class="fas fa-exclamation-circle mr-1"></i>Action Needed
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+              <i class="fas fa-check-circle mr-1"></i>Clean
+            </span>
+            {% endif %}
+            <span class="text-xs text-gray-400 dark:text-gray-500">
+              {{ notif.created_at.strftime('%d %b %Y, %H:%M') if notif.created_at }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-700 dark:text-gray-300">{{ notif.message }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="p-12 text-center">
+    <i class="fas fa-clipboard-check text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+    <p class="text-gray-500 dark:text-gray-400">No reconciliation runs yet.</p>
+    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+      Reconciliation runs automatically at midnight, or click "Run Now" to trigger manually.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Info -->
+<div class="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+  <div class="flex items-start gap-2">
+    <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+    <div class="text-xs text-blue-700 dark:text-blue-300">
+      <p class="font-semibold mb-1">How reconciliation works</p>
+      <ul class="list-disc list-inside space-y-1 text-blue-600 dark:text-blue-400">
+        <li>Runs daily at midnight via Celery Beat (also available manually above)</li>
+        <li>Checks all PayFast transactions from the last 48 hours</li>
+        <li>For pending/failed transactions with a PayFast reference, verifies with PayFast's validation endpoint</li>
+        <li>Auto-fixes: if PayFast confirms payment as valid, the wallet is credited and transaction completed</li>
+        <li>Flags mismatches: if a completed local transaction doesn't validate with PayFast</li>
+        <li>Creates an admin notification with the summary of each run</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if is_super_admin() %}
+<script>
+function runReconciliation() {
+  var btn = document.getElementById('run-recon-btn');
+  var result = document.getElementById('recon-result');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Running...';
+
+  fetch('{{ url_for("api_v1.payfast_reconciliation_run") }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    result.classList.remove('hidden');
+    if (data.message) {
+      result.className = 'text-xs mt-2 text-green-700 dark:text-green-400';
+      result.innerHTML = '<i class="fas fa-check-circle mr-1"></i> ' + data.message + '. Refresh this page in a minute to see the results.';
+      btn.innerHTML = '<i class="fas fa-check mr-1"></i> Queued';
+      btn.className = 'px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg cursor-default whitespace-nowrap ml-4';
+    } else {
+      result.className = 'text-xs mt-2 text-red-700 dark:text-red-400';
+      result.textContent = data.error || 'Unknown error';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Run Now';
+    }
+  })
+  .catch(function(err) {
+    result.classList.remove('hidden');
+    result.className = 'text-xs mt-2 text-red-700 dark:text-red-400';
+    result.textContent = 'Request failed: ' + err.message;
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Run Now';
+  });
+}
+</script>
+{% endif %}
+{% endblock %}

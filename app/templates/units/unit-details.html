@@ -1,0 +1,847 @@
+{% extends "base.html" %} {% block title %}Unit {{ unit.unit_number or unit.id
+}} Details - Quantify Metering System{% endblock %} {% block page_title %}Unit
+{{ unit.unit_number or unit.id }} Details{% endblock %} {% block breadcrumb %}
+
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.estates_page') }}" class="hover:text-primary"
+  >Estates</a
+>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.units_page') }}" class="hover:text-primary"
+  >Units</a
+>
+<span class="mx-1">/</span>
+<span>Unit {{ unit.unit_number or unit.id }}</span>
+{% endblock %} {% block content %} {% if unit.wallet_low_balance %}
+<div
+  class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-6"
+>
+  <div class="flex items-center">
+    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl mr-3"></i>
+    <div class="flex-1">
+      <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+        Low Wallet Balance Warning
+      </p>
+      <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+        This unit has only R {{ unit.wallet_balance | default(0) }} remaining.
+      </p>
+    </div>
+    {% if is_super_admin() %}
+    <button
+      id="topUpBtnWarning"
+      class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+    >
+      <i class="fas fa-credit-card mr-2"></i>Top Up Now
+    </button>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left Column - Unit & Resident Info -->
+  <div class="lg:col-span-1 space-y-6">
+    <!-- Unit Information -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-home text-primary mr-2"></i>Unit Information
+      </h3>
+      <div class="space-y-3">
+        <div
+          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+        >
+          <span class="text-sm text-gray-600 dark:text-gray-400"
+            >Unit Number</span
+          >
+          <span class="text-sm font-medium text-gray-900 dark:text-white"
+            >{{ unit.unit_number or '-' }}</span
+          >
+        </div>
+        <div
+          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+        >
+          <span class="text-sm text-gray-600 dark:text-gray-400">Estate</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white"
+            >{{ estate.name if estate else '-' }}</span
+          >
+        </div>
+        <div
+          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+        >
+          <span class="text-sm text-gray-600 dark:text-gray-400">Floor</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white"
+            >{{ unit.floor or '-' }}</span
+          >
+        </div>
+        <div
+          class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+        >
+          <span class="text-sm text-gray-600 dark:text-gray-400">Size</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white"
+            >{{ (unit.size_sqm ~ ' m²') if unit.size_sqm else '-' }}</span
+          >
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400"
+            >Occupancy Status</span
+          >
+          <span
+            class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if unit.occupancy_status=='occupied' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}"
+          >
+            <i
+              class="fas {{ 'fa-check-circle' if unit.occupancy_status=='occupied' else 'fa-circle' }} mr-1"
+            ></i
+            >{{ unit.occupancy_status or '-' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Owners Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-home text-blue-500 mr-2"></i>Owners
+        </h3>
+        {% if has_permission('units.edit') %}
+        <button
+          onclick="showAddOwnerModal()"
+          class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
+        >
+          <i class="fas fa-plus mr-1"></i>Add Owner
+        </button>
+        {% endif %}
+      </div>
+      {% if owners and owners|length > 0 %}
+        {% for owner in owners %}
+        <div class="{% if not loop.last %}border-b border-gray-100 dark:border-gray-700 pb-3 mb-3{% endif %}">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="flex-1">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ owner.person.full_name }}
+                  {% if owner.is_primary_owner %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Primary
+                  </span>
+                  {% endif %}
+                </span>
+              </div>
+              {% if has_permission('units.edit') %}
+              <button
+                onclick="removeOwner({{ owner.person.id }})"
+                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs ml-2"
+                title="Remove owner"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              {% endif %}
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Ownership</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.ownership_percentage }}%</span>
+            </div>
+            {% if owner.person.phone %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Phone</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.person.phone }}</span>
+            </div>
+            {% endif %}
+            {% if owner.person.email %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Email</span>
+              <span class="text-gray-900 dark:text-white">{{ owner.person.email }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No owners assigned</p>
+      {% endif %}
+    </div>
+
+    <!-- Tenants Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-user text-green-500 mr-2"></i>Tenants
+        </h3>
+        {% if has_permission('units.edit') %}
+        <button
+          onclick="showAddTenantModal()"
+          class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs transition-colors"
+        >
+          <i class="fas fa-plus mr-1"></i>Add Tenant
+        </button>
+        {% endif %}
+      </div>
+      {% if tenants and tenants|length > 0 %}
+        {% for tenant in tenants %}
+        <div class="{% if not loop.last %}border-b border-gray-100 dark:border-gray-700 pb-3 mb-3{% endif %}">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="flex-1">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ tenant.person.full_name }}
+                  {% if tenant.is_primary_tenant %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Primary
+                  </span>
+                  {% endif %}
+                </span>
+              </div>
+              {% if has_permission('units.edit') %}
+              <button
+                onclick="removeTenant({{ tenant.person.id }})"
+                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs ml-2"
+                title="Remove tenant"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+              {% endif %}
+            </div>
+            {% if tenant.person.id_number %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">ID Number</span>
+              <span class="text-gray-900 dark:text-white">{{ tenant.person.id_number }}</span>
+            </div>
+            {% endif %}
+            {% if tenant.person.phone %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Phone</span>
+              <span class="text-gray-900 dark:text-white">
+                {{ tenant.person.phone }}
+                <button class="ml-1 text-primary hover:text-blue-700">
+                  <i class="fas fa-phone text-xs"></i>
+                </button>
+              </span>
+            </div>
+            {% endif %}
+            {% if tenant.person.email %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Email</span>
+              <span class="text-gray-900 dark:text-white">
+                {{ tenant.person.email }}
+                <button class="ml-1 text-primary hover:text-blue-700">
+                  <i class="fas fa-envelope text-xs"></i>
+                </button>
+              </span>
+            </div>
+            {% endif %}
+            {% if tenant.move_in_date %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Move-in Date</span>
+              <span class="text-gray-900 dark:text-white">{{ tenant.move_in_date.strftime('%b %d, %Y') if tenant.move_in_date else '-' }}</span>
+            </div>
+            {% endif %}
+            {% if tenant.monthly_rent %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Monthly Rent</span>
+              <span class="text-gray-900 dark:text-white">R {{ tenant.monthly_rent | format_number(2) }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <button
+          class="w-full mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+        >
+          <i class="fas fa-message mr-2"></i>Send SMS to All Tenants
+        </button>
+      {% else %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No tenants assigned</p>
+      {% endif %}
+    </div>
+
+    <!-- Quick Action -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        Quick Actions
+      </h3>
+      <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
+        <a
+          href="{{ url_for('api_v1.wallet_statement_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 text-center"
+        >
+          <i class="fas fa-file-invoice mb-1"></i>
+          <div class="text-sm">Statement</div>
+        </a>
+        <a
+          href="{{ url_for('api_v1.unit_visual_page', unit_id=unit.id) }}"
+          class="px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 text-center"
+        >
+          <i class="fas fa-diagram-project mb-1"></i>
+          <div class="text-sm">Visual Diagram</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center Column - Wallet & Meters -->
+  <div class="lg:col-span-2 space-y-6">
+    <!-- Prepaid Wallet Status (static placeholders until backend data exists) -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-wallet text-primary mr-2"></i>Prepaid Wallet & Solar
+          Allocation
+        </h3>
+        {% if is_super_admin() %}
+        <button
+          id="topUpBtn"
+          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+        >
+          <i class="fas fa-plus-circle mr-2"></i>Top Up Wallet
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- Wallet metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div
+          class="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/30 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Total Balance</span
+            >
+            <i class="fas fa-wallet text-yellow-500"></i>
+          </div>
+          <div class="text-2xl font-bold text-yellow-600">
+            R {{ wallet.balance | format_number(2) if wallet else '0.00' }}
+          </div>
+        </div>
+
+        <div
+          class="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Electricity</span
+            >
+            <i class="fas fa-bolt text-yellow-500"></i>
+          </div>
+          <div class="text-2xl font-bold text-yellow-600">
+            R {{ wallet.electricity_balance | format_number(2) if wallet and wallet.electricity_balance else '0.00' }}
+          </div>
+        </div>
+
+        <div
+          class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Water</span
+            >
+            <i class="fas fa-tint text-blue-500"></i>
+          </div>
+          <div class="text-2xl font-bold text-blue-600">
+            R {{ wallet.water_balance | format_number(2) if wallet and wallet.water_balance else '0.00' }}
+          </div>
+        </div>
+
+        <div
+          class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Hot Water</span
+            >
+            <i class="fas fa-fire text-red-500"></i>
+          </div>
+          <div class="text-2xl font-bold text-red-600">
+            R {{ wallet.hot_water_balance | format_number(2) if wallet and wallet.hot_water_balance else '0.00' }}
+          </div>
+        </div>
+
+        <div
+          class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Solar (Free)</span
+            >
+            <i class="fas fa-solar-panel text-green-500"></i>
+          </div>
+          <div class="text-2xl font-bold text-green-600">
+            {{ wallet.solar_balance | format_number(2) if wallet and wallet.solar_balance else '0' }} kWh
+          </div>
+        </div>
+      </div>
+
+      <!-- Low Balance Threshold -->
+      <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Low Balance Alert Threshold</span>
+          </div>
+          <div class="text-xl font-bold text-blue-600">
+            R {{ wallet.low_balance_threshold | format_number(2) if wallet else '0.00' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent transactions list -->
+      <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Recent Transactions
+        </h4>
+        {% if recent_transactions and recent_transactions|length > 0 %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Date
+                </th>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Type
+                </th>
+                <th
+                  class="px-3 py-2 text-right text-gray-600 dark:text-gray-300"
+                >
+                  Amount
+                </th>
+                <th
+                  class="px-3 py-2 text-left text-gray-600 dark:text-gray-300"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              {% for txn in recent_transactions %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-3 py-2 text-gray-900 dark:text-white">
+                  {{ txn.completed_at.strftime('%b %d, %Y') if txn.completed_at
+                  else 'Pending' }}
+                </td>
+                <td class="px-3 py-2 text-gray-900 dark:text-white">
+                  {{ txn.transaction_type.replace('_', ' ')|title }}
+                </td>
+                <td
+                  class="px-3 py-2 text-right {% if txn.transaction_type == 'topup' %}text-green-600{% else %}text-red-600{% endif %}"
+                >
+                  {% if txn.transaction_type == 'topup' %}+{% else %}-{% endif
+                  %}R {{ txn.amount | format_number(2) }}
+                </td>
+                <td class="px-3 py-2">
+                  <span
+                    class="px-2 py-1 rounded text-xs {% if txn.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif txn.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}"
+                  >
+                    {{ txn.status|title }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-xs text-gray-500 dark:text-gray-400">
+          No transactions yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Individual Meter Readings (static placeholders) -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-tachometer-alt text-primary mr-2"></i>Live Meter
+        Readings
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Electricity Meter -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+              <span class="font-medium text-gray-900 dark:text-white"
+                >Electricity</span
+              >
+            </div>
+            {% set elec_status = meters.get('electricity').communication_status if meters.get('electricity') else 'offline' %}
+            <span
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if elec_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if elec_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
+            >
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ elec_status | capitalize if unit.electricity_meter_id else 'No Meter' }}
+            </span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
+              <span class="font-mono text-gray-900 dark:text-white"
+                >{{ unit.electricity_meter_id or '-' }}</span
+              >
+            </div>
+            {% if meter_readings.get('electricity') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('electricity').reading_value |
+                format_number(2) }} kWh</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('electricity').reading_date.strftime('%b
+                %d, %Y') if meter_readings.get('electricity').reading_date else
+                '-' }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Water Meter -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-tint text-blue-500 mr-2"></i>
+              <span class="font-medium text-gray-900 dark:text-white"
+                >Water</span
+              >
+            </div>
+            {% set water_status = meters.get('water').communication_status if meters.get('water') else 'offline' %}
+            <span
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if water_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if water_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
+            >
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ water_status | capitalize if unit.water_meter_id else 'No Meter' }}
+            </span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
+              <span class="font-mono text-gray-900 dark:text-white"
+                >{{ unit.water_meter_id or '-' }}</span
+              >
+            </div>
+            {% if meter_readings.get('water') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('water').reading_value | format_number(2)
+                }} kL</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('water').reading_date.strftime('%b %d,
+                %Y') if meter_readings.get('water').reading_date else '-'
+                }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Hot Water Meter -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-fire text-red-500 mr-2"></i>
+              <span class="font-medium text-gray-900 dark:text-white"
+                >Hot Water</span
+              >
+            </div>
+            {% set hw_status = meters.get('hot_water').communication_status if meters.get('hot_water') else 'offline' %}
+            <span
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if hw_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if hw_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
+            >
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ hw_status | capitalize if unit.hot_water_meter_id else 'No Meter' }}
+            </span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
+              <span class="font-mono text-gray-900 dark:text-white"
+                >{{ unit.hot_water_meter_id or '-' }}</span
+              >
+            </div>
+            {% if meter_readings.get('hot_water') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('hot_water').reading_value |
+                format_number(2) }} kL</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('hot_water').reading_date.strftime('%b
+                %d, %Y') if meter_readings.get('hot_water').reading_date else
+                '-' }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Solar Meter -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-solar-panel text-green-500 mr-2"></i>
+              <span class="font-medium text-gray-900 dark:text-white"
+                >Solar</span
+              >
+            </div>
+            {% set solar_status = meters.get('solar').communication_status if meters.get('solar') else 'offline' %}
+            <span
+              class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' if solar_status == 'online' else ('bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' if solar_status == 'error' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200') }}"
+            >
+              <i class="fas fa-circle mr-1 text-xs"></i>{{ solar_status | capitalize if unit.solar_meter_id else 'No Meter' }}
+            </span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Meter ID</span>
+              <span class="font-mono text-gray-900 dark:text-white"
+                >{{ unit.solar_meter_id or '-' }}</span
+              >
+            </div>
+            {% if meter_readings.get('solar') %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Reading</span>
+              <span class="font-semibold text-gray-900 dark:text-white"
+                >{{ meter_readings.get('solar').reading_value | format_number(2)
+                }} kWh</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Date</span>
+              <span class="text-gray-900 dark:text-white"
+                >{{ meter_readings.get('solar').reading_date.strftime('%b %d,
+                %Y') if meter_readings.get('solar').reading_date else '-'
+                }}</span
+              >
+            </div>
+            {% else %}
+            <div
+              class="text-xs text-gray-500 dark:text-gray-400 text-center py-2"
+            >
+              No readings
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top Up Modal -->
+<div id="topUpModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-plus-circle text-primary mr-2"></i>Top Up Wallet
+      </h3>
+      <button id="closeTopUpModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <form id="topUpForm">
+        <input type="hidden" id="walletId" value="{{ wallet.id if wallet else '' }}">
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Unit Information
+          </label>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Unit:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Estate:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ estate.name if estate else '—' }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Current Balance:</span>
+              <span class="font-medium text-gray-900 dark:text-white">R {{ wallet.balance | format_number(2) if wallet else '0.00' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Top Up Amount (R) <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            id="topUpAmount"
+            step="0.01"
+            min="1"
+            required
+            placeholder="Enter amount"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpUtilityType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Utility Type <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="topUpUtilityType"
+            required
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Select utility type</option>
+            <option value="electricity">Electricity</option>
+            <option value="water">Water</option>
+            <option value="solar">Solar</option>
+            <option value="hot_water">Hot Water</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpReference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Reference / Notes
+          </label>
+          <input
+            type="text"
+            id="topUpReference"
+            placeholder="Optional reference or notes"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelTopUpBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="submitTopUpBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-check mr-2"></i>Confirm Top Up
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Owner Modal -->
+<div id="addOwnerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Owner</h3>
+      <button onclick="closeAddOwnerModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="addOwnerForm" onsubmit="event.preventDefault(); submitAddOwner();">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Person <span class="text-red-500">*</span>
+          </label>
+          <select id="ownerPersonId" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select Person --</option>
+            {% for p in persons %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Ownership Percentage <span class="text-red-500">*</span>
+          </label>
+          <input id="ownerPercentage" type="number" min="0" max="100" step="0.01" value="100" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeAddOwnerModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Add Owner
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Tenant Modal -->
+<div id="addTenantModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Tenant</h3>
+      <button onclick="closeAddTenantModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="addTenantForm" onsubmit="event.preventDefault(); submitAddTenant();">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Person <span class="text-red-500">*</span>
+          </label>
+          <select id="tenantPersonId" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select Person --</option>
+            {% for p in persons %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeAddTenantModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+            <i class="fas fa-plus mr-2"></i>Add Tenant
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script>
+  // Pass unit ID to JavaScript
+  window.UNIT_ID = {{ unit.id }};
+</script>
+<script src="{{ url_for('static', filename='js/units/unit-details.js') }}"></script>
+{% endblock %}

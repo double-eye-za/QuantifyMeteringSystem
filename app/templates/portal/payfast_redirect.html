@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting to PayFast...</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+  <div class="text-center p-8">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+      <svg class="w-8 h-8 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+    </div>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">Redirecting to PayFast</h2>
+    <p class="text-gray-500 mb-4">Please wait while we redirect you to the secure payment page...</p>
+    <p class="text-sm text-gray-400">If you are not redirected automatically, click the button below.</p>
+
+    <form id="payfast-form" method="POST" action="{{ process_url }}">
+      {% for key, value in pf_data.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <button type="submit" class="mt-4 px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        Continue to PayFast
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Auto-submit after a brief delay so the user sees the spinner
+    setTimeout(function() {
+      document.getElementById('payfast-form').submit();
+    }, 1000);
+  </script>
+</body>
+</html>
