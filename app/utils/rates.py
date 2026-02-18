@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Dict, Any, Optional, List, Tuple
 
 
@@ -167,3 +168,62 @@ def calculate_bill_breakdown(
         "service_fee": fee,
         "final_total": final_total,
     }
+
+
+def get_default_rate_structure(utility_type: str) -> Dict[str, Any]:
+    """Get default rate structure from system settings or first active rate table.
+    Falls back to hardcoded values if no rate tables exist.
+
+    Args:
+        utility_type: 'electricity' or 'water'
+
+    Returns:
+        Rate structure dict with 'flat_rate' or 'tiers'
+    """
+    from ..models import RateTable
+
+    # Try to get a default rate table for this utility type
+    rate_table = RateTable.query.filter_by(
+        utility_type=utility_type,
+        is_active=True
+    ).first()
+
+    if rate_table and rate_table.rate_structure:
+        # rate_structure is stored as JSON text in the database, need to parse it
+        if isinstance(rate_table.rate_structure, str):
+            return json.loads(rate_table.rate_structure)
+        return rate_table.rate_structure
+
+    # Fallback to simple flat rates if no rate tables exist
+    if utility_type == "electricity":
+        return {"flat_rate": 2.50}  # R2.50/kWh
+    elif utility_type == "water":
+        return {"flat_rate": 15.00}  # R15.00/kL
+    else:
+        return {"flat_rate": 0.00}
+
+
+def calculate_consumption_charge(
+    consumption: float,
+    utility_type: str,
+    rate_structure: Optional[Dict[str, Any]] = None,
+    markup_percent: Optional[float] = None
+) -> float:
+    """Calculate charge for consumption, using rate structure or default rates.
+
+    Args:
+        consumption: Amount consumed (kWh or kL)
+        utility_type: 'electricity' or 'water'
+        rate_structure: Optional rate structure dict
+        markup_percent: Optional markup percentage
+
+    Returns:
+        Total charge amount
+    """
+    if not rate_structure:
+        rate_structure = get_default_rate_structure(utility_type)
+
+    base_amount = compute_from_structure(consumption, rate_structure)
+    total_amount = apply_markup(base_amount, markup_percent)
+
+    return total_amount

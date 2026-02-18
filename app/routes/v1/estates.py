@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Estate, Resident, Unit, Meter, RateTable
+from ...models import Estate, Unit, Meter, RateTable
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
 from ...utils.decorators import requires_permission
@@ -55,6 +55,18 @@ def estates_page():
 
     from ...db import db
 
+    # Calculate unit meters vs bulk meters
+    bulk_meter_count = (
+        db.session.query(func.count(Estate.id))
+        .filter(
+            (Estate.bulk_electricity_meter_id.isnot(None))
+            | (Estate.bulk_water_meter_id.isnot(None))
+        )
+        .scalar()
+        or 0
+    )
+    unit_meter_count = total_meters - bulk_meter_count
+
     elec_counts = dict(
         db.session.query(
             Unit.estate_id, func.count(Unit.electricity_meter_id.distinct())
@@ -90,11 +102,21 @@ def estates_page():
         eid = e["id"]
         has_bulk_e = e["bulk_electricity_meter_id"] is not None
         has_bulk_w = e["bulk_water_meter_id"] is not None
+        # Calculate total meters for this estate
+        total_estate_meters = (
+            elec_counts.get(eid, 0) +
+            water_counts.get(eid, 0) +
+            solar_counts.get(eid, 0) +
+            hot_water_counts.get(eid, 0) +
+            (1 if has_bulk_e else 0) +
+            (1 if has_bulk_w else 0)
+        )
         meter_configs[eid] = {
             "elec": f"{elec_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_e else ''}",
             "water": f"{water_counts.get(eid, 0)} unit{' + 1 bulk' if has_bulk_w else ''}",
             "solar": f"{solar_counts.get(eid, 0)} unit",
             "hot_water": f"{hot_water_counts.get(eid, 0)} unit",
+            "total": total_estate_meters,
         }
 
     # Rate tables for dropdowns
@@ -160,6 +182,8 @@ def estates_page():
             "units": total_units,
             "meters": total_meters,
             "dc450s": active_dc450s,
+            "unit_meters": unit_meter_count,
+            "bulk_meters": bulk_meter_count,
         },
         electricity_rate_tables=electricity_rate_tables,
         water_rate_tables=water_rate_tables,
@@ -273,7 +297,8 @@ def estate_details_page(estate_id: int):
     # Enrich units with resident, wallet balance
     enriched_units = []
     for u in units:
-        resident = Resident.query.get(u.resident_id) if u.resident_id else None
+        # Use backward compatibility property: unit.resident returns primary_tenant
+        resident = u.resident
         wallet = u.wallet
         balance = float(wallet.balance or 0) if wallet else 0
         enriched_units.append(

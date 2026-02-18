@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Ticket {{ ticket.ticket_number }} - Quantify Metering System{% endblock %}
+{% block page_title %}Ticket {{ ticket.ticket_number }}{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<a href="{{ url_for('api_v1.tickets_page') }}" class="hover:text-primary">Tickets</a>
+<span class="mx-1">/</span>
+<span>{{ ticket.ticket_number }}</span>
+{% endblock %}
+{% block content %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content - Left/Center -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Ticket Info Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ ticket.subject }}</h2>
+              <div class="flex items-center gap-3 mt-2">
+                {% set status_colors = {
+                  'open': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+                  'in_progress': 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400',
+                  'pending': 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400',
+                  'resolved': 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400',
+                  'closed': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                } %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ status_colors.get(ticket.status, 'bg-gray-100 text-gray-800') }}">
+                  {{ ticket.status | replace('_', ' ') | title }}
+                </span>
+                {% set priority_colors = {
+                  'urgent': 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400',
+                  'high': 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-400',
+                  'medium': 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400',
+                  'low': 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                } %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ priority_colors.get(ticket.priority, 'bg-gray-100 text-gray-800') }}">
+                  {% if ticket.priority == 'urgent' %}<i class="fas fa-exclamation-circle mr-1"></i>{% endif %}
+                  {{ ticket.priority | title }} Priority
+                </span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-gray-500 dark:text-gray-400">Created</div>
+              <div class="text-sm text-gray-900 dark:text-white">{{ ticket.created_at[:16] if ticket.created_at else '-' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ ticket.description }}</div>
+        </div>
+      </div>
+
+      <!-- Messages/Conversation -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <i class="fas fa-comments mr-2"></i>Conversation
+          </h3>
+        </div>
+        <div class="p-4 space-y-4 max-h-96 overflow-y-auto" id="messagesContainer">
+          {% if ticket.messages %}
+            {% for msg in ticket.messages %}
+            <div class="flex {% if msg.sender_type == 'staff' %}justify-end{% else %}justify-start{% endif %}">
+              <div class="max-w-[80%] {% if msg.sender_type == 'staff' %}bg-primary text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white{% endif %} rounded-lg px-4 py-3 {% if msg.is_internal %}border-2 border-yellow-500{% endif %}">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs font-semibold {% if msg.sender_type == 'staff' %}text-blue-100{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                    {{ msg.sender_name }}
+                    {% if msg.sender_type == 'staff' %}<i class="fas fa-user-shield ml-1"></i>{% endif %}
+                    {% if msg.is_internal %}<span class="text-yellow-500 ml-1">(Internal Note)</span>{% endif %}
+                  </span>
+                  <span class="text-xs {% if msg.sender_type == 'staff' %}text-blue-200{% else %}text-gray-400 dark:text-gray-500{% endif %}">
+                    {{ msg.created_at[:16] if msg.created_at else '' }}
+                  </span>
+                </div>
+                <div class="text-sm whitespace-pre-wrap">{{ msg.message }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+              <i class="fas fa-comment-slash text-4xl mb-2 opacity-50"></i>
+              <p>No messages yet</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Reply Form -->
+        {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+          <form id="replyForm" onsubmit="event.preventDefault(); submitReply();">
+            <div class="mb-3">
+              <textarea
+                id="replyMessage"
+                rows="3"
+                placeholder="Type your reply..."
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                required
+              ></textarea>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="isInternal"
+                  class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+                />
+                Internal note (not visible to customer)
+              </label>
+              <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                <i class="fas fa-paper-plane mr-2"></i>Send Reply
+              </button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar - Right -->
+    <div class="space-y-6">
+      <!-- Quick Actions -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Actions</h3>
+        <div class="space-y-2">
+          {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+            {% if ticket.status != 'resolved' %}
+            <button onclick="updateStatus('resolved')" class="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
+              <i class="fas fa-check mr-2"></i>Mark as Resolved
+            </button>
+            {% endif %}
+            <button onclick="updateStatus('closed')" class="w-full px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors">
+              <i class="fas fa-times-circle mr-2"></i>Close Ticket
+            </button>
+          {% elif ticket.status == 'closed' and has_permission('tickets.edit') %}
+            <button onclick="reopenTicket()" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+              <i class="fas fa-redo mr-2"></i>Reopen Ticket
+            </button>
+          {% endif %}
+          <a href="{{ url_for('api_v1.tickets_page') }}" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Tickets
+          </a>
+        </div>
+      </div>
+
+      <!-- Ticket Details -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Details</h3>
+        <div class="space-y-3">
+          <!-- Status -->
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Status</label>
+            {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+            <select id="statusSelect" onchange="updateStatus(this.value)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+              <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
+              <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+              <option value="pending" {% if ticket.status == 'pending' %}selected{% endif %}>Pending</option>
+              <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+            {% else %}
+            <div class="text-sm text-gray-900 dark:text-white">{{ ticket.status | replace('_', ' ') | title }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Priority -->
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Priority</label>
+            {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+            <select id="prioritySelect" onchange="updatePriority(this.value)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+              <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low</option>
+              <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
+              <option value="urgent" {% if ticket.priority == 'urgent' %}selected{% endif %}>Urgent</option>
+            </select>
+            {% else %}
+            <div class="text-sm text-gray-900 dark:text-white">{{ ticket.priority | title }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Category -->
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Category</label>
+            {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+            <select id="categorySelect" onchange="updateCategory(this.value)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+              <option value="">None</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if ticket.category and ticket.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <div class="text-sm text-gray-900 dark:text-white">{{ ticket.category.name if ticket.category else '-' }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Assigned To -->
+          <div>
+            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Assigned To</label>
+            {% if ticket.status != 'closed' and has_permission('tickets.edit') %}
+            <select id="assignedSelect" onchange="updateAssigned(this.value)" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+              <option value="">Unassigned</option>
+              {% for user in users %}
+              <option value="{{ user.id }}" {% if ticket.assigned_to_user and ticket.assigned_to_user.id == user.id %}selected{% endif %}>{{ user.name }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <div class="text-sm text-gray-900 dark:text-white">{{ ticket.assigned_to_user.name if ticket.assigned_to_user else 'Unassigned' }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Info -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Customer</h3>
+        {% if ticket.created_by_person %}
+        <div class="space-y-2">
+          <div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ ticket.created_by_person.name }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ ticket.created_by_person.email }}</div>
+          </div>
+          {% if unit_info %}
+          <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div class="text-xs text-gray-500 dark:text-gray-400">Related Unit</div>
+            <div class="text-sm text-gray-900 dark:text-white">Unit {{ unit_info.unit_number }} - {{ unit_info.estate_name }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-sm text-gray-500 dark:text-gray-400">Unknown customer</div>
+        {% endif %}
+      </div>
+
+      <!-- Timeline -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Timeline</h3>
+        <div class="space-y-3 text-xs">
+          <div class="flex items-start gap-2">
+            <i class="fas fa-plus-circle text-green-500 mt-0.5"></i>
+            <div>
+              <div class="text-gray-900 dark:text-white">Created</div>
+              <div class="text-gray-500 dark:text-gray-400">{{ ticket.created_at[:16] if ticket.created_at else '-' }}</div>
+            </div>
+          </div>
+          {% if ticket.resolved_at %}
+          <div class="flex items-start gap-2">
+            <i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+            <div>
+              <div class="text-gray-900 dark:text-white">Resolved</div>
+              <div class="text-gray-500 dark:text-gray-400">{{ ticket.resolved_at[:16] }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if ticket.closed_at %}
+          <div class="flex items-start gap-2">
+            <i class="fas fa-times-circle text-gray-500 mt-0.5"></i>
+            <div>
+              <div class="text-gray-900 dark:text-white">Closed</div>
+              <div class="text-gray-500 dark:text-gray-400">{{ ticket.closed_at[:16] }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if ticket.updated_at and ticket.updated_at != ticket.created_at %}
+          <div class="flex items-start gap-2">
+            <i class="fas fa-edit text-blue-500 mt-0.5"></i>
+            <div>
+              <div class="text-gray-900 dark:text-white">Last Updated</div>
+              <div class="text-gray-500 dark:text-gray-400">{{ ticket.updated_at[:16] }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script>
+  const ticketId = {{ ticket.id }};
+  const apiBase = '/api/v1/api/tickets/' + ticketId;
+  let lastMessageCount = {{ ticket.messages | length }};
+  let pollingInterval = null;
+  const POLL_INTERVAL = 10000; // 10 seconds
+
+  // Scroll messages to bottom
+  const messagesContainer = document.getElementById('messagesContainer');
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Start polling for new messages
+  function startPolling() {
+    if (pollingInterval) return;
+    pollingInterval = setInterval(checkForNewMessages, POLL_INTERVAL);
+  }
+
+  // Stop polling
+  function stopPolling() {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
+  // Check for new messages
+  async function checkForNewMessages() {
+    try {
+      const response = await fetch(apiBase);
+      if (!response.ok) return;
+
+      const result = await response.json();
+      const ticket = result.data;
+
+      if (ticket.messages && ticket.messages.length > lastMessageCount) {
+        // New messages found - update the conversation
+        updateMessagesContainer(ticket.messages);
+        lastMessageCount = ticket.messages.length;
+        showFlashMessage('New message received', 'success');
+      }
+    } catch (error) {
+      console.error('Error checking for new messages:', error);
+    }
+  }
+
+  // Update messages container with new messages
+  function updateMessagesContainer(messages) {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
+
+    let html = '';
+    if (messages.length === 0) {
+      html = `
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+          <i class="fas fa-comment-slash text-4xl mb-2 opacity-50"></i>
+          <p>No messages yet</p>
+        </div>
+      `;
+    } else {
+      messages.forEach(msg => {
+        const isStaff = msg.sender_type === 'staff';
+        const justifyClass = isStaff ? 'justify-end' : 'justify-start';
+        const bgClass = isStaff ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white';
+        const nameClass = isStaff ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400';
+        const timeClass = isStaff ? 'text-blue-200' : 'text-gray-400 dark:text-gray-500';
+        const internalBorder = msg.is_internal ? 'border-2 border-yellow-500' : '';
+        const internalLabel = msg.is_internal ? '<span class="text-yellow-500 ml-1">(Internal Note)</span>' : '';
+        const staffIcon = isStaff ? '<i class="fas fa-user-shield ml-1"></i>' : '';
+        const formattedTime = msg.created_at ? msg.created_at.substring(0, 16) : '';
+
+        html += `
+          <div class="flex ${justifyClass}">
+            <div class="max-w-[80%] ${bgClass} rounded-lg px-4 py-3 ${internalBorder}">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-semibold ${nameClass}">
+                  ${msg.sender_name}
+                  ${staffIcon}
+                  ${internalLabel}
+                </span>
+                <span class="text-xs ${timeClass}">
+                  ${formattedTime}
+                </span>
+              </div>
+              <div class="text-sm whitespace-pre-wrap">${msg.message}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Start polling when page loads
+  startPolling();
+
+  // Stop polling when page is hidden, restart when visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling();
+    } else {
+      startPolling();
+      checkForNewMessages(); // Check immediately when tab becomes visible
+    }
+  });
+
+  async function submitReply() {
+    const message = document.getElementById('replyMessage').value.trim();
+    const isInternal = document.getElementById('isInternal').checked;
+    const submitBtn = document.querySelector('#replyForm button[type="submit"]');
+
+    if (!message) {
+      showFlashMessage('Please enter a message', 'error');
+      return;
+    }
+
+    // Disable button to prevent double-clicks
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+    try {
+      const response = await fetch(apiBase + '/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, is_internal: isInternal })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store flash message to show after reload
+        showFlashMessage('Reply sent successfully', 'success', true);
+        // Clear form immediately
+        document.getElementById('replyMessage').value = '';
+        document.getElementById('isInternal').checked = false;
+        // Reload to show new message
+        location.reload();
+      } else {
+        showFlashMessage(data.error || 'Failed to send reply', 'error');
+        // Re-enable button on error
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Reply';
+      }
+    } catch (error) {
+      showFlashMessage('An error occurred', 'error');
+      console.error(error);
+      // Re-enable button on error
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Reply';
+    }
+  }
+
+  async function updateStatus(status) {
+    await updateTicket({ status });
+  }
+
+  async function updatePriority(priority) {
+    await updateTicket({ priority });
+  }
+
+  async function updateCategory(categoryId) {
+    await updateTicket({ category_id: categoryId ? parseInt(categoryId) : null });
+  }
+
+  async function updateAssigned(userId) {
+    await updateTicket({ assigned_to_user_id: userId ? parseInt(userId) : null });
+  }
+
+  async function updateTicket(payload) {
+    try {
+      const response = await fetch(apiBase, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showFlashMessage('Ticket updated successfully', 'success', true);
+        location.reload();
+      } else {
+        showFlashMessage(data.error || 'Failed to update ticket', 'error');
+      }
+    } catch (error) {
+      showFlashMessage('An error occurred', 'error');
+      console.error(error);
+    }
+  }
+
+  async function reopenTicket() {
+    try {
+      const response = await fetch(apiBase + '/reopen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showFlashMessage('Ticket reopened successfully', 'success', true);
+        location.reload();
+      } else {
+        showFlashMessage(data.error || 'Failed to reopen ticket', 'error');
+      }
+    } catch (error) {
+      showFlashMessage('An error occurred', 'error');
+      console.error(error);
+    }
+  }
+</script>
+{% endblock %}

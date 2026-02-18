@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - My Portal{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome -->
+<div class="mb-6">
+  <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {{ person.first_name }}!</h2>
+  <p class="text-gray-500 dark:text-gray-400 mt-1">Here's an overview of your units and utilities.</p>
+</div>
+
+<!-- Units Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+  {% for unit in units %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit {{ unit.unit_number }}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ unit.estate_name }}</p>
+      </div>
+      <span class="px-2 py-1 text-xs font-medium rounded-full {% if unit.role == 'owner' %}bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400{% else %}bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400{% endif %}">
+        {{ unit.role | capitalize }}
+      </span>
+    </div>
+
+    {% if unit.wallet %}
+    <!-- Balance Cards -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-3">
+        <div class="flex items-center gap-2 mb-1">
+          <i class="fas fa-bolt text-blue-500 text-xs"></i>
+          <span class="text-xs text-gray-500 dark:text-gray-400">Electricity</span>
+        </div>
+        <p class="text-sm font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(unit.wallet.electricity_balance) }}</p>
+      </div>
+      <div class="bg-cyan-50 dark:bg-cyan-900/10 rounded-lg p-3">
+        <div class="flex items-center gap-2 mb-1">
+          <i class="fas fa-droplet text-cyan-500 text-xs"></i>
+          <span class="text-xs text-gray-500 dark:text-gray-400">Water</span>
+        </div>
+        <p class="text-sm font-bold text-gray-900 dark:text-white">R {{ "%.2f"|format(unit.wallet.water_balance) }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="flex items-center justify-between text-sm">
+      <span class="text-gray-500 dark:text-gray-400"><i class="fas fa-tachometer-alt mr-1"></i> {{ unit.meter_count }} meter{{ 's' if unit.meter_count != 1 }}</span>
+      <a href="{{ url_for('portal.portal_unit_detail', unit_id=unit.unit_id) }}" class="text-primary hover:text-blue-700 font-medium">View Details <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Recent Notifications -->
+{% if recent_notifications %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Notifications</h3>
+    <a href="{{ url_for('portal.portal_notifications') }}" class="text-sm text-primary hover:text-blue-700">View All</a>
+  </div>
+  <div class="space-y-3">
+    {% for notif in recent_notifications %}
+    <div class="flex items-start gap-3 p-3 rounded-lg {% if notif.status != 'read' %}bg-blue-50 dark:bg-blue-900/10{% else %}bg-gray-50 dark:bg-gray-700/30{% endif %}">
+      <div class="w-8 h-8 rounded-full bg-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'blue' }}-100 dark:bg-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'blue' }}-900/20 flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-{{ 'exclamation-triangle' if notif.notification_type == 'low_credit' else 'check' if 'success' in (notif.notification_type or '') else 'info-circle' }} text-xs text-{{ 'yellow' if notif.notification_type == 'low_credit' else 'green' if 'success' in (notif.notification_type or '') else 'blue' }}-500"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ notif.subject }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ notif.created_at.strftime('%d %b %Y, %H:%M') if notif.created_at }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

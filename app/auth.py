@@ -11,7 +11,7 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .db import db
-from .models import User
+from .models import User, MobileUser
 
 
 login_manager = LoginManager()
@@ -21,7 +21,19 @@ login_manager.login_message = None
 
 @login_manager.user_loader
 def load_user(user_id: str):
+    """Load a user by session ID.
+
+    Supports two user types:
+      - Admin users: user_id is a plain integer string (e.g. "5")
+      - Portal users: user_id is prefixed with "mobile:" (e.g. "mobile:12")
+
+    The prefix is set by MobileUser.get_id() and ensures no collision
+    between the users and mobile_users tables.
+    """
     try:
+        if user_id.startswith('mobile:'):
+            mobile_id = int(user_id.split(':', 1)[1])
+            return MobileUser.query.get(mobile_id)
         return User.query.get(int(user_id))
     except Exception:
         return None

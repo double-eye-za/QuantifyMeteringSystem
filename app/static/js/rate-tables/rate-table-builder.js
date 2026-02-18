@@ -87,6 +87,42 @@ function addTier() {
   tieredRates.appendChild(newTier);
 }
 
+function calculateBillForUsage(usage, structure) {
+  let total = 0;
+
+  // Tiered pricing
+  if (structure.tiers && structure.tiers.length > 0) {
+    let remaining = usage;
+    for (const tier of structure.tiers) {
+      const tierFrom = tier.from || 0;
+      const tierTo = tier.to || Infinity;
+      const tierRange = tierTo - tierFrom;
+      const unitsInTier = Math.min(remaining, tierRange);
+      if (unitsInTier > 0) {
+        total += unitsInTier * (tier.rate || 0);
+        remaining -= unitsInTier;
+      }
+      if (remaining <= 0) break;
+    }
+  }
+  // Flat rate
+  else if (structure.flat_rate) {
+    total = usage * structure.flat_rate;
+  }
+  // Seasonal (use average of summer/winter)
+  else if (structure.seasonal) {
+    const avgRate = ((structure.seasonal.summer || 0) + (structure.seasonal.winter || 0)) / 2;
+    total = usage * avgRate;
+  }
+
+  // Add fixed charge if present
+  if (structure.fixed_charge) {
+    total += structure.fixed_charge;
+  }
+
+  return total;
+}
+
 function generatePreview() {
   const previewContent = document.getElementById("previewContent");
   const rateName =
@@ -124,8 +160,70 @@ function generatePreview() {
                 `;
   }
 
+  if (document.getElementById("seasonalPricing").checked) {
+    previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Seasonal Pricing</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Summer and Winter rates configured</p>
+                    </div>
+                `;
+  }
+
+  if (document.getElementById("flatPricing").checked) {
+    previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Flat Rate Pricing</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Single rate for all consumption</p>
+                    </div>
+                `;
+  }
+
+  if (document.getElementById("fixedPricing").checked) {
+    previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Fixed Charge</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Monthly fixed fee included</p>
+                    </div>
+                `;
+  }
+
+  if (document.getElementById("demandPricing").checked) {
+    previewHTML += `
+                    <div class="p-3 bg-white dark:bg-gray-800 rounded">
+                        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white">✓ Demand Charge</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Peak demand pricing configured</p>
+                    </div>
+                `;
+  }
+
   previewHTML += "</div>";
   previewContent.innerHTML = previewHTML;
+
+  // Update sample bill calculations
+  updateSampleBills();
+}
+
+function updateSampleBills() {
+  const structure = collectStructure();
+  const markup = document.getElementById("applyMarkup")?.checked ?
+    parseFloat(document.querySelector('#step3Content input[type="number"]')?.value || "20") / 100 : 0;
+  const vat = document.getElementById("includeVAT")?.checked ? 0.15 : 0;
+
+  const usageLevels = [50, 250, 500];
+  const elementIds = ["sampleBillLow", "sampleBillMid", "sampleBillHigh"];
+
+  usageLevels.forEach((usage, idx) => {
+    let bill = calculateBillForUsage(usage, structure);
+    // Apply markup
+    bill = bill * (1 + markup);
+    // Apply VAT
+    bill = bill * (1 + vat);
+
+    const el = document.getElementById(elementIds[idx]);
+    if (el) {
+      el.textContent = `R ${bill.toFixed(2)}`;
+    }
+  });
 }
 
 function previewRates() {

@@ -22,7 +22,16 @@ from . import audit_logs
 from . import profile
 from . import settings
 from . import auth
-from . import residents
+# from . import residents  # DEPRECATED - Removed in favor of Person model
+from . import persons
+from . import unit_ownerships
+from . import unit_tenancies
+from . import device_types
+from . import communication_types
+from . import tickets
+from . import messages
+from . import invites
+from . import lorawan
 
 
 @login_manager.unauthorized_handler
@@ -30,6 +39,29 @@ def _unauthorized():
     """Handle unauthorized access - redirect to login with flash message"""
     flash("Your session has expired. Please log in again to continue.", "warning")
     return redirect(url_for("api_v1.login_page"))
+
+
+@api_v1.before_request
+def _block_portal_users():
+    """Prevent portal (mobile) users from accessing admin routes.
+
+    Portal users who somehow navigate to /api/v1/* pages are redirected
+    to the portal dashboard. Login/logout routes are excluded so the
+    unified login and logout flow still works for both user types.
+    """
+    from flask_login import current_user
+
+    if not current_user.is_authenticated:
+        return  # Let @login_required handle unauthenticated users
+
+    if str(current_user.get_id()).startswith('mobile:'):
+        # Allow portal users to use the shared login/logout routes
+        allowed_endpoints = {
+            'api_v1.login_page', 'api_v1.login', 'api_v1.logout',
+        }
+        if request.endpoint not in allowed_endpoints:
+            flash("Please use the portal to access your account.", "info")
+            return redirect(url_for("portal.portal_dashboard"))
 
 
 @api_v1.errorhandler(401)

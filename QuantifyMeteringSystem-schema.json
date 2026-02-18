@@ -1,0 +1,1429 @@
+{
+  "$schema": "codeflow-schema-v1.0",
+  "project": {
+    "name": "Quantify Metering System",
+    "version": "1.0.0",
+    "repository": "https://github.com/metalogix/quantify-metering",
+    "generatedAt": "2026-01-29T10:30:00Z",
+    "generatedBy": "Claude Code (Manual)"
+  },
+  "layers": [
+    { "id": "db", "name": "Database", "description": "PostgreSQL tables and schemas", "depth": 0, "color": "#4A90D9" },
+    { "id": "models", "name": "Models/ORM", "description": "SQLAlchemy model definitions", "depth": 1, "color": "#7B68EE" },
+    { "id": "services", "name": "Services", "description": "Business logic layer", "depth": 2, "color": "#50C878" },
+    { "id": "routes", "name": "API Routes", "description": "Flask REST API endpoints", "depth": 3, "color": "#FFB347" },
+    { "id": "templates", "name": "Templates", "description": "Jinja2 HTML templates", "depth": 4, "color": "#FF6B6B" },
+    { "id": "frontend", "name": "Frontend", "description": "JavaScript client-side code", "depth": 5, "color": "#DDA0DD" }
+  ],
+  "entities": [
+    {
+      "id": "user",
+      "name": "User",
+      "description": "System admin/staff users with authentication",
+      "category": "core",
+      "dbTable": "users",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "role", "type": "many-to-one", "foreignKey": "role_id", "onDelete": "RESTRICT" },
+        { "entity": "estate", "type": "one-to-many", "foreignKey": "created_by", "onDelete": "SET NULL" },
+        { "entity": "person", "type": "one-to-many", "foreignKey": "created_by", "onDelete": "SET NULL" },
+        { "entity": "message", "type": "one-to-many", "foreignKey": "sender_user_id", "onDelete": "RESTRICT" },
+        { "entity": "ticket", "type": "one-to-many", "foreignKey": "assigned_to_user_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["auth", "core", "auditable"]
+    },
+    {
+      "id": "role",
+      "name": "Role",
+      "description": "User roles with permission sets",
+      "category": "core",
+      "dbTable": "roles",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "permission", "type": "many-to-one", "foreignKey": "permission_id", "onDelete": "RESTRICT" },
+        { "entity": "user", "type": "one-to-many", "foreignKey": "role_id", "onDelete": "RESTRICT" }
+      ],
+      "tags": ["auth", "rbac"]
+    },
+    {
+      "id": "permission",
+      "name": "Permission",
+      "description": "Granular permission definitions",
+      "category": "core",
+      "dbTable": "permissions",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "role", "type": "one-to-many", "foreignKey": "permission_id", "onDelete": "RESTRICT" }
+      ],
+      "tags": ["auth", "rbac"]
+    },
+    {
+      "id": "person",
+      "name": "Person",
+      "description": "Property owners/tenants (customers)",
+      "category": "domain",
+      "dbTable": "persons",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "unit_ownership", "type": "one-to-many", "foreignKey": "person_id", "onDelete": "CASCADE" },
+        { "entity": "unit_tenancy", "type": "one-to-many", "foreignKey": "person_id", "onDelete": "CASCADE" },
+        { "entity": "mobile_user", "type": "one-to-one", "foreignKey": "person_id", "onDelete": "CASCADE" },
+        { "entity": "ticket", "type": "one-to-many", "foreignKey": "created_by_person_id", "onDelete": "RESTRICT" },
+        { "entity": "message", "type": "one-to-many", "foreignKey": "recipient_person_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["customer", "auditable"]
+    },
+    {
+      "id": "mobile_user",
+      "name": "MobileUser",
+      "description": "Mobile app authentication for persons",
+      "category": "core",
+      "dbTable": "mobile_users",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "person", "type": "one-to-one", "foreignKey": "person_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["auth", "mobile"]
+    },
+    {
+      "id": "mobile_invite",
+      "name": "MobileInvite",
+      "description": "Invitations for mobile app registration",
+      "category": "domain",
+      "dbTable": "mobile_invites",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "person", "type": "many-to-one", "foreignKey": "person_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["mobile", "onboarding"]
+    },
+    {
+      "id": "estate",
+      "name": "Estate",
+      "description": "Property complexes/buildings",
+      "category": "domain",
+      "dbTable": "estates",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "unit", "type": "one-to-many", "foreignKey": "estate_id", "onDelete": "CASCADE" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "bulk_electricity_meter_id", "onDelete": "SET NULL" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "bulk_water_meter_id", "onDelete": "SET NULL" },
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "electricity_rate_table_id", "onDelete": "SET NULL" },
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "water_rate_table_id", "onDelete": "SET NULL" },
+        { "entity": "message", "type": "one-to-many", "foreignKey": "estate_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["property", "auditable"]
+    },
+    {
+      "id": "unit",
+      "name": "Unit",
+      "description": "Individual property units within estates",
+      "category": "domain",
+      "dbTable": "units",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "estate", "type": "many-to-one", "foreignKey": "estate_id", "onDelete": "CASCADE" },
+        { "entity": "wallet", "type": "one-to-one", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "electricity_meter_id", "onDelete": "SET NULL" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "water_meter_id", "onDelete": "SET NULL" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "solar_meter_id", "onDelete": "SET NULL" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "hot_water_meter_id", "onDelete": "SET NULL" },
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "electricity_rate_table_id", "onDelete": "SET NULL" },
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "water_rate_table_id", "onDelete": "SET NULL" },
+        { "entity": "unit_ownership", "type": "one-to-many", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "unit_tenancy", "type": "one-to-many", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "ticket", "type": "one-to-many", "foreignKey": "unit_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["property", "metering", "auditable"]
+    },
+    {
+      "id": "unit_ownership",
+      "name": "UnitOwnership",
+      "description": "Person-Unit ownership relationships",
+      "category": "junction",
+      "dbTable": "unit_ownerships",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "unit", "type": "many-to-one", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "person", "type": "many-to-one", "foreignKey": "person_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["property", "relationship"]
+    },
+    {
+      "id": "unit_tenancy",
+      "name": "UnitTenancy",
+      "description": "Person-Unit tenancy relationships",
+      "category": "junction",
+      "dbTable": "unit_tenancies",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "unit", "type": "many-to-one", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "person", "type": "many-to-one", "foreignKey": "person_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["property", "relationship"]
+    },
+    {
+      "id": "meter",
+      "name": "Meter",
+      "description": "Physical metering devices (electricity, water, solar)",
+      "category": "device",
+      "dbTable": "meters",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "meter_reading", "type": "one-to-many", "foreignKey": "meter_id", "onDelete": "CASCADE" },
+        { "entity": "meter_alert", "type": "one-to-many", "foreignKey": "meter_id", "onDelete": "CASCADE" },
+        { "entity": "device_command", "type": "one-to-many", "foreignKey": "meter_id", "onDelete": "CASCADE" },
+        { "entity": "transaction", "type": "one-to-many", "foreignKey": "meter_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["iot", "hardware", "lorawan"]
+    },
+    {
+      "id": "meter_reading",
+      "name": "MeterReading",
+      "description": "Time-series meter consumption data",
+      "category": "transaction",
+      "dbTable": "meter_readings",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "meter_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["iot", "timeseries"]
+    },
+    {
+      "id": "meter_alert",
+      "name": "MeterAlert",
+      "description": "Alerts generated by meter anomalies",
+      "category": "domain",
+      "dbTable": "meter_alerts",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "meter_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["iot", "monitoring"]
+    },
+    {
+      "id": "device_command",
+      "name": "DeviceCommand",
+      "description": "Commands sent to meters (relay on/off)",
+      "category": "domain",
+      "dbTable": "device_commands",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "meter_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["iot", "control"]
+    },
+    {
+      "id": "device_type",
+      "name": "DeviceType",
+      "description": "Meter hardware types (prepaid, postpaid)",
+      "category": "lookup",
+      "dbTable": "device_types",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["config", "lookup"]
+    },
+    {
+      "id": "communication_type",
+      "name": "CommunicationType",
+      "description": "Meter communication protocols (LoRaWAN, NB-IoT)",
+      "category": "lookup",
+      "dbTable": "communication_types",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["config", "lookup"]
+    },
+    {
+      "id": "wallet",
+      "name": "Wallet",
+      "description": "Prepaid balance accounts for units",
+      "category": "transaction",
+      "dbTable": "wallets",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "unit", "type": "one-to-one", "foreignKey": "unit_id", "onDelete": "CASCADE" },
+        { "entity": "transaction", "type": "one-to-many", "foreignKey": "wallet_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["finance", "prepaid"]
+    },
+    {
+      "id": "transaction",
+      "name": "Transaction",
+      "description": "Financial transactions (topups, consumption charges)",
+      "category": "transaction",
+      "dbTable": "transactions",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "wallet", "type": "many-to-one", "foreignKey": "wallet_id", "onDelete": "CASCADE" },
+        { "entity": "meter", "type": "many-to-one", "foreignKey": "meter_id", "onDelete": "SET NULL" },
+        { "entity": "user", "type": "many-to-one", "foreignKey": "created_by", "onDelete": "SET NULL" }
+      ],
+      "tags": ["finance", "auditable"]
+    },
+    {
+      "id": "rate_table",
+      "name": "RateTable",
+      "description": "Pricing rate tables for utilities",
+      "category": "domain",
+      "dbTable": "rate_tables",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "rate_table_tier", "type": "one-to-many", "foreignKey": "rate_table_id", "onDelete": "CASCADE" },
+        { "entity": "time_of_use_rate", "type": "one-to-many", "foreignKey": "rate_table_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["billing", "config"]
+    },
+    {
+      "id": "rate_table_tier",
+      "name": "RateTableTier",
+      "description": "Tiered pricing bands within rate tables",
+      "category": "domain",
+      "dbTable": "rate_table_tiers",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "rate_table_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["billing"]
+    },
+    {
+      "id": "time_of_use_rate",
+      "name": "TimeOfUseRate",
+      "description": "Time-based pricing rates",
+      "category": "domain",
+      "dbTable": "time_of_use_rates",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "rate_table", "type": "many-to-one", "foreignKey": "rate_table_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["billing"]
+    },
+    {
+      "id": "ticket",
+      "name": "Ticket",
+      "description": "Support tickets from customers",
+      "category": "domain",
+      "dbTable": "tickets",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "ticket_category", "type": "many-to-one", "foreignKey": "category_id", "onDelete": "SET NULL" },
+        { "entity": "person", "type": "many-to-one", "foreignKey": "created_by_person_id", "onDelete": "RESTRICT" },
+        { "entity": "user", "type": "many-to-one", "foreignKey": "assigned_to_user_id", "onDelete": "SET NULL" },
+        { "entity": "unit", "type": "many-to-one", "foreignKey": "unit_id", "onDelete": "SET NULL" },
+        { "entity": "ticket_message", "type": "one-to-many", "foreignKey": "ticket_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["support", "communication"]
+    },
+    {
+      "id": "ticket_category",
+      "name": "TicketCategory",
+      "description": "Categories for support tickets",
+      "category": "lookup",
+      "dbTable": "ticket_categories",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "ticket", "type": "one-to-many", "foreignKey": "category_id", "onDelete": "SET NULL" }
+      ],
+      "tags": ["support", "lookup"]
+    },
+    {
+      "id": "ticket_message",
+      "name": "TicketMessage",
+      "description": "Messages within support tickets",
+      "category": "domain",
+      "dbTable": "ticket_messages",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "ticket", "type": "many-to-one", "foreignKey": "ticket_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["support", "communication"]
+    },
+    {
+      "id": "message",
+      "name": "Message",
+      "description": "System messages to customers",
+      "category": "domain",
+      "dbTable": "messages",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "user", "type": "many-to-one", "foreignKey": "sender_user_id", "onDelete": "RESTRICT" },
+        { "entity": "estate", "type": "many-to-one", "foreignKey": "estate_id", "onDelete": "SET NULL" },
+        { "entity": "person", "type": "many-to-one", "foreignKey": "recipient_person_id", "onDelete": "SET NULL" },
+        { "entity": "message_recipient", "type": "one-to-many", "foreignKey": "message_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["communication"]
+    },
+    {
+      "id": "message_recipient",
+      "name": "MessageRecipient",
+      "description": "Message delivery tracking per recipient",
+      "category": "junction",
+      "dbTable": "message_recipients",
+      "primaryKey": "id",
+      "relationships": [
+        { "entity": "message", "type": "many-to-one", "foreignKey": "message_id", "onDelete": "CASCADE" }
+      ],
+      "tags": ["communication"]
+    },
+    {
+      "id": "notification",
+      "name": "Notification",
+      "description": "Push notifications to mobile users",
+      "category": "domain",
+      "dbTable": "notifications",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["communication", "mobile"]
+    },
+    {
+      "id": "audit_log",
+      "name": "AuditLog",
+      "description": "System audit trail",
+      "category": "transaction",
+      "dbTable": "audit_logs",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["audit", "security"]
+    },
+    {
+      "id": "system_setting",
+      "name": "SystemSetting",
+      "description": "Application configuration settings",
+      "category": "lookup",
+      "dbTable": "system_settings",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["config"]
+    },
+    {
+      "id": "reconciliation_report",
+      "name": "ReconciliationReport",
+      "description": "Financial reconciliation reports",
+      "category": "transaction",
+      "dbTable": "reconciliation_reports",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["finance", "reporting"]
+    },
+    {
+      "id": "payment_method",
+      "name": "PaymentMethod",
+      "description": "Available payment methods",
+      "category": "lookup",
+      "dbTable": "payment_methods",
+      "primaryKey": "id",
+      "relationships": [],
+      "tags": ["finance", "config"]
+    }
+  ],
+  "files": [
+    { "id": "m001", "path": "app/models/user.py", "layer": "models", "language": "python", "linesOfCode": 56 },
+    { "id": "m002", "path": "app/models/role.py", "layer": "models", "language": "python", "linesOfCode": 28 },
+    { "id": "m003", "path": "app/models/permissions.py", "layer": "models", "language": "python", "linesOfCode": 22 },
+    { "id": "m004", "path": "app/models/person.py", "layer": "models", "language": "python", "linesOfCode": 131 },
+    { "id": "m005", "path": "app/models/mobile_user.py", "layer": "models", "language": "python", "linesOfCode": 111 },
+    { "id": "m006", "path": "app/models/mobile_invite.py", "layer": "models", "language": "python", "linesOfCode": 87 },
+    { "id": "m007", "path": "app/models/estate.py", "layer": "models", "language": "python", "linesOfCode": 90 },
+    { "id": "m008", "path": "app/models/unit.py", "layer": "models", "language": "python", "linesOfCode": 202 },
+    { "id": "m009", "path": "app/models/unit_ownership.py", "layer": "models", "language": "python", "linesOfCode": 80 },
+    { "id": "m010", "path": "app/models/unit_tenancy.py", "layer": "models", "language": "python", "linesOfCode": 111 },
+    { "id": "m011", "path": "app/models/meter.py", "layer": "models", "language": "python", "linesOfCode": 99 },
+    { "id": "m012", "path": "app/models/meter_reading.py", "layer": "models", "language": "python", "linesOfCode": 109 },
+    { "id": "m013", "path": "app/models/meter_alert.py", "layer": "models", "language": "python", "linesOfCode": 46 },
+    { "id": "m014", "path": "app/models/device_command.py", "layer": "models", "language": "python", "linesOfCode": 84 },
+    { "id": "m015", "path": "app/models/device_type.py", "layer": "models", "language": "python", "linesOfCode": 58 },
+    { "id": "m016", "path": "app/models/communication_type.py", "layer": "models", "language": "python", "linesOfCode": 52 },
+    { "id": "m017", "path": "app/models/wallet.py", "layer": "models", "language": "python", "linesOfCode": 117 },
+    { "id": "m018", "path": "app/models/transaction.py", "layer": "models", "language": "python", "linesOfCode": 82 },
+    { "id": "m019", "path": "app/models/rate_table.py", "layer": "models", "language": "python", "linesOfCode": 72 },
+    { "id": "m020", "path": "app/models/rate_table_tier.py", "layer": "models", "language": "python", "linesOfCode": 39 },
+    { "id": "m021", "path": "app/models/time_of_use_rate.py", "layer": "models", "language": "python", "linesOfCode": 34 },
+    { "id": "m022", "path": "app/models/ticket.py", "layer": "models", "language": "python", "linesOfCode": 146 },
+    { "id": "m023", "path": "app/models/ticket_category.py", "layer": "models", "language": "python", "linesOfCode": 57 },
+    { "id": "m024", "path": "app/models/ticket_message.py", "layer": "models", "language": "python", "linesOfCode": 72 },
+    { "id": "m025", "path": "app/models/message.py", "layer": "models", "language": "python", "linesOfCode": 126 },
+    { "id": "m026", "path": "app/models/message_recipient.py", "layer": "models", "language": "python", "linesOfCode": 76 },
+    { "id": "m027", "path": "app/models/notification.py", "layer": "models", "language": "python", "linesOfCode": 68 },
+    { "id": "m028", "path": "app/models/audit_log.py", "layer": "models", "language": "python", "linesOfCode": 38 },
+    { "id": "m029", "path": "app/models/system_setting.py", "layer": "models", "language": "python", "linesOfCode": 44 },
+    { "id": "m030", "path": "app/models/reconciliation_report.py", "layer": "models", "language": "python", "linesOfCode": 49 },
+    { "id": "m031", "path": "app/models/payment_method.py", "layer": "models", "language": "python", "linesOfCode": 61 },
+
+    { "id": "s001", "path": "app/services/users.py", "layer": "services", "language": "python", "linesOfCode": 180 },
+    { "id": "s002", "path": "app/services/roles.py", "layer": "services", "language": "python", "linesOfCode": 98 },
+    { "id": "s003", "path": "app/services/permissions.py", "layer": "services", "language": "python", "linesOfCode": 34 },
+    { "id": "s004", "path": "app/services/persons.py", "layer": "services", "language": "python", "linesOfCode": 210 },
+    { "id": "s005", "path": "app/services/mobile_users.py", "layer": "services", "language": "python", "linesOfCode": 385 },
+    { "id": "s006", "path": "app/services/mobile_invites.py", "layer": "services", "language": "python", "linesOfCode": 196 },
+    { "id": "s007", "path": "app/services/estates.py", "layer": "services", "language": "python", "linesOfCode": 134 },
+    { "id": "s008", "path": "app/services/units.py", "layer": "services", "language": "python", "linesOfCode": 250 },
+    { "id": "s009", "path": "app/services/unit_ownerships.py", "layer": "services", "language": "python", "linesOfCode": 120 },
+    { "id": "s010", "path": "app/services/unit_tenancies.py", "layer": "services", "language": "python", "linesOfCode": 140 },
+    { "id": "s011", "path": "app/services/meters.py", "layer": "services", "language": "python", "linesOfCode": 299 },
+    { "id": "s012", "path": "app/services/meter_readings.py", "layer": "services", "language": "python", "linesOfCode": 17 },
+    { "id": "s013", "path": "app/services/wallets.py", "layer": "services", "language": "python", "linesOfCode": 180 },
+    { "id": "s014", "path": "app/services/transactions.py", "layer": "services", "language": "python", "linesOfCode": 150 },
+    { "id": "s015", "path": "app/services/rate_tables.py", "layer": "services", "language": "python", "linesOfCode": 18 },
+    { "id": "s016", "path": "app/services/tickets.py", "layer": "services", "language": "python", "linesOfCode": 200 },
+    { "id": "s017", "path": "app/services/messages.py", "layer": "services", "language": "python", "linesOfCode": 503 },
+    { "id": "s018", "path": "app/services/notification_service.py", "layer": "services", "language": "python", "linesOfCode": 418 },
+    { "id": "s019", "path": "app/services/chirpstack_service.py", "layer": "services", "language": "python", "linesOfCode": 682 },
+    { "id": "s020", "path": "app/services/device_types.py", "layer": "services", "language": "python", "linesOfCode": 81 },
+    { "id": "s021", "path": "app/services/communication_types.py", "layer": "services", "language": "python", "linesOfCode": 75 },
+    { "id": "s022", "path": "app/services/system_settings.py", "layer": "services", "language": "python", "linesOfCode": 81 },
+    { "id": "s023", "path": "app/services/sms_service.py", "layer": "services", "language": "python", "linesOfCode": 133 },
+    { "id": "s024", "path": "app/utils/rates.py", "layer": "services", "language": "python", "linesOfCode": 150 },
+    { "id": "s025", "path": "app/utils/audit.py", "layer": "services", "language": "python", "linesOfCode": 80 },
+    { "id": "s026", "path": "app/tasks/prepaid_disconnect_tasks.py", "layer": "services", "language": "python", "linesOfCode": 120 },
+    { "id": "s027", "path": "app/tasks/notification_tasks.py", "layer": "services", "language": "python", "linesOfCode": 100 },
+
+    { "id": "r001", "path": "app/routes/v1/users.py", "layer": "routes", "language": "python", "linesOfCode": 306 },
+    { "id": "r002", "path": "app/routes/v1/roles.py", "layer": "routes", "language": "python", "linesOfCode": 151 },
+    { "id": "r003", "path": "app/routes/v1/auth.py", "layer": "routes", "language": "python", "linesOfCode": 788 },
+    { "id": "r004", "path": "app/routes/v1/persons.py", "layer": "routes", "language": "python", "linesOfCode": 369 },
+    { "id": "r005", "path": "app/routes/v1/invites.py", "layer": "routes", "language": "python", "linesOfCode": 148 },
+    { "id": "r006", "path": "app/routes/v1/estates.py", "layer": "routes", "language": "python", "linesOfCode": 387 },
+    { "id": "r007", "path": "app/routes/v1/units.py", "layer": "routes", "language": "python", "linesOfCode": 1175 },
+    { "id": "r008", "path": "app/routes/v1/unit_ownerships.py", "layer": "routes", "language": "python", "linesOfCode": 167 },
+    { "id": "r009", "path": "app/routes/v1/unit_tenancies.py", "layer": "routes", "language": "python", "linesOfCode": 201 },
+    { "id": "r010", "path": "app/routes/v1/meters.py", "layer": "routes", "language": "python", "linesOfCode": 1177 },
+    { "id": "r011", "path": "app/routes/v1/wallets.py", "layer": "routes", "language": "python", "linesOfCode": 364 },
+    { "id": "r012", "path": "app/routes/v1/transactions.py", "layer": "routes", "language": "python", "linesOfCode": 87 },
+    { "id": "r013", "path": "app/routes/v1/rate_tables.py", "layer": "routes", "language": "python", "linesOfCode": 373 },
+    { "id": "r014", "path": "app/routes/v1/tickets.py", "layer": "routes", "language": "python", "linesOfCode": 445 },
+    { "id": "r015", "path": "app/routes/v1/messages.py", "layer": "routes", "language": "python", "linesOfCode": 281 },
+    { "id": "r016", "path": "app/routes/v1/notifications.py", "layer": "routes", "language": "python", "linesOfCode": 40 },
+    { "id": "r017", "path": "app/routes/v1/audit_logs.py", "layer": "routes", "language": "python", "linesOfCode": 160 },
+    { "id": "r018", "path": "app/routes/v1/settings.py", "layer": "routes", "language": "python", "linesOfCode": 163 },
+    { "id": "r019", "path": "app/routes/v1/device_types.py", "layer": "routes", "language": "python", "linesOfCode": 108 },
+    { "id": "r020", "path": "app/routes/v1/communication_types.py", "layer": "routes", "language": "python", "linesOfCode": 108 },
+    { "id": "r021", "path": "app/routes/v1/lorawan.py", "layer": "routes", "language": "python", "linesOfCode": 599 },
+    { "id": "r022", "path": "app/routes/v1/reports.py", "layer": "routes", "language": "python", "linesOfCode": 1879 },
+    { "id": "r023", "path": "app/routes/v1/profile.py", "layer": "routes", "language": "python", "linesOfCode": 106 },
+
+    { "id": "r030", "path": "app/routes/mobile/auth.py", "layer": "routes", "language": "python", "linesOfCode": 327 },
+    { "id": "r031", "path": "app/routes/mobile/units.py", "layer": "routes", "language": "python", "linesOfCode": 515 },
+    { "id": "r032", "path": "app/routes/mobile/tickets.py", "layer": "routes", "language": "python", "linesOfCode": 395 },
+    { "id": "r033", "path": "app/routes/mobile/messages.py", "layer": "routes", "language": "python", "linesOfCode": 169 },
+    { "id": "r034", "path": "app/routes/mobile/notifications.py", "layer": "routes", "language": "python", "linesOfCode": 181 },
+
+    { "id": "t001", "path": "app/templates/users/users.html", "layer": "templates", "language": "jinja2", "linesOfCode": 612 },
+    { "id": "t002", "path": "app/templates/roles&permissions/roles.html", "layer": "templates", "language": "jinja2", "linesOfCode": 852 },
+    { "id": "t003", "path": "app/templates/auth/login.html", "layer": "templates", "language": "jinja2", "linesOfCode": 256 },
+    { "id": "t004", "path": "app/templates/auth/register.html", "layer": "templates", "language": "jinja2", "linesOfCode": 583 },
+    { "id": "t005", "path": "app/templates/auth/reset-password.html", "layer": "templates", "language": "jinja2", "linesOfCode": 474 },
+    { "id": "t006", "path": "app/templates/persons/persons.html", "layer": "templates", "language": "jinja2", "linesOfCode": 300 },
+    { "id": "t007", "path": "app/templates/invites/invites.html", "layer": "templates", "language": "jinja2", "linesOfCode": 330 },
+    { "id": "t008", "path": "app/templates/estates/estates.html", "layer": "templates", "language": "jinja2", "linesOfCode": 1113 },
+    { "id": "t009", "path": "app/templates/estates/estate_details.html", "layer": "templates", "language": "jinja2", "linesOfCode": 286 },
+    { "id": "t010", "path": "app/templates/units/units.html", "layer": "templates", "language": "jinja2", "linesOfCode": 693 },
+    { "id": "t011", "path": "app/templates/units/unit-details.html", "layer": "templates", "language": "jinja2", "linesOfCode": 1097 },
+    { "id": "t012", "path": "app/templates/units/unit-visual.html", "layer": "templates", "language": "jinja2", "linesOfCode": 1014 },
+    { "id": "t013", "path": "app/templates/meters/meters.html", "layer": "templates", "language": "jinja2", "linesOfCode": 483 },
+    { "id": "t014", "path": "app/templates/meters/meter-details.html", "layer": "templates", "language": "jinja2", "linesOfCode": 563 },
+    { "id": "t015", "path": "app/templates/wallets/wallet-statement.html", "layer": "templates", "language": "jinja2", "linesOfCode": 512 },
+    { "id": "t016", "path": "app/templates/rate-tables/rate-table.html", "layer": "templates", "language": "jinja2", "linesOfCode": 510 },
+    { "id": "t017", "path": "app/templates/rate-tables/rate-table-builder.html", "layer": "templates", "language": "jinja2", "linesOfCode": 792 },
+    { "id": "t018", "path": "app/templates/rate-tables/edit-rate-table.html", "layer": "templates", "language": "jinja2", "linesOfCode": 594 },
+    { "id": "t019", "path": "app/templates/tickets/tickets.html", "layer": "templates", "language": "jinja2", "linesOfCode": 371 },
+    { "id": "t020", "path": "app/templates/tickets/ticket-detail.html", "layer": "templates", "language": "jinja2", "linesOfCode": 495 },
+    { "id": "t021", "path": "app/templates/tickets/categories.html", "layer": "templates", "language": "jinja2", "linesOfCode": 275 },
+    { "id": "t022", "path": "app/templates/messages/messages.html", "layer": "templates", "language": "jinja2", "linesOfCode": 251 },
+    { "id": "t023", "path": "app/templates/messages/compose.html", "layer": "templates", "language": "jinja2", "linesOfCode": 401 },
+    { "id": "t024", "path": "app/templates/messages/message-detail.html", "layer": "templates", "language": "jinja2", "linesOfCode": 242 },
+    { "id": "t025", "path": "app/templates/audit-logs/audit-logs.html", "layer": "templates", "language": "jinja2", "linesOfCode": 346 },
+    { "id": "t026", "path": "app/templates/settings/settings.html", "layer": "templates", "language": "jinja2", "linesOfCode": 515 },
+    { "id": "t027", "path": "app/templates/settings/device-types.html", "layer": "templates", "language": "jinja2", "linesOfCode": 235 },
+    { "id": "t028", "path": "app/templates/settings/communication-types.html", "layer": "templates", "language": "jinja2", "linesOfCode": 210 },
+    { "id": "t029", "path": "app/templates/reports/reports.html", "layer": "templates", "language": "jinja2", "linesOfCode": 141 },
+    { "id": "t030", "path": "app/templates/reports/consumption_reports.html", "layer": "templates", "language": "jinja2", "linesOfCode": 891 },
+    { "id": "t031", "path": "app/templates/reports/estate_reports.html", "layer": "templates", "language": "jinja2", "linesOfCode": 452 },
+    { "id": "t032", "path": "app/templates/reports/financial_reports.html", "layer": "templates", "language": "jinja2", "linesOfCode": 256 },
+    { "id": "t033", "path": "app/templates/reports/system_reports.html", "layer": "templates", "language": "jinja2", "linesOfCode": 452 },
+    { "id": "t034", "path": "app/templates/dashboard/index.html", "layer": "templates", "language": "jinja2", "linesOfCode": 381 },
+    { "id": "t035", "path": "app/templates/profile/profile.html", "layer": "templates", "language": "jinja2", "linesOfCode": 470 },
+    { "id": "t036", "path": "app/templates/billing/billing.html", "layer": "templates", "language": "jinja2", "linesOfCode": 432 },
+    { "id": "t037", "path": "app/templates/lorawan/index.html", "layer": "templates", "language": "jinja2", "linesOfCode": 163 },
+    { "id": "t038", "path": "app/templates/lorawan/devices.html", "layer": "templates", "language": "jinja2", "linesOfCode": 400 },
+    { "id": "t039", "path": "app/templates/lorawan/gateways.html", "layer": "templates", "language": "jinja2", "linesOfCode": 298 },
+
+    { "id": "f001", "path": "app/static/js/users/users.js", "layer": "frontend", "language": "javascript", "linesOfCode": 446 },
+    { "id": "f002", "path": "app/static/js/auth.js", "layer": "frontend", "language": "javascript", "linesOfCode": 150 },
+    { "id": "f003", "path": "app/static/js/persons/persons.js", "layer": "frontend", "language": "javascript", "linesOfCode": 280 },
+    { "id": "f004", "path": "app/static/js/estates/estates.js", "layer": "frontend", "language": "javascript", "linesOfCode": 1400 },
+    { "id": "f005", "path": "app/static/js/units/units.js", "layer": "frontend", "language": "javascript", "linesOfCode": 619 },
+    { "id": "f006", "path": "app/static/js/meters/meters.js", "layer": "frontend", "language": "javascript", "linesOfCode": 500 },
+    { "id": "f007", "path": "app/static/js/meters/meter-details.js", "layer": "frontend", "language": "javascript", "linesOfCode": 446 },
+    { "id": "f008", "path": "app/static/js/rate-tables/rate-table.js", "layer": "frontend", "language": "javascript", "linesOfCode": 350 },
+    { "id": "f009", "path": "app/static/js/rate-tables/rate-table-builder.js", "layer": "frontend", "language": "javascript", "linesOfCode": 375 },
+    { "id": "f010", "path": "app/static/js/rate-tables/edit-rate-table.js", "layer": "frontend", "language": "javascript", "linesOfCode": 200 },
+    { "id": "f011", "path": "app/static/js/billing/billing.js", "layer": "frontend", "language": "javascript", "linesOfCode": 51 },
+    { "id": "f012", "path": "app/static/js/settings/settings.js", "layer": "frontend", "language": "javascript", "linesOfCode": 187 },
+    { "id": "f013", "path": "app/static/js/settings/device-types.js", "layer": "frontend", "language": "javascript", "linesOfCode": 110 },
+    { "id": "f014", "path": "app/static/js/settings/communication-types.js", "layer": "frontend", "language": "javascript", "linesOfCode": 106 },
+    { "id": "f015", "path": "app/static/js/audit-logs/audit-logs.js", "layer": "frontend", "language": "javascript", "linesOfCode": 67 },
+    { "id": "f016", "path": "app/static/js/dashboard/index.js", "layer": "frontend", "language": "javascript", "linesOfCode": 51 },
+    { "id": "f017", "path": "app/static/js/profile/profile.js", "layer": "frontend", "language": "javascript", "linesOfCode": 275 },
+    { "id": "f018", "path": "app/static/js/common/table-filters.js", "layer": "frontend", "language": "javascript", "linesOfCode": 349 }
+  ],
+  "connections": [
+    {
+      "id": "c001",
+      "entity": "user",
+      "file": "m001",
+      "operations": [
+        { "type": "define", "description": "SQLAlchemy User model with authentication fields", "lines": [1, 56], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c002",
+      "entity": "user",
+      "file": "s001",
+      "operations": [
+        { "type": "create", "description": "Create new user with password hashing", "lines": [20, 60], "significance": "high" },
+        { "type": "read", "description": "Get user by ID or email", "lines": [65, 95], "significance": "medium" },
+        { "type": "update", "description": "Update user profile and password", "lines": [100, 140], "significance": "high" },
+        { "type": "delete", "description": "Soft delete user account", "lines": [145, 175], "significance": "critical" }
+      ]
+    },
+    {
+      "id": "c003",
+      "entity": "user",
+      "file": "r001",
+      "operations": [
+        { "type": "create", "description": "POST /api/v1/users - Create user", "lines": [50, 100], "significance": "high", "endpoint": "POST /api/v1/users" },
+        { "type": "read", "description": "GET /api/v1/users - List users", "lines": [105, 150], "significance": "medium", "endpoint": "GET /api/v1/users" },
+        { "type": "read", "description": "GET /api/v1/users/:id - Get user details", "lines": [155, 190], "significance": "medium", "endpoint": "GET /api/v1/users/:id" },
+        { "type": "update", "description": "PUT /api/v1/users/:id - Update user", "lines": [195, 250], "significance": "high", "endpoint": "PUT /api/v1/users/:id" },
+        { "type": "delete", "description": "DELETE /api/v1/users/:id - Delete user", "lines": [255, 300], "significance": "critical", "endpoint": "DELETE /api/v1/users/:id" }
+      ]
+    },
+    {
+      "id": "c004",
+      "entity": "user",
+      "file": "r003",
+      "operations": [
+        { "type": "validate", "description": "Login authentication and JWT generation", "lines": [50, 150], "significance": "critical" },
+        { "type": "create", "description": "User registration", "lines": [155, 250], "significance": "high" },
+        { "type": "update", "description": "Password reset flow", "lines": [400, 550], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c005",
+      "entity": "user",
+      "file": "t001",
+      "operations": [
+        { "type": "render", "description": "Display users list with CRUD modals", "lines": [1, 612], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c006",
+      "entity": "user",
+      "file": "f001",
+      "operations": [
+        { "type": "fetch", "description": "Load users list via AJAX", "lines": [20, 80], "significance": "medium" },
+        { "type": "submit", "description": "Create/update user form submission", "lines": [100, 200], "significance": "high" },
+        { "type": "delete", "description": "Delete user confirmation", "lines": [350, 400], "significance": "critical" }
+      ]
+    },
+
+    {
+      "id": "c010",
+      "entity": "role",
+      "file": "m002",
+      "operations": [
+        { "type": "define", "description": "Role model with permission reference", "lines": [1, 28], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c011",
+      "entity": "role",
+      "file": "s002",
+      "operations": [
+        { "type": "create", "description": "Create role with permissions", "lines": [15, 40], "significance": "high" },
+        { "type": "read", "description": "Get roles list", "lines": [45, 70], "significance": "medium" },
+        { "type": "update", "description": "Update role permissions", "lines": [75, 95], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c012",
+      "entity": "role",
+      "file": "r002",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/roles - List roles", "lines": [30, 70], "significance": "medium", "endpoint": "GET /api/v1/roles" },
+        { "type": "create", "description": "POST /api/v1/roles - Create role", "lines": [75, 110], "significance": "high", "endpoint": "POST /api/v1/roles" },
+        { "type": "update", "description": "PUT /api/v1/roles/:id - Update role", "lines": [115, 145], "significance": "high", "endpoint": "PUT /api/v1/roles/:id" }
+      ]
+    },
+    {
+      "id": "c013",
+      "entity": "role",
+      "file": "t002",
+      "operations": [
+        { "type": "render", "description": "Roles management UI with permission matrix", "lines": [1, 852], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c020",
+      "entity": "person",
+      "file": "m004",
+      "operations": [
+        { "type": "define", "description": "Person model for property owners/tenants", "lines": [1, 131], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c021",
+      "entity": "person",
+      "file": "s004",
+      "operations": [
+        { "type": "create", "description": "Create person with contact details", "lines": [25, 70], "significance": "high" },
+        { "type": "read", "description": "Get persons with filtering", "lines": [75, 130], "significance": "medium" },
+        { "type": "update", "description": "Update person information", "lines": [135, 180], "significance": "medium" },
+        { "type": "delete", "description": "Delete person and cleanup relationships", "lines": [185, 210], "significance": "critical" }
+      ]
+    },
+    {
+      "id": "c022",
+      "entity": "person",
+      "file": "r004",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/persons - List persons", "lines": [40, 100], "significance": "medium", "endpoint": "GET /api/v1/persons" },
+        { "type": "create", "description": "POST /api/v1/persons - Create person", "lines": [105, 180], "significance": "high", "endpoint": "POST /api/v1/persons" },
+        { "type": "read", "description": "GET /api/v1/persons/:id - Get person details", "lines": [185, 230], "significance": "medium", "endpoint": "GET /api/v1/persons/:id" },
+        { "type": "update", "description": "PUT /api/v1/persons/:id - Update person", "lines": [235, 310], "significance": "medium", "endpoint": "PUT /api/v1/persons/:id" },
+        { "type": "delete", "description": "DELETE /api/v1/persons/:id - Delete person", "lines": [315, 365], "significance": "critical", "endpoint": "DELETE /api/v1/persons/:id" }
+      ]
+    },
+    {
+      "id": "c023",
+      "entity": "person",
+      "file": "t006",
+      "operations": [
+        { "type": "render", "description": "Persons list with search and CRUD", "lines": [1, 300], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c024",
+      "entity": "person",
+      "file": "f003",
+      "operations": [
+        { "type": "fetch", "description": "Load persons via AJAX with debounce", "lines": [20, 80], "significance": "medium" },
+        { "type": "submit", "description": "Person form submission", "lines": [100, 180], "significance": "high" },
+        { "type": "delete", "description": "Delete person confirmation", "lines": [200, 250], "significance": "critical" }
+      ]
+    },
+
+    {
+      "id": "c030",
+      "entity": "mobile_user",
+      "file": "m005",
+      "operations": [
+        { "type": "define", "description": "MobileUser model with JWT auth", "lines": [1, 111], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c031",
+      "entity": "mobile_user",
+      "file": "s005",
+      "operations": [
+        { "type": "create", "description": "Register mobile user from invite", "lines": [40, 120], "significance": "high" },
+        { "type": "validate", "description": "Authenticate mobile user", "lines": [125, 200], "significance": "critical" },
+        { "type": "update", "description": "Update mobile user profile", "lines": [205, 280], "significance": "medium" },
+        { "type": "update", "description": "Password reset for mobile", "lines": [285, 380], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c032",
+      "entity": "mobile_user",
+      "file": "r030",
+      "operations": [
+        { "type": "create", "description": "POST /mobile/auth/register - Mobile registration", "lines": [50, 120], "significance": "high", "endpoint": "POST /mobile/auth/register" },
+        { "type": "validate", "description": "POST /mobile/auth/login - Mobile login", "lines": [125, 200], "significance": "critical", "endpoint": "POST /mobile/auth/login" },
+        { "type": "update", "description": "POST /mobile/auth/change-password", "lines": [205, 280], "significance": "high", "endpoint": "POST /mobile/auth/change-password" }
+      ]
+    },
+
+    {
+      "id": "c040",
+      "entity": "estate",
+      "file": "m007",
+      "operations": [
+        { "type": "define", "description": "Estate model with bulk meter references", "lines": [1, 90], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c041",
+      "entity": "estate",
+      "file": "s007",
+      "operations": [
+        { "type": "create", "description": "Create estate with configuration", "lines": [20, 55], "significance": "high" },
+        { "type": "read", "description": "Get estates with unit counts", "lines": [60, 100], "significance": "medium" },
+        { "type": "update", "description": "Update estate settings", "lines": [105, 130], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c042",
+      "entity": "estate",
+      "file": "r006",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/estates - List estates", "lines": [50, 120], "significance": "medium", "endpoint": "GET /api/v1/estates" },
+        { "type": "create", "description": "POST /api/v1/estates - Create estate", "lines": [125, 200], "significance": "high", "endpoint": "POST /api/v1/estates" },
+        { "type": "read", "description": "GET /api/v1/estates/:id - Estate details", "lines": [205, 270], "significance": "medium", "endpoint": "GET /api/v1/estates/:id" },
+        { "type": "update", "description": "PUT /api/v1/estates/:id - Update estate", "lines": [275, 350], "significance": "medium", "endpoint": "PUT /api/v1/estates/:id" }
+      ]
+    },
+    {
+      "id": "c043",
+      "entity": "estate",
+      "file": "t008",
+      "operations": [
+        { "type": "render", "description": "Estates list with filtering and CRUD", "lines": [1, 1113], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c044",
+      "entity": "estate",
+      "file": "t009",
+      "operations": [
+        { "type": "render", "description": "Estate details with units summary", "lines": [1, 286], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c045",
+      "entity": "estate",
+      "file": "f004",
+      "operations": [
+        { "type": "fetch", "description": "Load estates data", "lines": [30, 150], "significance": "medium" },
+        { "type": "submit", "description": "Estate CRUD operations", "lines": [200, 500], "significance": "high" },
+        { "type": "display", "description": "Estate cards and modals", "lines": [600, 1200], "significance": "low" }
+      ]
+    },
+
+    {
+      "id": "c050",
+      "entity": "unit",
+      "file": "m008",
+      "operations": [
+        { "type": "define", "description": "Unit model with meter and rate table references", "lines": [1, 202], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c051",
+      "entity": "unit",
+      "file": "s008",
+      "operations": [
+        { "type": "create", "description": "Create unit with wallet", "lines": [30, 80], "significance": "high" },
+        { "type": "read", "description": "Get units with meters and owners", "lines": [85, 160], "significance": "medium" },
+        { "type": "update", "description": "Update unit configuration", "lines": [165, 220], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c052",
+      "entity": "unit",
+      "file": "r007",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/units - List units", "lines": [80, 200], "significance": "medium", "endpoint": "GET /api/v1/units" },
+        { "type": "create", "description": "POST /api/v1/units - Create unit", "lines": [205, 350], "significance": "high", "endpoint": "POST /api/v1/units" },
+        { "type": "read", "description": "GET /api/v1/units/:id - Unit details", "lines": [355, 500], "significance": "medium", "endpoint": "GET /api/v1/units/:id" },
+        { "type": "update", "description": "PUT /api/v1/units/:id - Update unit", "lines": [505, 700], "significance": "medium", "endpoint": "PUT /api/v1/units/:id" },
+        { "type": "read", "description": "GET /api/v1/units/:id/consumption - Consumption data", "lines": [800, 950], "significance": "high", "endpoint": "GET /api/v1/units/:id/consumption" }
+      ]
+    },
+    {
+      "id": "c053",
+      "entity": "unit",
+      "file": "r031",
+      "operations": [
+        { "type": "read", "description": "GET /mobile/units - Mobile user's units", "lines": [50, 150], "significance": "medium", "endpoint": "GET /mobile/units" },
+        { "type": "read", "description": "GET /mobile/units/:id - Unit details for mobile", "lines": [155, 300], "significance": "medium", "endpoint": "GET /mobile/units/:id" },
+        { "type": "read", "description": "GET /mobile/units/:id/consumption - Mobile consumption", "lines": [305, 450], "significance": "high", "endpoint": "GET /mobile/units/:id/consumption" }
+      ]
+    },
+    {
+      "id": "c054",
+      "entity": "unit",
+      "file": "t010",
+      "operations": [
+        { "type": "render", "description": "Units list with filtering", "lines": [1, 693], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c055",
+      "entity": "unit",
+      "file": "t011",
+      "operations": [
+        { "type": "render", "description": "Unit details with meters and wallet", "lines": [1, 1097], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c056",
+      "entity": "unit",
+      "file": "t012",
+      "operations": [
+        { "type": "render", "description": "Visual unit layout with meter positions", "lines": [1, 1014], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c057",
+      "entity": "unit",
+      "file": "f005",
+      "operations": [
+        { "type": "fetch", "description": "Load units with AJAX", "lines": [30, 150], "significance": "medium" },
+        { "type": "submit", "description": "Unit CRUD operations", "lines": [200, 450], "significance": "high" },
+        { "type": "display", "description": "Unit cards and details", "lines": [500, 619], "significance": "low" }
+      ]
+    },
+
+    {
+      "id": "c060",
+      "entity": "unit_ownership",
+      "file": "m009",
+      "operations": [
+        { "type": "define", "description": "UnitOwnership junction model", "lines": [1, 80], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c061",
+      "entity": "unit_ownership",
+      "file": "s009",
+      "operations": [
+        { "type": "create", "description": "Create ownership relationship", "lines": [20, 55], "significance": "high" },
+        { "type": "read", "description": "Get ownerships for unit/person", "lines": [60, 90], "significance": "medium" },
+        { "type": "delete", "description": "Remove ownership", "lines": [95, 120], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c062",
+      "entity": "unit_ownership",
+      "file": "r008",
+      "operations": [
+        { "type": "create", "description": "POST /api/v1/unit-ownerships - Create ownership", "lines": [40, 90], "significance": "high", "endpoint": "POST /api/v1/unit-ownerships" },
+        { "type": "read", "description": "GET /api/v1/unit-ownerships - List ownerships", "lines": [95, 130], "significance": "medium", "endpoint": "GET /api/v1/unit-ownerships" },
+        { "type": "delete", "description": "DELETE /api/v1/unit-ownerships/:id", "lines": [135, 165], "significance": "high", "endpoint": "DELETE /api/v1/unit-ownerships/:id" }
+      ]
+    },
+
+    {
+      "id": "c065",
+      "entity": "unit_tenancy",
+      "file": "m010",
+      "operations": [
+        { "type": "define", "description": "UnitTenancy junction model with dates", "lines": [1, 111], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c066",
+      "entity": "unit_tenancy",
+      "file": "s010",
+      "operations": [
+        { "type": "create", "description": "Create tenancy with date range", "lines": [25, 65], "significance": "high" },
+        { "type": "read", "description": "Get active tenancies", "lines": [70, 105], "significance": "medium" },
+        { "type": "update", "description": "End tenancy", "lines": [110, 140], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c067",
+      "entity": "unit_tenancy",
+      "file": "r009",
+      "operations": [
+        { "type": "create", "description": "POST /api/v1/unit-tenancies - Create tenancy", "lines": [45, 100], "significance": "high", "endpoint": "POST /api/v1/unit-tenancies" },
+        { "type": "read", "description": "GET /api/v1/unit-tenancies - List tenancies", "lines": [105, 150], "significance": "medium", "endpoint": "GET /api/v1/unit-tenancies" },
+        { "type": "update", "description": "PUT /api/v1/unit-tenancies/:id - End tenancy", "lines": [155, 200], "significance": "high", "endpoint": "PUT /api/v1/unit-tenancies/:id" }
+      ]
+    },
+
+    {
+      "id": "c070",
+      "entity": "meter",
+      "file": "m011",
+      "operations": [
+        { "type": "define", "description": "Meter model with LoRaWAN integration", "lines": [1, 99], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c071",
+      "entity": "meter",
+      "file": "s011",
+      "operations": [
+        { "type": "create", "description": "Register meter in system", "lines": [30, 80], "significance": "high" },
+        { "type": "read", "description": "Get meters with readings", "lines": [85, 150], "significance": "medium" },
+        { "type": "update", "description": "Update meter configuration", "lines": [155, 220], "significance": "medium" },
+        { "type": "event", "description": "Send relay commands", "lines": [225, 295], "significance": "critical" }
+      ]
+    },
+    {
+      "id": "c072",
+      "entity": "meter",
+      "file": "r010",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/meters - List meters", "lines": [80, 200], "significance": "medium", "endpoint": "GET /api/v1/meters" },
+        { "type": "create", "description": "POST /api/v1/meters - Register meter", "lines": [205, 350], "significance": "high", "endpoint": "POST /api/v1/meters" },
+        { "type": "read", "description": "GET /api/v1/meters/:id - Meter details", "lines": [355, 500], "significance": "medium", "endpoint": "GET /api/v1/meters/:id" },
+        { "type": "read", "description": "GET /api/v1/meters/:id/realtime-stats", "lines": [811, 870], "significance": "high", "endpoint": "GET /api/v1/meters/:id/realtime-stats" },
+        { "type": "read", "description": "GET /api/v1/meters/:id/chart-data", "lines": [875, 930], "significance": "high", "endpoint": "GET /api/v1/meters/:id/chart-data" },
+        { "type": "update", "description": "POST /api/v1/meters/:id/relay - Control relay", "lines": [700, 800], "significance": "critical", "endpoint": "POST /api/v1/meters/:id/relay" }
+      ]
+    },
+    {
+      "id": "c073",
+      "entity": "meter",
+      "file": "t013",
+      "operations": [
+        { "type": "render", "description": "Meters list with status indicators", "lines": [1, 483], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c074",
+      "entity": "meter",
+      "file": "t014",
+      "operations": [
+        { "type": "render", "description": "Meter details with charts and readings", "lines": [1, 563], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c075",
+      "entity": "meter",
+      "file": "f006",
+      "operations": [
+        { "type": "fetch", "description": "Load meters list", "lines": [30, 120], "significance": "medium" },
+        { "type": "submit", "description": "Meter CRUD and relay commands", "lines": [150, 400], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c076",
+      "entity": "meter",
+      "file": "f007",
+      "operations": [
+        { "type": "fetch", "description": "Load realtime stats and chart data", "lines": [50, 180], "significance": "high" },
+        { "type": "display", "description": "Render consumption charts", "lines": [200, 350], "significance": "medium" },
+        { "type": "submit", "description": "Send relay control commands", "lines": [360, 440], "significance": "critical" }
+      ]
+    },
+
+    {
+      "id": "c080",
+      "entity": "meter_reading",
+      "file": "m012",
+      "operations": [
+        { "type": "define", "description": "MeterReading time-series model", "lines": [1, 109], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c081",
+      "entity": "meter_reading",
+      "file": "s012",
+      "operations": [
+        { "type": "create", "description": "Store reading from LoRaWAN uplink", "lines": [5, 17], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c082",
+      "entity": "meter_reading",
+      "file": "s019",
+      "operations": [
+        { "type": "create", "description": "Process ChirpStack uplink payload", "lines": [200, 400], "significance": "critical" },
+        { "type": "transform", "description": "Decode meter reading from payload", "lines": [405, 550], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c083",
+      "entity": "meter_reading",
+      "file": "r021",
+      "operations": [
+        { "type": "create", "description": "POST /api/v1/lorawan/uplink - Process uplink", "lines": [100, 250], "significance": "critical", "endpoint": "POST /api/v1/lorawan/uplink" }
+      ]
+    },
+
+    {
+      "id": "c090",
+      "entity": "wallet",
+      "file": "m017",
+      "operations": [
+        { "type": "define", "description": "Wallet model with balance tracking", "lines": [1, 117], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c091",
+      "entity": "wallet",
+      "file": "s013",
+      "operations": [
+        { "type": "create", "description": "Create wallet for unit", "lines": [20, 50], "significance": "high" },
+        { "type": "read", "description": "Get wallet balance and history", "lines": [55, 100], "significance": "medium" },
+        { "type": "update", "description": "Credit/debit wallet balance", "lines": [105, 160], "significance": "critical" }
+      ]
+    },
+    {
+      "id": "c092",
+      "entity": "wallet",
+      "file": "r011",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/wallets/:id - Wallet details", "lines": [60, 120], "significance": "medium", "endpoint": "GET /api/v1/wallets/:id" },
+        { "type": "read", "description": "GET /api/v1/wallets/:id/statement - Transaction history", "lines": [125, 200], "significance": "medium", "endpoint": "GET /api/v1/wallets/:id/statement" },
+        { "type": "update", "description": "POST /api/v1/wallets/:id/topup - Add credit", "lines": [205, 300], "significance": "critical", "endpoint": "POST /api/v1/wallets/:id/topup" }
+      ]
+    },
+    {
+      "id": "c093",
+      "entity": "wallet",
+      "file": "t015",
+      "operations": [
+        { "type": "render", "description": "Wallet statement with transactions", "lines": [1, 512], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c100",
+      "entity": "transaction",
+      "file": "m018",
+      "operations": [
+        { "type": "define", "description": "Transaction model for all financial ops", "lines": [1, 82], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c101",
+      "entity": "transaction",
+      "file": "s014",
+      "operations": [
+        { "type": "create", "description": "Create transaction record", "lines": [25, 70], "significance": "critical" },
+        { "type": "read", "description": "Get transactions with filtering", "lines": [75, 120], "significance": "medium" },
+        { "type": "transform", "description": "Calculate consumption charges", "lines": [125, 150], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c102",
+      "entity": "transaction",
+      "file": "s024",
+      "operations": [
+        { "type": "transform", "description": "Calculate tiered consumption charges", "lines": [30, 100], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c103",
+      "entity": "transaction",
+      "file": "r012",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/transactions - List transactions", "lines": [30, 85], "significance": "medium", "endpoint": "GET /api/v1/transactions" }
+      ]
+    },
+
+    {
+      "id": "c110",
+      "entity": "rate_table",
+      "file": "m019",
+      "operations": [
+        { "type": "define", "description": "RateTable model with utility type", "lines": [1, 72], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c111",
+      "entity": "rate_table",
+      "file": "r013",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/rate-tables - List rate tables", "lines": [50, 120], "significance": "medium", "endpoint": "GET /api/v1/rate-tables" },
+        { "type": "create", "description": "POST /api/v1/rate-tables - Create rate table", "lines": [125, 220], "significance": "high", "endpoint": "POST /api/v1/rate-tables" },
+        { "type": "read", "description": "GET /api/v1/rate-tables/:id - Rate table details", "lines": [225, 280], "significance": "medium", "endpoint": "GET /api/v1/rate-tables/:id" },
+        { "type": "update", "description": "PUT /api/v1/rate-tables/:id - Update rate table", "lines": [285, 370], "significance": "high", "endpoint": "PUT /api/v1/rate-tables/:id" }
+      ]
+    },
+    {
+      "id": "c112",
+      "entity": "rate_table",
+      "file": "t016",
+      "operations": [
+        { "type": "render", "description": "Rate tables list", "lines": [1, 510], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c113",
+      "entity": "rate_table",
+      "file": "t017",
+      "operations": [
+        { "type": "render", "description": "Rate table builder wizard", "lines": [1, 792], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c114",
+      "entity": "rate_table",
+      "file": "f008",
+      "operations": [
+        { "type": "fetch", "description": "Load rate tables", "lines": [20, 80], "significance": "medium" },
+        { "type": "display", "description": "Render rate table cards", "lines": [100, 250], "significance": "low" }
+      ]
+    },
+    {
+      "id": "c115",
+      "entity": "rate_table",
+      "file": "f009",
+      "operations": [
+        { "type": "submit", "description": "Build rate table with tiers", "lines": [50, 250], "significance": "high" },
+        { "type": "validate", "description": "Validate tier configuration", "lines": [260, 370], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c120",
+      "entity": "ticket",
+      "file": "m022",
+      "operations": [
+        { "type": "define", "description": "Ticket model with status workflow", "lines": [1, 146], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c121",
+      "entity": "ticket",
+      "file": "s016",
+      "operations": [
+        { "type": "create", "description": "Create support ticket", "lines": [30, 80], "significance": "high" },
+        { "type": "read", "description": "Get tickets with filtering", "lines": [85, 140], "significance": "medium" },
+        { "type": "update", "description": "Update ticket status", "lines": [145, 195], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c122",
+      "entity": "ticket",
+      "file": "r014",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/tickets - List tickets", "lines": [60, 150], "significance": "medium", "endpoint": "GET /api/v1/tickets" },
+        { "type": "create", "description": "POST /api/v1/tickets - Create ticket", "lines": [155, 250], "significance": "high", "endpoint": "POST /api/v1/tickets" },
+        { "type": "read", "description": "GET /api/v1/tickets/:id - Ticket details", "lines": [255, 330], "significance": "medium", "endpoint": "GET /api/v1/tickets/:id" },
+        { "type": "update", "description": "PUT /api/v1/tickets/:id - Update ticket", "lines": [335, 420], "significance": "medium", "endpoint": "PUT /api/v1/tickets/:id" }
+      ]
+    },
+    {
+      "id": "c123",
+      "entity": "ticket",
+      "file": "r032",
+      "operations": [
+        { "type": "read", "description": "GET /mobile/tickets - Mobile user's tickets", "lines": [50, 130], "significance": "medium", "endpoint": "GET /mobile/tickets" },
+        { "type": "create", "description": "POST /mobile/tickets - Create ticket from app", "lines": [135, 230], "significance": "high", "endpoint": "POST /mobile/tickets" },
+        { "type": "create", "description": "POST /mobile/tickets/:id/messages - Add message", "lines": [300, 390], "significance": "medium", "endpoint": "POST /mobile/tickets/:id/messages" }
+      ]
+    },
+    {
+      "id": "c124",
+      "entity": "ticket",
+      "file": "t019",
+      "operations": [
+        { "type": "render", "description": "Tickets list with status filters", "lines": [1, 371], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c125",
+      "entity": "ticket",
+      "file": "t020",
+      "operations": [
+        { "type": "render", "description": "Ticket detail with message thread", "lines": [1, 495], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c130",
+      "entity": "message",
+      "file": "m025",
+      "operations": [
+        { "type": "define", "description": "Message model with recipients", "lines": [1, 126], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c131",
+      "entity": "message",
+      "file": "s017",
+      "operations": [
+        { "type": "create", "description": "Compose and send message", "lines": [50, 150], "significance": "high" },
+        { "type": "read", "description": "Get messages for user/estate", "lines": [155, 250], "significance": "medium" },
+        { "type": "transform", "description": "Process message recipients", "lines": [255, 350], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c132",
+      "entity": "message",
+      "file": "r015",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/messages - List messages", "lines": [50, 120], "significance": "medium", "endpoint": "GET /api/v1/messages" },
+        { "type": "create", "description": "POST /api/v1/messages - Send message", "lines": [125, 220], "significance": "high", "endpoint": "POST /api/v1/messages" },
+        { "type": "read", "description": "GET /api/v1/messages/:id - Message details", "lines": [225, 280], "significance": "medium", "endpoint": "GET /api/v1/messages/:id" }
+      ]
+    },
+    {
+      "id": "c133",
+      "entity": "message",
+      "file": "r033",
+      "operations": [
+        { "type": "read", "description": "GET /mobile/messages - Mobile inbox", "lines": [40, 100], "significance": "medium", "endpoint": "GET /mobile/messages" },
+        { "type": "read", "description": "GET /mobile/messages/:id - Message detail", "lines": [105, 165], "significance": "medium", "endpoint": "GET /mobile/messages/:id" }
+      ]
+    },
+    {
+      "id": "c134",
+      "entity": "message",
+      "file": "t022",
+      "operations": [
+        { "type": "render", "description": "Messages inbox list", "lines": [1, 251], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c135",
+      "entity": "message",
+      "file": "t023",
+      "operations": [
+        { "type": "render", "description": "Compose message form", "lines": [1, 401], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c140",
+      "entity": "notification",
+      "file": "m027",
+      "operations": [
+        { "type": "define", "description": "Notification model for push alerts", "lines": [1, 68], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c141",
+      "entity": "notification",
+      "file": "s018",
+      "operations": [
+        { "type": "create", "description": "Create and queue notification", "lines": [50, 150], "significance": "high" },
+        { "type": "event", "description": "Send push via Firebase", "lines": [200, 350], "significance": "high" }
+      ]
+    },
+    {
+      "id": "c142",
+      "entity": "notification",
+      "file": "r034",
+      "operations": [
+        { "type": "read", "description": "GET /mobile/notifications - User notifications", "lines": [50, 120], "significance": "medium", "endpoint": "GET /mobile/notifications" },
+        { "type": "update", "description": "PUT /mobile/notifications/:id/read - Mark as read", "lines": [125, 180], "significance": "low", "endpoint": "PUT /mobile/notifications/:id/read" }
+      ]
+    },
+
+    {
+      "id": "c150",
+      "entity": "audit_log",
+      "file": "m028",
+      "operations": [
+        { "type": "define", "description": "AuditLog model for system tracking", "lines": [1, 38], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c151",
+      "entity": "audit_log",
+      "file": "s025",
+      "operations": [
+        { "type": "create", "description": "Log audit event", "lines": [20, 60], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c152",
+      "entity": "audit_log",
+      "file": "r017",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/audit-logs - List audit logs", "lines": [40, 120], "significance": "medium", "endpoint": "GET /api/v1/audit-logs" }
+      ]
+    },
+    {
+      "id": "c153",
+      "entity": "audit_log",
+      "file": "t025",
+      "operations": [
+        { "type": "render", "description": "Audit logs table with filtering", "lines": [1, 346], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c154",
+      "entity": "audit_log",
+      "file": "f015",
+      "operations": [
+        { "type": "fetch", "description": "Load audit logs with pagination", "lines": [10, 67], "significance": "low" }
+      ]
+    },
+
+    {
+      "id": "c160",
+      "entity": "device_type",
+      "file": "m015",
+      "operations": [
+        { "type": "define", "description": "DeviceType lookup model", "lines": [1, 58], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c161",
+      "entity": "device_type",
+      "file": "s020",
+      "operations": [
+        { "type": "create", "description": "Create device type", "lines": [15, 40], "significance": "medium" },
+        { "type": "read", "description": "List device types", "lines": [45, 70], "significance": "low" }
+      ]
+    },
+    {
+      "id": "c162",
+      "entity": "device_type",
+      "file": "r019",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/device-types", "lines": [30, 60], "significance": "low", "endpoint": "GET /api/v1/device-types" },
+        { "type": "create", "description": "POST /api/v1/device-types", "lines": [65, 100], "significance": "medium", "endpoint": "POST /api/v1/device-types" }
+      ]
+    },
+    {
+      "id": "c163",
+      "entity": "device_type",
+      "file": "t027",
+      "operations": [
+        { "type": "render", "description": "Device types settings page", "lines": [1, 235], "significance": "low" }
+      ]
+    },
+    {
+      "id": "c164",
+      "entity": "device_type",
+      "file": "f013",
+      "operations": [
+        { "type": "fetch", "description": "Load device types", "lines": [10, 50], "significance": "low" },
+        { "type": "submit", "description": "CRUD operations", "lines": [55, 110], "significance": "medium" }
+      ]
+    },
+
+    {
+      "id": "c170",
+      "entity": "communication_type",
+      "file": "m016",
+      "operations": [
+        { "type": "define", "description": "CommunicationType lookup model", "lines": [1, 52], "significance": "medium" }
+      ]
+    },
+    {
+      "id": "c171",
+      "entity": "communication_type",
+      "file": "s021",
+      "operations": [
+        { "type": "create", "description": "Create communication type", "lines": [15, 40], "significance": "medium" },
+        { "type": "read", "description": "List communication types", "lines": [45, 70], "significance": "low" }
+      ]
+    },
+    {
+      "id": "c172",
+      "entity": "communication_type",
+      "file": "r020",
+      "operations": [
+        { "type": "read", "description": "GET /api/v1/communication-types", "lines": [30, 60], "significance": "low", "endpoint": "GET /api/v1/communication-types" },
+        { "type": "create", "description": "POST /api/v1/communication-types", "lines": [65, 100], "significance": "medium", "endpoint": "POST /api/v1/communication-types" }
+      ]
+    },
+    {
+      "id": "c173",
+      "entity": "communication_type",
+      "file": "t028",
+      "operations": [
+        { "type": "render", "description": "Communication types settings page", "lines": [1, 210], "significance": "low" }
+      ]
+    },
+    {
+      "id": "c174",
+      "entity": "communication_type",
+      "file": "f014",
+      "operations": [
+        { "type": "fetch", "description": "Load communication types", "lines": [10, 50], "significance": "low" },
+        { "type": "submit", "description": "CRUD operations", "lines": [55, 106], "significance": "medium" }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from flask import jsonify, request, render_template
-from flask_login import login_required
+from flask import jsonify, request, render_template, current_app
+from flask_login import login_required, current_user
 
 from ...models import Wallet, Transaction
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from . import api_v1
 
-from ...services.wallets import get_wallet_by_id as svc_get_wallet_by_id
+from ...services.wallets import get_wallet_by_id as svc_get_wallet_by_id, credit_wallet
 from ...services.transactions import (
     list_transactions as svc_list_transactions,
     create_transaction as svc_create_transaction,
@@ -228,11 +228,13 @@ def get_wallet(wallet_id: int):
 @api_v1.post("/wallets/<int:wallet_id>/topup")
 @login_required
 def topup_wallet(wallet_id: int):
+    from flask_login import current_user
+
     payload = request.get_json(force=True) or {}
     amount = payload.get("amount")
     payment_method = payload.get("payment_method")
     reference = payload.get("reference")
-    metadata = payload.get("metadata")
+    metadata = payload.get("metadata") or {}
 
     # Validate wallet exists
     wallet = svc_get_wallet_by_id(wallet_id)
@@ -250,14 +252,45 @@ def topup_wallet(wallet_id: int):
             400,
         )
 
+    # For manual admin top-ups, require super admin
+    if payment_method == "manual_admin":
+        if not getattr(current_user, "is_super_admin", False):
+            return jsonify({"error": "Unauthorized. Super admin access required.", "code": 403}), 403
+
+    # Determine utility type from metadata (transaction type is always "topup")
+    utility_type = metadata.get("utility_type", "electricity")
+    transaction_type = "topup"
+
+    # Get the meter_id for this utility type from the unit
+    from ...db import db
+    from ...models import Unit
+    unit = db.session.query(Unit).filter(Unit.id == wallet.unit_id).first()
+    meter_id = None
+
+    if unit:
+        if utility_type == "electricity":
+            meter_id = unit.electricity_meter_id
+        elif utility_type == "water":
+            meter_id = unit.water_meter_id
+        elif utility_type == "solar":
+            meter_id = unit.solar_meter_id
+        elif utility_type == "hot_water":
+            meter_id = unit.hot_water_meter_id
+
+    # Create transaction with meter_id link
     txn = svc_create_transaction(
         wallet_id=wallet_id,
-        transaction_type="topup",
+        transaction_type=transaction_type,
         amount=amount,
         reference=reference,
         payment_method=payment_method,
         metadata=metadata,
+        meter_id=meter_id,  # Link to specific meter
     )
+
+    # Update wallet balance for the specific utility type
+    credit_wallet(wallet, float(amount), utility_type)
+    db.session.commit()
 
     log_action(
         "wallet.topup",
@@ -268,8 +301,23 @@ def topup_wallet(wallet_id: int):
             "payment_method": payment_method,
             "reference": reference,
             "transaction_id": txn.id,
+            "utility_type": utility_type,
         },
     )
+
+    # Send real-time notification (async via Celery)
+    try:
+        from ...tasks.notification_tasks import send_topup_notification
+        send_topup_notification.delay(
+            wallet_id=wallet_id,
+            amount=float(amount),
+            payment_method=payment_method,
+            utility_type=utility_type
+        )
+    except Exception as e:
+        # Don't fail the transaction if notification fails
+        import logging
+        logging.warning(f"Failed to queue top-up notification: {e}")
 
     return jsonify(
         {
@@ -304,3 +352,214 @@ def list_pending_transactions(wallet_id: int):
             **meta,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin PayFast transaction management
+# ---------------------------------------------------------------------------
+
+@api_v1.route("/transactions/payfast", methods=["GET"])
+@login_required
+def payfast_transactions_page():
+    """Admin page listing all PayFast transactions with filters."""
+    from datetime import datetime, timedelta
+    from ...db import db
+
+    status_filter = request.args.get("status", "all")
+    days = request.args.get("days", 30, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = 25
+
+    since = datetime.utcnow() - timedelta(days=days)
+
+    query = Transaction.query.filter(
+        Transaction.payment_gateway == "payfast",
+        Transaction.created_at >= since,
+    )
+
+    if status_filter != "all":
+        query = query.filter(Transaction.status == status_filter)
+
+    query = query.order_by(Transaction.created_at.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    # Summary counts
+    total_payfast = Transaction.query.filter(
+        Transaction.payment_gateway == "payfast",
+        Transaction.created_at >= since,
+    ).count()
+    pending_count = Transaction.query.filter(
+        Transaction.payment_gateway == "payfast",
+        Transaction.status == "pending",
+        Transaction.created_at >= since,
+    ).count()
+    failed_count = Transaction.query.filter(
+        Transaction.payment_gateway == "payfast",
+        Transaction.status.in_(["failed", "expired"]),
+        Transaction.created_at >= since,
+    ).count()
+
+    return render_template(
+        "billing/payfast_transactions.html",
+        transactions=pagination.items,
+        pagination=pagination,
+        status_filter=status_filter,
+        days=days,
+        total_payfast=total_payfast,
+        pending_count=pending_count,
+        failed_count=failed_count,
+    )
+
+
+@api_v1.route("/transactions/<int:txn_id>/retry-payfast", methods=["POST"])
+@login_required
+def retry_payfast_transaction(txn_id):
+    """Admin: Retry/confirm a pending or failed PayFast transaction.
+
+    Super admin only. Checks with PayFast validation endpoint if a gateway ref
+    exists, otherwise allows manual force-complete.
+    """
+    from ...db import db
+    from ...routes.payfast import _complete_transaction, _extract_utility_type
+
+    if not getattr(current_user, "is_super_admin", False):
+        return jsonify({"error": "Super admin access required"}), 403
+
+    txn = Transaction.query.get_or_404(txn_id)
+
+    if txn.payment_gateway != "payfast":
+        return jsonify({"error": "Not a PayFast transaction"}), 400
+
+    if txn.status == "completed":
+        return jsonify({"message": "Already completed"}), 200
+
+    if txn.status not in ("pending", "failed", "expired"):
+        return jsonify({"error": f"Cannot retry transaction with status '{txn.status}'"}), 400
+
+    action = request.json.get("action", "check") if request.is_json else "check"
+
+    # If we have a PayFast reference, verify with PayFast
+    if txn.payment_gateway_ref and action == "check":
+        from ...utils.payfast import verify_itn_with_payfast
+        import json
+
+        # Try to reconstruct minimal post data for validation
+        validate_url = current_app.config.get("PAYFAST_VALIDATE_URL")
+        if txn.payment_metadata:
+            try:
+                post_data = json.loads(txn.payment_metadata)
+                if isinstance(post_data, dict):
+                    is_valid = verify_itn_with_payfast(post_data, validate_url)
+                    if is_valid:
+                        utility_type = _complete_transaction(txn)
+                        txn.payment_gateway_status = "COMPLETE"
+                        db.session.commit()
+                        log_action(
+                            "payfast.retry_success",
+                            entity_type="transaction",
+                            entity_id=txn.id,
+                            new_values={"action": "auto_verified", "utility_type": utility_type},
+                        )
+                        return jsonify({
+                            "message": "Transaction verified and completed",
+                            "amount": float(txn.amount),
+                            "utility_type": utility_type,
+                        }), 200
+                    else:
+                        return jsonify({
+                            "message": "PayFast verification returned INVALID. Use force-complete if you're sure.",
+                            "status": "unverified",
+                        }), 200
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    # Force-complete (super admin override)
+    if action == "force_complete":
+        try:
+            utility_type = _complete_transaction(txn)
+            txn.payment_gateway_status = "FORCE_COMPLETED"
+            txn.payment_gateway_ref = txn.payment_gateway_ref or "ADMIN-MANUAL"
+            db.session.commit()
+            log_action(
+                "payfast.force_complete",
+                entity_type="transaction",
+                entity_id=txn.id,
+                new_values={
+                    "action": "force_complete",
+                    "admin_user": current_user.id,
+                    "utility_type": utility_type,
+                },
+            )
+            return jsonify({
+                "message": "Transaction force-completed by admin",
+                "amount": float(txn.amount),
+                "utility_type": utility_type,
+            }), 200
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 500
+
+    return jsonify({"error": "No gateway reference found. Use force_complete action."}), 400
+
+
+@api_v1.route("/payfast/reconciliation", methods=["GET"])
+@login_required
+def payfast_reconciliation_page():
+    """Admin view showing reconciliation status and ability to trigger a run."""
+    from datetime import datetime, timedelta
+    from ...db import db
+    from ...models.notification import Notification
+    from sqlalchemy import func
+
+    # Get recent reconciliation notifications (last 14 days)
+    since = datetime.utcnow() - timedelta(days=14)
+    recon_notifications = Notification.query.filter(
+        Notification.notification_type == "payfast_reconciliation",
+        Notification.created_at >= since,
+    ).order_by(Notification.created_at.desc()).limit(14).all()
+
+    # Summary stats for the reconciliation dashboard
+    last_48h = datetime.utcnow() - timedelta(hours=48)
+    payfast_txns_48h = Transaction.query.filter(
+        Transaction.payment_gateway == "payfast",
+        Transaction.created_at >= last_48h,
+    ).all()
+
+    total_txns = len(payfast_txns_48h)
+    completed = sum(1 for t in payfast_txns_48h if t.status == "completed")
+    pending = sum(1 for t in payfast_txns_48h if t.status == "pending")
+    failed = sum(1 for t in payfast_txns_48h if t.status in ("failed", "expired"))
+    reconciled = sum(1 for t in payfast_txns_48h if t.reconciled)
+
+    return render_template(
+        "billing/payfast_reconciliation.html",
+        recon_notifications=recon_notifications,
+        total_txns=total_txns,
+        completed=completed,
+        pending=pending,
+        failed=failed,
+        reconciled=reconciled,
+    )
+
+
+@api_v1.route("/payfast/reconciliation/run", methods=["POST"])
+@login_required
+def payfast_reconciliation_run():
+    """Trigger a manual reconciliation run (admin only)."""
+    if not getattr(current_user, "is_super_admin", False):
+        return jsonify({"error": "Super admin access required"}), 403
+
+    try:
+        from ...tasks.payment_tasks import reconcile_payfast_transactions
+        task = reconcile_payfast_transactions.delay()
+        log_action(
+            "payfast.reconciliation_manual",
+            entity_type="system",
+            entity_id=0,
+            new_values={"task_id": task.id, "triggered_by": current_user.id},
+        )
+        return jsonify({
+            "message": "Reconciliation task queued",
+            "task_id": task.id,
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to queue task: {str(e)}"}), 500

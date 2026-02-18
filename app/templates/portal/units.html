@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My Units - Portal{% endblock %}
+{% block page_title %}My Units{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>My Units</span>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {% for unit in units %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit {{ unit.unit_number }}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ unit.estate_name }}</p>
+        </div>
+        <span class="px-2 py-1 text-xs font-medium rounded-full {% if unit.role == 'owner' %}bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400{% else %}bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400{% endif %}">
+          {{ unit.role | capitalize }}
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between text-sm mb-4">
+        <span class="text-gray-600 dark:text-gray-400">
+          <i class="fas fa-wallet mr-1"></i> Balance: <span class="font-semibold text-gray-900 dark:text-white">R {{ "%.2f"|format(unit.wallet_balance) }}</span>
+        </span>
+      </div>
+
+      {% if unit.meters %}
+      <div class="space-y-2 mb-4">
+        {% for meter in unit.meters %}
+        <div class="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/30 rounded-lg px-3 py-2">
+          <span class="text-gray-700 dark:text-gray-300"><i class="fas fa-{{ 'bolt' if meter.utility_type == 'Electricity' else 'droplet' if meter.utility_type == 'Water' else 'fire' if meter.utility_type == 'Hot Water' else 'sun' }} mr-1"></i> {{ meter.utility_type }}</span>
+          <span class="font-mono text-gray-500 dark:text-gray-400">{{ meter.serial_number }}</span>
+          <span class="w-2 h-2 rounded-full {% if meter.status == 'online' %}bg-green-500{% elif meter.status == 'offline' %}bg-red-500{% else %}bg-gray-400{% endif %}"></span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 bg-gray-50 dark:bg-gray-700/20">
+      <a href="{{ url_for('portal.portal_unit_detail', unit_id=unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700 font-medium">View Details <i class="fas fa-arrow-right ml-1"></i></a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not units %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+  <i class="fas fa-house-circle-xmark text-4xl text-gray-400 mb-4"></i>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Units Found</h3>
+  <p class="text-gray-500 dark:text-gray-400">You don't have any units assigned to your account yet.</p>
+</div>
+{% endif %}
+{% endblock %}

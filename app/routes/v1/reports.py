@@ -22,9 +22,10 @@ from app.models import (
     Meter,
     Unit,
     Wallet,
-    Resident,
     Notification,
     MeterAlert,
+    Person,
+    UnitTenancy,
 )
 from app.db import db
 from ...utils.pagination import parse_pagination_params
@@ -122,6 +123,7 @@ def get_consumption_reports(
         "top_consumers_hot_water": [],
         "top_consumers_solar": [],
         "solar_generation_vs_usage": [],
+        "daily_consumption_trend": [],
     }
 
     # Unit Consumption Summary
@@ -368,6 +370,71 @@ def get_consumption_reports(
 
     reports["solar_generation_vs_usage"] = solar_data.all()
 
+    # Daily Consumption Trend - last 30 days aggregated by date
+    from datetime import timedelta
+
+    # Calculate date 30 days ago
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+
+    daily_trend_query = (
+        db.session.query(
+            func.date(MeterReading.reading_date).label("date"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "electricity", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("electricity"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "water", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("water"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "hot_water", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("hot_water"),
+            func.sum(
+                case(
+                    (Meter.meter_type == "solar", MeterReading.consumption_since_last),
+                    else_=0,
+                )
+            ).label("solar"),
+        )
+        .join(Meter, MeterReading.meter_id == Meter.id)
+        .filter(MeterReading.reading_date >= thirty_days_ago)
+        .group_by(func.date(MeterReading.reading_date))
+        .order_by(func.date(MeterReading.reading_date))
+    )
+
+    if estate_id:
+        # Join with units to filter by estate
+        daily_trend_query = daily_trend_query.join(
+            Unit,
+            or_(
+                Unit.electricity_meter_id == Meter.id,
+                Unit.water_meter_id == Meter.id,
+                Unit.hot_water_meter_id == Meter.id,
+                Unit.solar_meter_id == Meter.id,
+            ),
+        ).filter(Unit.estate_id == estate_id)
+
+    # Convert Row objects to dictionaries for JSON serialization
+    daily_trend_results = daily_trend_query.all()
+    reports["daily_consumption_trend"] = [
+        {
+            "date": row.date.isoformat() if row.date else None,
+            "electricity": float(row.electricity) if row.electricity else 0,
+            "water": float(row.water) if row.water else 0,
+            "hot_water": float(row.hot_water) if row.hot_water else 0,
+            "solar": float(row.solar) if row.solar else 0,
+        }
+        for row in daily_trend_results
+    ]
+
     return reports
 
 
@@ -410,7 +477,25 @@ def get_financial_reports(start_date, end_date, estate_id, page=1, per_page=10):
         per_page
     )
 
-    reports["credit_purchases"] = paginated_purchases.all()
+    # Convert to list for template use
+    credit_purchases_raw = paginated_purchases.all()
+    reports["credit_purchases"] = credit_purchases_raw
+
+    # Also create JSON-serializable version for JavaScript charts
+    reports["credit_purchases_json"] = [
+        {
+            "transaction_number": row.transaction_number,
+            "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+            "unit_number": row.unit_number,
+            "estate_name": row.estate_name,
+            "amount": float(row.amount) if row.amount else 0,
+            "payment_method": row.payment_method,
+            "status": row.status,
+            "description": row.description,
+        }
+        for row in credit_purchases_raw
+    ]
+
     reports["credit_purchases_pagination"] = {
         "total": total_purchases,
         "page": page,
@@ -622,14 +707,15 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
     reports["meter_health"] = meter_health.all()
 
     # Low Balance & Cut-off Alerts
+    # Join through UnitTenancy → Person to get primary tenant info
     low_balance_alerts = (
         db.session.query(
             Unit.unit_number,
             Estate.name.label("estate_name"),
-            Resident.first_name,
-            Resident.last_name,
-            Resident.email,
-            Resident.phone,
+            Person.first_name,
+            Person.last_name,
+            Person.email,
+            Person.phone,
             Wallet.balance,
             Wallet.low_balance_threshold,
             case(
@@ -639,8 +725,17 @@ def get_system_status_reports(start_date, end_date, estate_id, page=1, per_page=
             ).label("status"),
         )
         .join(Estate, Unit.estate_id == Estate.id)
-        .outerjoin(Resident, Unit.resident_id == Resident.id)
         .outerjoin(Wallet, Unit.id == Wallet.unit_id)
+        .outerjoin(
+            UnitTenancy,
+            and_(
+                UnitTenancy.unit_id == Unit.id,
+                UnitTenancy.is_primary_tenant == True,
+                UnitTenancy.status == "active",
+                UnitTenancy.move_out_date.is_(None),
+            ),
+        )
+        .outerjoin(Person, Person.id == UnitTenancy.person_id)
         .filter(Unit.is_active == True)
         .filter(Wallet.balance < Wallet.low_balance_threshold)
     )
@@ -750,7 +845,22 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
     if estate_id:
         estate_utility_summary = estate_utility_summary.filter(Estate.id == estate_id)
 
-    reports["estate_utility_summary"] = estate_utility_summary.all()
+    estate_utility_summary_raw = estate_utility_summary.all()
+    reports["estate_utility_summary"] = estate_utility_summary_raw
+
+    # Also create JSON-serializable version for JavaScript charts
+    reports["estate_utility_summary_json"] = [
+        {
+            "estate_name": row.estate_name,
+            "total_electricity": float(row.total_electricity) if row.total_electricity else 0,
+            "total_water": float(row.total_water) if row.total_water else 0,
+            "total_hot_water": float(row.total_hot_water) if row.total_hot_water else 0,
+            "total_solar": float(row.total_solar) if row.total_solar else 0,
+            "total_units": row.total_units or 0,
+            "occupied_units": row.occupied_units or 0,
+        }
+        for row in estate_utility_summary_raw
+    ]
 
     # Communal Usage Report
     communal_usage = []
@@ -806,9 +916,17 @@ def get_estate_level_reports(start_date, end_date, estate_id, page=1, per_page=1
         communal_electricity = float(bulk_electricity) - float(sub_electricity)
         communal_water = float(bulk_water) - float(sub_water)
 
-        # Calculate costs (using standard rates)
-        electricity_cost = communal_electricity * 2.50
-        water_cost = communal_water * 15.00
+        # Calculate costs using rate tables
+        from app.utils.rates import calculate_consumption_charge
+
+        electricity_cost = calculate_consumption_charge(
+            consumption=communal_electricity,
+            utility_type="electricity"
+        )
+        water_cost = calculate_consumption_charge(
+            consumption=communal_water / 1000.0,  # Convert L to kL
+            utility_type="water"
+        )
         communal_usage.append(
             {
                 "estate_name": estate.name,
@@ -1202,6 +1320,7 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
         "management_snapshot",
         "credit_purchases",
         "solar_generation_vs_usage",
+        "low_balance_alerts",
     ]
     if report_type in landscape_reports:
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
@@ -1432,33 +1551,46 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             headers = [
                 "Unit Number",
                 "Estate",
+                "Resident",
+                "Email",
+                "Phone",
                 "Current Balance",
-                "Low Balance Threshold",
-                "Days Remaining",
+                "Threshold",
+                "Status",
             ]
             report_data = get_system_status_reports(start_date, end_date, estate_id)[
                 "low_balance_alerts"
             ]
             for row in report_data:
+                resident_name = (
+                    f"{row.first_name} {row.last_name}"
+                    if row.first_name
+                    else "Vacant"
+                )
                 data.append(
                     [
                         str(row.unit_number),
                         str(row.estate_name),
+                        resident_name,
+                        str(row.email or "N/A"),
+                        str(row.phone or "N/A"),
                         f"R{row.balance:.2f}" if row.balance else "R0.00",
                         f"R{row.low_balance_threshold:.2f}"
                         if row.low_balance_threshold
                         else "R0.00",
-                        str(row.days_remaining) if row.days_remaining else "0",
+                        str(row.status).replace("_", " ").title(),
                     ]
                 )
 
         elif report_type == "reconnection_history":
             headers = [
+                "Transaction #",
+                "Date",
                 "Unit Number",
                 "Estate",
-                "Disconnection Date",
-                "Reconnection Date",
-                "Duration (Days)",
+                "Type",
+                "Amount",
+                "Description",
             ]
             report_data = get_system_status_reports(start_date, end_date, estate_id)[
                 "reconnection_history"
@@ -1466,15 +1598,15 @@ def export_pdf(report_type, category, start_date, end_date, estate_id):
             for row in report_data:
                 data.append(
                     [
+                        str(row.transaction_number),
+                        row.completed_at.strftime("%Y-%m-%d %H:%M")
+                        if row.completed_at
+                        else "N/A",
                         str(row.unit_number),
                         str(row.estate_name),
-                        row.disconnection_date.strftime("%Y-%m-%d")
-                        if row.disconnection_date
-                        else "",
-                        row.reconnection_date.strftime("%Y-%m-%d")
-                        if row.reconnection_date
-                        else "",
-                        str(row.duration_days) if row.duration_days else "0",
+                        str(row.transaction_type).title(),
+                        f"R{row.amount:.2f}" if row.amount else "R0.00",
+                        str(row.description or "N/A"),
                     ]
                 )
 

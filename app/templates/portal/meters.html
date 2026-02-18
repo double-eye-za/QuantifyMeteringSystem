@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Meters - Portal{% endblock %}
+{% block page_title %}My Meters{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('portal.portal_dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-2">/</span>
+<span>Meters</span>
+{% endblock %}
+
+{% block content %}
+<p class="text-gray-500 dark:text-gray-400 mb-6">All meters across your units.</p>
+
+{% if all_meters %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for meter in all_meters %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-100 dark:bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-900/20 flex items-center justify-center">
+          <i class="fas fa-{{ 'bolt' if meter.utility_type == 'Electricity' else 'droplet' if meter.utility_type == 'Water' else 'fire' if meter.utility_type == 'Hot Water' else 'sun' }} text-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-500"></i>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ meter.utility_type }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ meter.serial_number }}</p>
+        </div>
+      </div>
+      <span class="px-2 py-1 text-xs rounded-full {% if meter.status == 'online' %}bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400{% elif meter.status == 'offline' %}bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400{% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">{{ meter.status or 'Unknown' }}</span>
+    </div>
+    <div class="text-xs text-gray-500 dark:text-gray-400">
+      <span><i class="fas fa-house mr-1"></i> Unit {{ meter.unit_number }} &bull; {{ meter.estate_name }}</span>
+    </div>
+    {% if meter.current_reading is not none %}
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm">
+      <span class="text-gray-500 dark:text-gray-400">Reading:</span>
+      <span class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(meter.current_reading) }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+  <i class="fas fa-tachometer-alt text-4xl text-gray-400 mb-4"></i>
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Meters Found</h3>
+  <p class="text-gray-500 dark:text-gray-400">No meters are assigned to your units.</p>
+</div>
+{% endif %}
+{% endblock %}

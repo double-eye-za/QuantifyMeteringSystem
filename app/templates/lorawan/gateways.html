@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}LoRaWAN Gateways - Quantify Metering System{% endblock %}
+
+{% block page_title %}LoRaWAN Gateways{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Dashboard</a>
+<span class="mx-2">/</span>
+<a href="{{ url_for('api_v1.lorawan_page') }}" class="hover:text-primary">LoRaWAN</a>
+<span class="mx-2">/</span>
+<span class="text-gray-500 dark:text-gray-400">Gateways</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Add Button -->
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-gray-500 dark:text-gray-400">Manage your LoRaWAN gateways</p>
+        </div>
+        <button onclick="openAddGatewayModal()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+            <i class="fas fa-plus mr-2"></i> Add Gateway
+        </button>
+    </div>
+
+    <!-- Gateways Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gateway ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Seen</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="gatewaysTable" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                            <p>Loading gateways...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Gateway Modal -->
+<div id="addGatewayModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add New Gateway</h3>
+        </div>
+        <form id="addGatewayForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gateway ID (EUI) *</label>
+                <input type="text" name="gateway_id" required maxlength="16" pattern="[0-9a-fA-F]{16}"
+                    placeholder="e.g., 24e124fffefd378a"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">16 hexadecimal characters (found on gateway label)</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                <input type="text" name="name" required
+                    placeholder="e.g., Office Gateway"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tenant *</label>
+                <select name="tenant_id" required id="tenantSelect"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">Loading tenants...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea name="description" rows="2"
+                    placeholder="Optional description"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Latitude</label>
+                    <input type="number" name="latitude" step="any"
+                        placeholder="-26.2041"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Longitude</label>
+                    <input type="number" name="longitude" step="any"
+                        placeholder="28.0473"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Altitude (m)</label>
+                    <input type="number" name="altitude" step="any"
+                        placeholder="1500"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+            </div>
+        </form>
+        <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <button type="button" onclick="closeAddGatewayModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+                Cancel
+            </button>
+            <button type="button" onclick="submitAddGateway()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                <i class="fas fa-plus mr-2"></i> Add Gateway
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let tenants = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadGateways();
+    loadTenants();
+
+    // Check if we should open add modal
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add') {
+        openAddGatewayModal();
+    }
+});
+
+function loadGateways() {
+    fetch('/api/v1/api/lorawan/gateways')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('gatewaysTable');
+            if (!data.success || !data.gateways || data.gateways.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-broadcast-tower text-4xl mb-3 opacity-50"></i>
+                            <p class="mb-2">No gateways found</p>
+                            <button onclick="openAddGatewayModal()" class="text-primary hover:underline">
+                                Add your first gateway
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.gateways.map(gateway => {
+                const lastSeen = gateway.lastSeenAt ? new Date(gateway.lastSeenAt).toLocaleString() : 'Never';
+                const isOnline = gateway.lastSeenAt && (new Date() - new Date(gateway.lastSeenAt)) < 5 * 60 * 1000;
+                const location = gateway.location ?
+                    `${gateway.location.latitude?.toFixed(4)}, ${gateway.location.longitude?.toFixed(4)}` :
+                    'Not set';
+
+                return `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <code class="text-sm font-mono text-gray-900 dark:text-white">${gateway.gatewayId}</code>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">${gateway.name}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">${gateway.description || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOnline ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'}">
+                                <span class="w-2 h-2 rounded-full mr-1.5 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}"></span>
+                                ${isOnline ? 'Online' : 'Offline'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            ${lastSeen}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            ${location}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <button onclick="deleteGateway('${gateway.gatewayId}', '${gateway.name}')" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        })
+        .catch(error => {
+            console.error('Error loading gateways:', error);
+            document.getElementById('gatewaysTable').innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading gateways</p>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadTenants() {
+    fetch('/api/v1/api/lorawan/tenants')
+        .then(response => response.json())
+        .then(data => {
+            tenants = data.tenants || [];
+            const select = document.getElementById('tenantSelect');
+            if (tenants.length === 0) {
+                select.innerHTML = '<option value="">No tenants available</option>';
+            } else {
+                select.innerHTML = tenants.map(t =>
+                    `<option value="${t.id}">${t.name}</option>`
+                ).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tenants:', error);
+            document.getElementById('tenantSelect').innerHTML = '<option value="">Error loading tenants</option>';
+        });
+}
+
+function openAddGatewayModal() {
+    document.getElementById('addGatewayModal').classList.remove('hidden');
+    document.getElementById('addGatewayModal').classList.add('flex');
+}
+
+function closeAddGatewayModal() {
+    document.getElementById('addGatewayModal').classList.add('hidden');
+    document.getElementById('addGatewayModal').classList.remove('flex');
+    document.getElementById('addGatewayForm').reset();
+}
+
+function submitAddGateway() {
+    const form = document.getElementById('addGatewayForm');
+    const formData = new FormData(form);
+
+    const data = {
+        gateway_id: formData.get('gateway_id'),
+        name: formData.get('name'),
+        tenant_id: formData.get('tenant_id'),
+        description: formData.get('description'),
+    };
+
+    if (formData.get('latitude')) data.latitude = parseFloat(formData.get('latitude'));
+    if (formData.get('longitude')) data.longitude = parseFloat(formData.get('longitude'));
+    if (formData.get('altitude')) data.altitude = parseFloat(formData.get('altitude'));
+
+    fetch('/api/v1/api/lorawan/gateways', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeAddGatewayModal();
+            loadGateways();
+            showNotification('Gateway created successfully', 'success');
+        } else {
+            showNotification(result.error || 'Failed to create gateway', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error creating gateway', 'error');
+    });
+}
+
+function deleteGateway(gatewayId, name) {
+    if (!confirm(`Are you sure you want to delete gateway "${name}"?\n\nThis will remove it from ChirpStack.`)) {
+        return;
+    }
+
+    fetch(`/api/v1/api/lorawan/gateways/${gatewayId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            loadGateways();
+            showNotification('Gateway deleted successfully', 'success');
+        } else {
+            showNotification(result.error || 'Failed to delete gateway', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error deleting gateway', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    // Simple notification - you can enhance this with your existing notification system
+    alert(message);
+}
+</script>
+{% endblock %}

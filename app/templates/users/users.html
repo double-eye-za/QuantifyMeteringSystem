@@ -27,7 +27,7 @@ Manage Users
 
       <!-- Filters Bar -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
-        <form id="filters" method="GET">
+        <div id="filters">
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <!-- Left side - Search -->
             <div class="flex-1 max-w-md">
@@ -37,10 +37,10 @@ Manage Users
                 </div>
                 <input
                   name="search"
-                  id="search"
+                  id="searchInput"
                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                  placeholder="Search by name or email"
-                  aria-label="Search by name or email"
+                  placeholder="Search name, email, phone..."
+                  aria-label="Search by name, email, or phone"
                   value="{{ current_filters.search }}"
                 />
               </div>
@@ -50,10 +50,10 @@ Manage Users
             <div class="flex items-center gap-3">
               <!-- Status Filter -->
               <div class="w-full md:w-auto">
-                <select 
+                <select
                   id="statusFilter"
-                  name="status" 
-                  class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-40 transition-colors duration-200" 
+                  name="status"
+                  class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-40 transition-colors duration-200"
                   aria-label="Filter by status"
                 >
                   <option value="" {{ 'selected' if not current_filters.status else '' }}>Status: All</option>
@@ -64,10 +64,10 @@ Manage Users
 
               <!-- Role Filter -->
               <div class="w-full md:w-auto">
-                <select 
+                <select
                   id="roleFilter"
-                  name="role_id" 
-                  class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-48 transition-colors duration-200" 
+                  name="role_id"
+                  class="border border-gray-300 dark:border-gray-600 p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-48 transition-colors duration-200"
                   aria-label="Filter by role"
                 >
                   <option value="" {{ 'selected' if not current_filters.role_id else '' }}>Role: All</option>
@@ -77,25 +77,17 @@ Manage Users
                 </select>
               </div>
 
-              <!-- Action Buttons -->
+              <!-- Clear Filters Button -->
               <button
                 type="button"
-                onclick="applyFilters()"
-                class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-              >
-                <i class="fas fa-filter mr-2"></i> Apply Filters
-              </button>
-              
-              <button
-                type="button"
-                onclick="clearFilters()"
+                id="clearFiltersBtn"
                 class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors"
               >
-                <i class="fas fa-times mr-2"></i> Clear Filters
+                <i class="fas fa-times mr-2"></i> Clear
               </button>
             </div>
           </div>
-        </form>
+        </div>
       </div>
 
   <!-- Users Table -->
@@ -113,7 +105,7 @@ Manage Users
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody id="usersTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
           {% for user in users %}
           <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
             <td class="px-4 py-3 text-gray-900 dark:text-gray-100">{{ user.full_name }}</td>
@@ -145,7 +137,12 @@ Manage Users
                   Enable
                 </button>
                 {% endif %}
-                {# Delete action intentionally removed per requirements #}
+                {% if has_permission('users.delete') %}
+                <button data-delete-user-id="{{user.id}}" data-delete-user-data='{{user | tojson}}' class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors duration-200" title="Delete user permanently">
+                  <i class="fa-solid fa-trash mr-1"></i>
+                  Delete
+                </button>
+                {% endif %}
               </div>
             </td>
           </tr>
@@ -231,7 +228,18 @@ Manage Users
               Enable
             </button>
             {% endif %}
-            {# Delete action intentionally removed per requirements #}
+            {% if has_permission('users.delete') %}
+            <button
+              type="button"
+              class="inline-flex items-center text-red-700 dark:text-red-400 hover:underline"
+              data-delete-user-id="{{user.id}}"
+              data-delete-user-data='{{user | tojson}}'
+              title="Delete user permanently"
+            >
+              <i class="fa-solid fa-trash mr-1"></i>
+              Delete
+            </button>
+            {% endif %}
                             </div>
                         </div>
         {% endfor %}
@@ -590,6 +598,16 @@ Manage Users
 {% endblock %}
 
 {% block extra_js %}
-<script src="../../static/js/flash.js"></script>
-<script src="../../static/js/users/users.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/table-filters.js') }}"></script>
+<script>
+  // Pass permissions to JavaScript for dynamic row rendering
+  window.USER_PERMISSIONS = {
+    canEdit: {{ 'true' if has_permission('users.edit') else 'false' }},
+    canEnable: {{ 'true' if has_permission('users.enable') else 'false' }},
+    canDisable: {{ 'true' if has_permission('users.disable') else 'false' }},
+    canDelete: {{ 'true' if has_permission('users.delete') else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/users/users.js') }}"></script>
 {% endblock %}

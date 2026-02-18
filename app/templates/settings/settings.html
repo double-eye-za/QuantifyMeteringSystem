@@ -324,14 +324,13 @@
               Account Lockout
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              Lock accounts after 5 failed attempts
+              Lock accounts after failed login attempts
             </p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               id="account_lockout"
-              checked
               class="sr-only peer"
             />
             <div
@@ -510,6 +509,6 @@
 </div>
 
 {% endblock %} {% block extra_js %}
-<script src="/static/js/flash.js"></script>
-<script src="/static/js/settings/settings.js"></script>
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings/settings.js') }}"></script>
 {% endblock %}

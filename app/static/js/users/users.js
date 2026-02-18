@@ -1,5 +1,123 @@
 const BASE_URL = "/api/v1";
 
+// Global table filter instance
+let usersTableFilter = null;
+
+// Render a single user row for the table
+function renderUserRow(user) {
+  const permissions = window.USER_PERMISSIONS || {};
+  const userJson = JSON.stringify(user).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+
+  let actionsHtml = '<div class="flex gap-2">';
+
+  // Edit button
+  if (permissions.canEdit) {
+    actionsHtml += `
+      <button data-user="${userJson}" class="inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors duration-200" title="Edit user">
+        <i class="fa-solid fa-pen-to-square mr-1"></i>
+        Edit
+      </button>
+    `;
+  }
+
+  // Enable/Disable button
+  if (user.is_active && permissions.canDisable) {
+    actionsHtml += `
+      <button data-user-id="${user.id}" data-user-data="${userJson}" class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400 transition-colors duration-200" title="Disable user">
+        <i class="fa-solid fa-ban mr-1"></i>
+        Disable
+      </button>
+    `;
+  } else if (!user.is_active && permissions.canEnable) {
+    actionsHtml += `
+      <button data-user-id="${user.id}" data-user-data="${userJson}" class="inline-flex items-center px-2 py-1 border border-green-300 dark:border-green-600 rounded text-xs hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 transition-colors duration-200" title="Enable user">
+        <i class="fa-solid fa-check mr-1"></i>
+        Enable
+      </button>
+    `;
+  }
+
+  // Delete button
+  if (permissions.canDelete) {
+    actionsHtml += `
+      <button data-delete-user-id="${user.id}" data-delete-user-data="${userJson}" class="inline-flex items-center px-2 py-1 border border-red-300 dark:border-red-600 rounded text-xs hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 transition-colors duration-200" title="Delete user permanently">
+        <i class="fa-solid fa-trash mr-1"></i>
+        Delete
+      </button>
+    `;
+  }
+
+  actionsHtml += '</div>';
+
+  const statusClass = user.is_active ? 'bg-green-600' : 'bg-gray-500';
+  const statusText = user.is_active ? 'Active' : 'Disabled';
+
+  return `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+      <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.full_name || ''}</td>
+      <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.email || ''}</td>
+      <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.phone || '-'}</td>
+      <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.role_name || '-'}</td>
+      <td class="px-4 py-3">
+        <span class="px-2 py-1 rounded text-white text-xs ${statusClass}">
+          ${statusText}
+        </span>
+      </td>
+      <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.created_at || ''}</td>
+      <td class="px-4 py-3">${actionsHtml}</td>
+    </tr>
+  `;
+}
+
+// Attach event listeners to dynamically rendered action buttons
+function attachUserRowEventListeners() {
+  // Edit buttons
+  document.querySelectorAll("[data-user]").forEach((button) => {
+    button.addEventListener("click", function () {
+      const user = JSON.parse(this.dataset.user);
+      populateEditForm(user);
+      showEditModal();
+    });
+  });
+
+  // Enable/Disable buttons
+  document.querySelectorAll("[data-user-id]").forEach((button) => {
+    button.addEventListener("click", function () {
+      const userId = this.dataset.userId;
+      const user = JSON.parse(this.dataset.userData);
+      const isActive = user.is_active;
+
+      if (isActive) {
+        showConfirmModal(
+          "Disable User",
+          `Are you sure you want to disable ${user.full_name}?`,
+          () => disableUser(userId)
+        );
+      } else {
+        showConfirmModal(
+          "Enable User",
+          `Are you sure you want to enable ${user.full_name}?`,
+          () => enableUser(userId)
+        );
+      }
+    });
+  });
+
+  // Delete buttons
+  document.querySelectorAll("[data-delete-user-id]").forEach((button) => {
+    button.addEventListener("click", function () {
+      const userId = this.dataset.deleteUserId;
+      const user = JSON.parse(this.dataset.deleteUserData);
+
+      showConfirmModal(
+        "Delete User",
+        `Are you sure you want to permanently delete ${user.full_name}? This action cannot be undone.`,
+        () => deleteUser(userId)
+      );
+    });
+  });
+}
+
 function showCreateModal() {
   document.getElementById("invite-modal").classList.remove("hidden");
   document.getElementById("invite-modal").classList.add("flex");
@@ -37,6 +155,36 @@ function hideConfirmModal() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Initialize TableFilter for AJAX-based filtering
+  usersTableFilter = new TableFilter({
+    tableBodyId: 'usersTableBody',
+    apiEndpoint: `${BASE_URL}/api/users`,
+    filters: {
+      search: { element: '#searchInput', param: 'search', debounce: true },
+      status: { element: '#statusFilter', param: 'status' },
+      role: { element: '#roleFilter', param: 'role_id' }
+    },
+    renderRow: renderUserRow,
+    colSpan: 7,
+    onError: (error) => showFlashMessage(error, 'error', false),
+    onAfterFetch: () => {
+      // Re-attach event listeners after table is re-rendered
+      attachUserRowEventListeners();
+    }
+  });
+
+  // Override attachRowEventListeners in the filter instance
+  usersTableFilter.attachRowEventListeners = attachUserRowEventListeners;
+
+  // Clear filters button
+  const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", function () {
+      usersTableFilter.clearFilters();
+    });
+  }
+
+  // Modal buttons
   document
     .getElementById("invite-open")
     .addEventListener("click", showCreateModal);
@@ -61,35 +209,8 @@ document.addEventListener("DOMContentLoaded", function () {
     .getElementById("user-confirm-cancel")
     .addEventListener("click", hideConfirmModal);
 
-  document.querySelectorAll("[data-user]").forEach((button) => {
-    button.addEventListener("click", function () {
-      const user = JSON.parse(this.dataset.user);
-      populateEditForm(user);
-      showEditModal();
-    });
-  });
-
-  document.querySelectorAll("[data-user-id]").forEach((button) => {
-    button.addEventListener("click", function () {
-      const userId = this.dataset.userId;
-      const user = JSON.parse(this.dataset.userData);
-      const isActive = user.is_active;
-
-      if (isActive) {
-        showConfirmModal(
-          "Disable User",
-          `Are you sure you want to disable ${user.full_name}?`,
-          () => disableUser(userId)
-        );
-      } else {
-        showConfirmModal(
-          "Enable User",
-          `Are you sure you want to enable ${user.full_name}?`,
-          () => enableUser(userId)
-        );
-      }
-    });
-  });
+  // Attach initial event listeners for server-rendered rows
+  attachUserRowEventListeners();
 
   document
     .getElementById("invite-form")
@@ -171,15 +292,21 @@ async function createUser() {
 
     const result = await response.json();
 
-    if (result.success) {
+    // Check response status first
+    if (response.ok && result.success) {
+      // Success - hide modal and refresh table
       hideCreateModal();
-      window.location.reload();
-      showFlashMessage("User created successfully", "success", true);
+      showFlashMessage("User created successfully", "success", false);
+      refreshUsersTable();
     } else {
-      showFlashMessage(result.error || "Failed to create user", "error", true);
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to create user. Please check the form and try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to create user", "error", true);
+    // Network or parsing error - show immediately
+    console.error("Error creating user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -204,15 +331,17 @@ async function updateUser() {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideEditModal();
-      window.location.reload();
-      showFlashMessage("User updated successfully", "success", true);
+      showFlashMessage("User updated successfully", "success", false);
+      refreshUsersTable();
     } else {
-      showFlashMessage(result.error || "Failed to update user", "error", true);
+      const errorMessage = result.error || result.message || "Failed to update user. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to update user", "error", true);
+    console.error("Error updating user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -227,15 +356,19 @@ async function enableUser(userId) {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideConfirmModal();
-      window.location.reload();
-      showFlashMessage("User enabled successfully", "success", true);
+      showFlashMessage("User enabled successfully", "success", false);
+      refreshUsersTable();
     } else {
-      showFlashMessage(result.error || "Failed to enable user", "error", true);
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to enable user.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to enable user", "error", true);
+    hideConfirmModal();
+    console.error("Error enabling user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -250,15 +383,46 @@ async function disableUser(userId) {
 
     const result = await response.json();
 
-    if (result.success) {
+    if (response.ok && result.success) {
       hideConfirmModal();
-      window.location.reload();
-      showFlashMessage("User disabled successfully", "success", true);
+      showFlashMessage("User disabled successfully", "success", false);
+      refreshUsersTable();
     } else {
-      showFlashMessage(result.error || "Failed to disable user", "error", true);
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to disable user.";
+      showFlashMessage(errorMessage, "error", false);
     }
   } catch (error) {
-    showFlashMessage("Failed to disable user", "error", true);
+    hideConfirmModal();
+    console.error("Error disabling user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
+  }
+}
+
+async function deleteUser(userId) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      hideConfirmModal();
+      showFlashMessage("User deleted successfully", "success", false);
+      refreshUsersTable();
+    } else {
+      hideConfirmModal();
+      const errorMessage = result.error || result.message || "Failed to delete user.";
+      showFlashMessage(errorMessage, "error", false);
+    }
+  } catch (error) {
+    hideConfirmModal();
+    console.error("Error deleting user:", error);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
 }
 
@@ -272,23 +436,11 @@ function generateSecurePassword() {
   return password;
 }
 
-function applyFilters() {
-  const form = document.getElementById("filters");
-  form.submit();
-}
-
-function clearFilters() {
-  window.location.href = "/api/v1/users";
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  const searchInput = document.getElementById("search");
-  if (searchInput) {
-    searchInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        applyFilters();
-      }
-    });
+// Refresh the table after CRUD operations (use AJAX refresh instead of full page reload)
+function refreshUsersTable() {
+  if (usersTableFilter) {
+    usersTableFilter.refresh();
+  } else {
+    window.location.reload();
   }
-});
+}

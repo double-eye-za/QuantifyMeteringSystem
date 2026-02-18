@@ -26,6 +26,8 @@ class Meter(db.Model):
     firmware_version: Optional[str]
     is_prepaid: Optional[bool]
     is_active: Optional[bool]
+    device_eui: Optional[str]
+    lorawan_device_type: Optional[str]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     serial_number = db.Column(db.String(100), unique=True, nullable=False)
@@ -41,6 +43,11 @@ class Meter(db.Model):
     firmware_version = db.Column(db.String(50))
     is_prepaid = db.Column(db.Boolean, default=True)
     is_active = db.Column(db.Boolean, default=True)
+
+    # LoRaWAN Device Fields (for backend MQTT integration)
+    device_eui = db.Column(db.String(16), unique=True, nullable=True, index=True)
+    lorawan_device_type = db.Column(db.String(50), nullable=True)  # milesight_em300, qalcosonic_w1
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
@@ -52,7 +59,7 @@ class Meter(db.Model):
             name="ck_meters_type",
         ),
         CheckConstraint(
-            "communication_type IN ('plc','cellular','wifi','manual')",
+            "communication_type IN ('plc','cellular','wifi','manual','lora')",
             name="ck_meters_comm_type",
         ),
         CheckConstraint(
@@ -85,6 +92,8 @@ class Meter(db.Model):
             "firmware_version": self.firmware_version,
             "is_prepaid": self.is_prepaid,
             "is_active": self.is_active,
+            "device_eui": self.device_eui,
+            "lorawan_device_type": self.lorawan_device_type,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

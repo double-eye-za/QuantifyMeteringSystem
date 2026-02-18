@@ -175,19 +175,29 @@ async function submitProfile(event) {
     email: document.getElementById("email")?.value || "",
     phone: document.getElementById("phone")?.value || "",
   };
+
   try {
     const resp = await fetch(`${BASE_URL}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!resp.ok) showFlashMessage("Failed to update profile", "error", true);
-    await resp.json();
-    window.location.reload();
-    showFlashMessage("Profile updated successfully", "success", true);
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - reload with success message
+      showFlashMessage("Profile updated successfully", "success", true);
+      window.location.reload();
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to update profile. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
+    }
   } catch (e) {
+    // Network or parsing error
     console.error("Error updating profile:", e);
-    showFlashMessage("Failed to update profile", "error", true);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
   return false;
 }
@@ -225,13 +235,13 @@ async function submitChangePassword(event) {
     showFlashMessage(
       "Password does not meet requirements: " + messages.join(", "),
       "error",
-      true
+      false
     );
     return false;
   }
 
   if (payload.new_password !== payload.confirm_password) {
-    showFlashMessage("Passwords do not match", "error", true);
+    showFlashMessage("Passwords do not match", "error", false);
     return false;
   }
 
@@ -241,26 +251,25 @@ async function submitChangePassword(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await resp.json();
-    if (!resp.ok) {
-      window.location.reload();
-      showFlashMessage(
-        data.error || "Failed to update password",
-        "error",
-        true
-      );
-      return false;
+
+    const result = await resp.json();
+
+    if (resp.ok && result.success) {
+      // Success - show message and reset form (NO reload for password change)
+      showFlashMessage("Password updated successfully", "success", false);
+      form.reset();
+      document.getElementById("passwordValidation").innerHTML = "";
+      document.getElementById("passwordMatchValidation").innerHTML = "";
+      document.getElementById("submitPasswordBtn").disabled = true;
+    } else {
+      // Error - show message immediately WITHOUT reload
+      const errorMessage = result.error || result.message || "Failed to update password. Please try again.";
+      showFlashMessage(errorMessage, "error", false);
     }
-
-    showFlashMessage("Password updated successfully", "success", false);
-
-    form.reset();
-    document.getElementById("passwordValidation").innerHTML = "";
-    document.getElementById("passwordMatchValidation").innerHTML = "";
-    document.getElementById("submitPasswordBtn").disabled = true;
   } catch (e) {
+    // Network or parsing error
     console.error("Error updating password:", e);
-    showFlashMessage("Failed to update password", "error", false);
+    showFlashMessage("An unexpected error occurred. Please try again.", "error", false);
   }
   return false;
 }

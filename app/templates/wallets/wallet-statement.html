@@ -397,12 +397,21 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
       ctx.lineWidth = 2;
       ctx.beginPath();
 
-      const data = [700, 668, 636, 604, 572, 540, 508, 476, 450, 418];
-      const days = ["1", "2", "3", "4", "5", "6", "7", "8", "9 (Today)", "10"];
+      // Use real balance history from backend
+      {% if balance_history %}
+      const balanceHistory = {{ balance_history | tojson }};
+      const data = balanceHistory.map(item => item.balance);
+      const days = balanceHistory.map(item => item.label);
+      const maxBalance = Math.max(...data, 1); // Avoid division by zero
+      {% else %}
+      const data = [{{ wallet.electricity_balance }}];
+      const days = ["Today"];
+      const maxBalance = {{ wallet.electricity_balance }};
+      {% endif %}
 
       data.forEach((value, index) => {
         const x = 30 + index * 35;
-        const y = 170 - (value / 700) * 150;
+        const y = 170 - (value / maxBalance) * 150;
 
         if (index === 0) {
           ctx.moveTo(x, y);
@@ -410,8 +419,8 @@ unit.unit_number }} - Quantify Metering System{% endblock %} {% block page_title
           ctx.lineTo(x, y);
         }
 
-        // Draw points
-        ctx.fillStyle = index === 8 ? "#10b981" : "#3b82f6";
+        // Draw points (highlight last point as "today")
+        ctx.fillStyle = index === data.length - 1 ? "#10b981" : "#3b82f6";
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fill();

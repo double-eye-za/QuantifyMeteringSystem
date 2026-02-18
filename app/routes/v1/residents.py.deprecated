@@ -38,19 +38,13 @@ def residents_page():
     query = svc_list_residents(search=search, is_active=is_active_val, unit_id=unit_id)
     items, meta = paginate_query(query)
 
+    # Note: Residents table is legacy - for new system use Persons
+    # This page still works for backward compatibility but won't show unit associations
+    # since resident_id column was removed. Use /api/v1/persons instead.
     residents = []
     for r in items:
         rd = r.to_dict()
-        unit = Unit.query.filter_by(resident_id=r.id).first()
-        if unit:
-            estate = Estate.query.get(unit.estate_id)
-            rd["unit"] = {
-                "id": unit.id,
-                "unit_number": unit.unit_number,
-                "estate_name": estate.name if estate else None,
-            }
-        else:
-            rd["unit"] = None
+        rd["unit"] = None  # Legacy residents don't have unit association anymore
         residents.append(rd)
 
     units = []

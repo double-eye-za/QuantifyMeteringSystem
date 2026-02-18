@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import jsonify, request, render_template
 from flask_login import login_required, current_user
 
-from ...models import Unit, Estate, Resident, Meter, RateTable, SystemSetting
+from ...models import Unit, Estate, Person, Meter, RateTable, SystemSetting
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
@@ -16,12 +16,27 @@ from ...services.units import (
     create_unit as svc_create_unit,
     update_unit as svc_update_unit,
     delete_unit as svc_delete_unit,
+    decommission_unit as svc_decommission_unit,
+    recommission_unit as svc_recommission_unit,
+    UnitDeleteError,
 )
 from ...services.meters import list_available_by_type as svc_list_available_meters
-from ...services.residents import (
-    list_residents_for_dropdown as svc_list_residents_for_dropdown,
+from ...services.persons import (
+    list_persons_for_dropdown as svc_list_persons_for_dropdown,
 )
 from ...services.rate_tables import get_rate_table_by_id as svc_get_rate_table_by_id
+from ...services.unit_ownerships import (
+    add_owner as svc_add_owner,
+    get_unit_owners as svc_get_unit_owners,
+)
+from ...services.unit_tenancies import (
+    add_tenant as svc_add_tenant,
+    get_unit_tenants as svc_get_unit_tenants,
+)
+from ...services.mobile_users import (
+    get_mobile_user_by_person_id,
+    create_mobile_user,
+)
 
 
 @api_v1.route("/units", methods=["GET"])
@@ -45,24 +60,19 @@ def units_page():
     )
     items, meta = paginate_query(query)
 
-    # Preload resident names
-    units = []
-    for u in items:
-        ud = u.to_dict()
-        if u.resident_id:
-            res = Resident.query.get(u.resident_id)
-            if res:
-                ud["resident"] = {
-                    "id": res.id,
-                    "first_name": res.first_name,
-                    "last_name": res.last_name,
-                    "phone": res.phone,
-                }
-        units.append(ud)
+    # Preload tenant/owner names (Unit.to_dict() already includes this via properties)
+    units = [u.to_dict() for u in items]
     estates = [
         {"id": e.id, "name": e.name}
         for e in Estate.query.order_by(Estate.name.asc()).all()
     ]
+
+    # Count units per estate for header display (within the current filtered result set)
+    estate_unit_counts = {}
+    for u in units:
+        eid = u.get("estate_id")
+        if eid:
+            estate_unit_counts[eid] = estate_unit_counts.get(eid, 0) + 1
 
     assigned_ids = set()
     for u in Unit.query.with_entities(
@@ -91,20 +101,21 @@ def units_page():
     ]
     solar_meters = [serialize_meter(m) for m in svc_list_available_meters("solar")]
 
-    residents = [
-        {"id": r.id, "name": f"{r.first_name} {r.last_name}"}
-        for r in svc_list_residents_for_dropdown()
+    persons = [
+        {"id": p.id, "name": p.full_name}
+        for p in svc_list_persons_for_dropdown()
     ]
 
     return render_template(
         "units/units.html",
         units=units,
         estates=estates,
+        estate_unit_counts=estate_unit_counts,
         electricity_meters=electricity_meters,
         water_meters=water_meters,
         hot_water_meters=hot_water_meters,
         solar_meters=solar_meters,
-        residents=residents,
+        persons=persons,
         pagination=meta,
         current_filters={
             "estate_id": estate_id,
@@ -197,11 +208,10 @@ def wallet_statement_page(unit_id: int):
     txn_query = txn_query.order_by(Transaction.completed_at.desc())
     txn_items, txn_meta = paginate_query(txn_query)
 
-    # Get last topup date
+    # Get last topup date (any topup type)
     last_topup = (
-        Transaction.query.filter_by(
-            wallet_id=wallet.id, transaction_type="topup", status="completed"
-        )
+        Transaction.query.filter_by(wallet_id=wallet.id, status="completed")
+        .filter(Transaction.transaction_type.like("topup%"))
         .order_by(Transaction.completed_at.desc())
         .first()
     )
@@ -302,6 +312,49 @@ def wallet_statement_page(unit_id: int):
         if latest:
             meter_readings["solar"] = latest
 
+    # Calculate balance history for trend chart (last 10 days)
+    from datetime import timedelta
+
+    balance_history = []
+    ten_days_ago = datetime.now() - timedelta(days=10)
+
+    # Get transactions for last 10 days to calculate running balance
+    historical_txns = (
+        Transaction.query.filter_by(wallet_id=wallet.id)
+        .filter(Transaction.completed_at >= ten_days_ago)
+        .filter(Transaction.status == "completed")
+        .order_by(Transaction.completed_at.asc())
+        .all()
+    )
+
+    # Group by date and calculate balance at end of each day
+    from collections import defaultdict
+
+    daily_balances = defaultdict(lambda: float(wallet.electricity_balance))
+
+    if historical_txns:
+        # Calculate balance progression
+        current_balance = float(wallet.electricity_balance)
+
+        # Work backwards from current balance
+        for txn in reversed(historical_txns):
+            txn_date = txn.completed_at.date()
+            # Reverse the transaction to get previous balance
+            if txn.transaction_type.startswith("topup"):
+                current_balance -= float(txn.amount)
+            elif txn.transaction_type.startswith("deduction"):
+                current_balance += float(txn.amount)
+            daily_balances[txn_date] = current_balance
+
+    # Fill in all days for last 10 days
+    for i in range(10):
+        day = datetime.now().date() - timedelta(days=9 - i)
+        balance_history.append({
+            "day": i + 1,
+            "label": day.strftime("%b %d") if i < 9 else f"{day.strftime('%b %d')} (Today)",
+            "balance": daily_balances.get(day, float(wallet.electricity_balance))
+        })
+
     return render_template(
         "wallets/wallet-statement.html",
         unit=unit,
@@ -309,6 +362,7 @@ def wallet_statement_page(unit_id: int):
         estate=estate,
         transactions=txn_items,
         transactions_pagination=txn_meta,
+        balance_history=balance_history,
         period=period,
         start_date=start_param,
         end_date=end_param,
@@ -383,10 +437,8 @@ def unit_visual_page(unit_id: int):
     # Wallet
     wallet = getattr(unit, "wallet", None)
 
-    # Resident data
-    resident = None
-    if unit.resident_id:
-        resident = Resident.query.get(unit.resident_id)
+    # Resident data (using backward compatibility property)
+    resident = unit.resident  # Returns primary_tenant as Person
 
     # Today's usage from transactions
     from datetime import datetime, timedelta
@@ -719,9 +771,12 @@ def unit_details_page(unit_id: int):
     if getattr(unit, "estate_id", None):
         estate = Estate.query.get(unit.estate_id)
 
-    resident = None
-    if getattr(unit, "resident_id", None):
-        resident = Resident.query.get(unit.resident_id)
+    # Get owners and tenants for this unit
+    owners = svc_get_unit_owners(unit_id)
+    tenants = svc_get_unit_tenants(unit_id, active_only=True)
+
+    # Get resident using backward compatibility property (for old code)
+    resident = getattr(unit, "resident", None)  # Returns primary_tenant as Person
 
     # Get wallet for the unit
     wallet = None
@@ -745,6 +800,18 @@ def unit_details_page(unit_id: int):
     # Get latest meter readings for all 4 meters
     meter_readings = {}
     from ...models.meter_reading import MeterReading
+    from ...models.meter import Meter
+
+    # Get actual Meter objects for status information
+    meters = {}
+    if unit.electricity_meter_id:
+        meters["electricity"] = Meter.query.get(unit.electricity_meter_id)
+    if unit.water_meter_id:
+        meters["water"] = Meter.query.get(unit.water_meter_id)
+    if unit.hot_water_meter_id:
+        meters["hot_water"] = Meter.query.get(unit.hot_water_meter_id)
+    if unit.solar_meter_id:
+        meters["solar"] = Meter.query.get(unit.solar_meter_id)
 
     if unit.electricity_meter_id:
         latest_electricity = (
@@ -782,14 +849,24 @@ def unit_details_page(unit_id: int):
         if latest_solar:
             meter_readings["solar"] = latest_solar
 
+    # Get all persons for dropdown
+    persons = [
+        {"id": p.id, "name": p.full_name}
+        for p in svc_list_persons_for_dropdown()
+    ]
+
     return render_template(
         "units/unit-details.html",
         unit=unit,
         estate=estate,
         resident=resident,
+        owners=owners,
+        tenants=tenants,
+        persons=persons,
         wallet=wallet,
         recent_transactions=recent_transactions,
         meter_readings=meter_readings,
+        meters=meters,
     )
 
 
@@ -962,9 +1039,132 @@ def remove_unit_overrides():
 @requires_permission("units.create")
 def create_unit():
     payload = request.get_json(force=True) or {}
+
+    # Extract owners and tenants arrays before creating unit
+    owners = payload.pop("owners", [])
+    tenants = payload.pop("tenants", [])
+
+    # Create the unit
     unit = svc_create_unit(payload, user_id=getattr(current_user, "id", None))
+
+    # Add owners
+    owner_errors = []
+    mobile_users_created = []
+
+    # Get estate info for SMS messages and tracking
+    estate_name = unit.estate.name if unit.estate else None
+    estate_id = unit.estate_id
+
+    for owner_data in owners:
+        person_id = owner_data.get("person_id")
+        if person_id:
+            success, result = svc_add_owner(
+                unit_id=unit.id,
+                person_id=person_id,
+                is_primary_owner=owner_data.get("is_primary_owner", False),
+                ownership_percentage=owner_data.get("ownership_percentage", 100.0),
+            )
+            if success:
+                log_action(
+                    "unit.owner_added",
+                    entity_type="unit",
+                    entity_id=unit.id,
+                    new_values={"person_id": person_id},
+                )
+
+                # Check if person needs mobile user account
+                existing_mobile_user = get_mobile_user_by_person_id(person_id)
+                if not existing_mobile_user:
+                    user_success, user_result = create_mobile_user(
+                        person_id=person_id,
+                        send_sms=True,
+                        estate_name=estate_name,
+                        estate_id=estate_id,
+                        unit_id=unit.id,
+                        role="owner",
+                        created_by=getattr(current_user, "id", None),
+                    )
+                    if user_success:
+                        mobile_users_created.append({
+                            "person_id": person_id,
+                            "role": "owner",
+                            "phone_number": user_result["user"].phone_number,
+                            "temporary_password": user_result["temp_password"],
+                            "sms_sent": user_result.get("sms_sent", False),
+                            "sms_error": user_result.get("sms_error"),
+                        })
+            else:
+                # Log the error but continue with other owners
+                error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
+                owner_errors.append(f"Person {person_id}: {error_msg}")
+
+    # Add tenants
+    tenant_errors = []
+    for tenant_data in tenants:
+        person_id = tenant_data.get("person_id")
+        if person_id:
+            success, result = svc_add_tenant(
+                unit_id=unit.id,
+                person_id=person_id,
+                is_primary_tenant=tenant_data.get("is_primary_tenant", False),
+                status=tenant_data.get("status", "active"),
+            )
+            if success:
+                log_action(
+                    "unit.tenant_added",
+                    entity_type="unit",
+                    entity_id=unit.id,
+                    new_values={"person_id": person_id},
+                )
+
+                # Check if person needs mobile user account
+                existing_mobile_user = get_mobile_user_by_person_id(person_id)
+                if not existing_mobile_user:
+                    user_success, user_result = create_mobile_user(
+                        person_id=person_id,
+                        send_sms=True,
+                        estate_name=estate_name,
+                        estate_id=estate_id,
+                        unit_id=unit.id,
+                        role="tenant",
+                        created_by=getattr(current_user, "id", None),
+                    )
+                    if user_success:
+                        mobile_users_created.append({
+                            "person_id": person_id,
+                            "role": "tenant",
+                            "phone_number": user_result["user"].phone_number,
+                            "temporary_password": user_result["temp_password"],
+                            "sms_sent": user_result.get("sms_sent", False),
+                            "sms_error": user_result.get("sms_error"),
+                        })
+            else:
+                # Log the error but continue with other tenants
+                error_msg = result.get("message", "Unknown error") if isinstance(result, dict) else str(result)
+                tenant_errors.append(f"Person {person_id}: {error_msg}")
+
     log_action("unit.create", entity_type="unit", entity_id=unit.id, new_values=payload)
-    return jsonify({"data": unit.to_dict()}), 201
+
+    # Build response with warnings if there were errors
+    response_data = {
+        "data": unit.to_dict(),
+        "message": "Unit created successfully"
+    }
+
+    if owner_errors or tenant_errors:
+        warnings = []
+        if owner_errors:
+            warnings.append(f"Owner assignment errors: {'; '.join(owner_errors)}")
+        if tenant_errors:
+            warnings.append(f"Tenant assignment errors: {'; '.join(tenant_errors)}")
+        response_data["warnings"] = warnings
+
+    # Include mobile user creation info if any were created
+    if mobile_users_created:
+        response_data["mobile_users_created"] = mobile_users_created
+        response_data["message"] += f". {len(mobile_users_created)} mobile app account(s) created."
+
+    return jsonify(response_data), 201
 
 
 @api_v1.put("/units/<int:unit_id>")
@@ -994,6 +1194,63 @@ def delete_unit(unit_id: int):
     unit = svc_get_unit_by_id(unit_id)
     if not unit:
         return jsonify({"error": "Not Found", "code": 404}), 404
-    svc_delete_unit(unit)
+    try:
+        svc_delete_unit(unit)
+    except UnitDeleteError as e:
+        return jsonify({"error": str(e), "code": 409}), 409
     log_action("unit.delete", entity_type="unit", entity_id=unit_id)
     return jsonify({"message": "Deleted"})
+
+
+@api_v1.post("/units/<int:unit_id>/decommission")
+@login_required
+@requires_permission("units.delete")
+def decommission_unit(unit_id: int):
+    """
+    Decommission a unit (soft delete).
+
+    This is used when a unit has transaction history that must be preserved.
+    - Sets is_active = False
+    - Unlinks all meters
+    - Keeps wallet and transactions for audit
+    """
+    unit = svc_get_unit_by_id(unit_id)
+    if not unit:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    if not unit.is_active:
+        return jsonify({"error": "Unit is already decommissioned", "code": 400}), 400
+
+    svc_decommission_unit(unit)
+    log_action("unit.decommission", entity_type="unit", entity_id=unit_id)
+    return jsonify({
+        "message": f"Unit '{unit.unit_number}' has been decommissioned",
+        "data": unit.to_dict()
+    })
+
+
+@api_v1.post("/units/<int:unit_id>/recommission")
+@login_required
+@requires_permission("units.edit")
+def recommission_unit(unit_id: int):
+    """
+    Recommission a previously decommissioned unit.
+
+    This brings the unit back to active status.
+    - Sets is_active = True
+    - Sets occupancy_status to 'vacant'
+    - Meters must be reassigned manually after recommissioning
+    """
+    unit = svc_get_unit_by_id(unit_id)
+    if not unit:
+        return jsonify({"error": "Not Found", "code": 404}), 404
+
+    if unit.is_active:
+        return jsonify({"error": "Unit is already active", "code": 400}), 400
+
+    svc_recommission_unit(unit)
+    log_action("unit.recommission", entity_type="unit", entity_id=unit_id)
+    return jsonify({
+        "message": f"Unit '{unit.unit_number}' has been recommissioned and is now active",
+        "data": unit.to_dict()
+    })

@@ -27,7 +27,7 @@ from app.models import (
     TimeOfUseRate,
     MeterReading,
     MeterAlert,
-    Resident,
+    # Resident,  # DEPRECATED - Use Person model instead
     Transaction,
 )
 from sqlalchemy import text
@@ -1377,6 +1377,104 @@ def create_residents_and_assign(admin_user: User) -> dict[str, int]:
     return {"residents_created": created, "assigned": assigned}
 
 
+def create_persons_and_assign(admin_user: User) -> dict[str, int]:
+    """Create persons and assign them as tenants to occupied units"""
+    from random import randint
+    from datetime import date, timedelta
+    from app.models import Person, UnitTenancy
+
+    created = 0
+    assigned = 0
+
+    first_names = [
+        "John",
+        "Sarah",
+        "Mike",
+        "Jane",
+        "Peter",
+        "Anna",
+        "Takudzwa",
+        "Emily",
+        "Tom",
+        "Grace",
+    ]
+    last_names = [
+        "Smith",
+        "Johnson",
+        "Chen",
+        "Doe",
+        "Brown",
+        "Williams",
+        "Maseva",
+        "Khan",
+        "Naidoo",
+        "Botha",
+    ]
+
+    def ensure_person(email: str, data: dict) -> Person:
+        p = Person.query.filter_by(email=email).first()
+        if p:
+            return p
+        p = Person(
+            id_number=data.get("id_number"),
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=email,
+            phone=data["phone"],
+            is_active=True,
+            created_by=admin_user.id,
+        )
+        db.session.add(p)
+        db.session.commit()
+        nonlocal created
+        created += 1
+        return p
+
+    for unit in Unit.query.all():
+        if unit.occupancy_status == "occupied":
+            # Check if unit already has tenants
+            existing_tenancy = UnitTenancy.query.filter_by(
+                unit_id=unit.id, status="active"
+            ).first()
+            if existing_tenancy:
+                continue  # Skip if already has tenant
+
+            fn = first_names[unit.id % len(first_names)]
+            ln = last_names[unit.id % len(last_names)]
+            email = f"{fn.lower()}.{ln.lower()}{unit.id}@example.com"
+            phone = f"+27 10 {randint(100, 999)} {randint(1000, 9999)}"
+
+            person = ensure_person(
+                email,
+                {
+                    "id_number": f"800101{unit.id:04d}0080",
+                    "first_name": fn,
+                    "last_name": ln,
+                    "phone": phone,
+                },
+            )
+
+            # Create tenancy record
+            lease_start = date.today() - timedelta(days=randint(30, 365))
+            tenancy = UnitTenancy(
+                unit_id=unit.id,
+                person_id=person.id,
+                is_primary_tenant=True,
+                lease_start_date=lease_start,
+                lease_end_date=None,
+                move_in_date=lease_start,
+                status="active",
+            )
+            db.session.add(tenancy)
+            db.session.commit()
+            assigned += 1
+
+    logging.info(
+        "Seeding persons done (created=%d, assigned_to_units=%d)", created, assigned
+    )
+    return {"persons_created": created, "assigned": assigned}
+
+
 def reset_database_data() -> None:
     engine_name = db.engine.name
     logging.info("Resetting database data using engine='%s'", engine_name)
@@ -1425,7 +1523,7 @@ def main():
         create_tiers_and_time_of_use(rate_tables)
         ensure_roles_and_super_admin()
         counts = create_estates_and_units(admin_user, rate_tables)
-        res_counts = create_residents_and_assign(admin_user)
+        res_counts = create_persons_and_assign(admin_user)
         ra_counts = create_readings_and_alerts()
         historical_transactions = create_historical_transactions()
         monthly_counts = create_monthly_readings_and_transactions()

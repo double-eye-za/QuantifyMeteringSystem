@@ -76,3 +76,6 @@ src/
 *.tmp
 temp/
 tmp/
+
+# CodeSight session data
+.codesight/

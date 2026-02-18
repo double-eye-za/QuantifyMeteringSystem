@@ -68,11 +68,19 @@ class Transaction(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "transaction_type IN (\n            'topup','purchase_electricity','purchase_water','purchase_solar',\n            'consumption_electricity','consumption_water','consumption_solar',\n            'refund','adjustment','service_charge'\n        )",
+            "transaction_type IN ("
+            "'topup', 'topup_electricity', 'topup_water', 'topup_solar', 'topup_hot_water', "
+            "'purchase_electricity', 'purchase_water', 'purchase_solar', "
+            "'consumption_electricity', 'consumption_water', 'consumption_solar', 'consumption_hot_water', "
+            "'deduction_electricity', 'deduction_water', 'deduction_solar', 'deduction_hot_water', "
+            "'refund', 'adjustment', 'service_charge'"
+            ")",
             name="ck_transactions_type",
         ),
         CheckConstraint(
-            "payment_method IS NULL OR payment_method IN ('eft','card','instant_eft','cash','system','adjustment')",
+            "payment_method IS NULL OR payment_method IN ("
+            "'eft', 'card', 'instant_eft', 'cash', 'system', 'adjustment', 'manual_admin'"
+            ")",
             name="ck_transactions_payment_method",
         ),
         CheckConstraint(
@@ -80,3 +88,23 @@ class Transaction(db.Model):
             name="ck_transactions_status",
         ),
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "transaction_number": self.transaction_number,
+            "wallet_id": self.wallet_id,
+            "transaction_type": self.transaction_type,
+            "amount": float(self.amount) if self.amount is not None else None,
+            "balance_before": float(self.balance_before) if self.balance_before is not None else None,
+            "balance_after": float(self.balance_after) if self.balance_after is not None else None,
+            "reference": self.reference,
+            "description": self.description,
+            "payment_method": self.payment_method,
+            "status": self.status,
+            "meter_id": self.meter_id,
+            "consumption_kwh": float(self.consumption_kwh) if self.consumption_kwh is not None else None,
+            "rate_applied": float(self.rate_applied) if self.rate_applied is not None else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

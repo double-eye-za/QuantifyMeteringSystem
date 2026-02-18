@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantify Metering System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8 text-center">
+            <!-- Logo/Icon -->
+            <div class="flex justify-center">
+                <div class="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
+                    <i class="fas fa-bolt text-white text-5xl"></i>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                    Quantify Metering System
+                </h1>
+                <p class="text-lg text-gray-600 dark:text-gray-300">
+                    Manage your prepaid utilities efficiently
+                </p>
+            </div>
+
+            <!-- Features -->
+            <div class="mt-8 grid grid-cols-1 gap-4 text-left">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-tachometer-alt text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                Real-time Monitoring
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Track electricity, water, and more
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-wallet text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                Prepaid Wallets
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Manage balances and top-ups
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                Analytics & Reports
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Insights on consumption patterns
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Button -->
+            <div class="mt-8">
+                <a href="/api/v1/login"
+                   class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fas fa-sign-in-alt text-blue-400 group-hover:text-blue-300"></i>
+                    </span>
+                    Sign In to Dashboard
+                </a>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-mobile-alt mr-2"></i>
+                    Mobile app available for owners and tenants
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Pattern (Optional) -->
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <svg class="absolute top-0 left-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+        </svg>
+    </div>
+</body>
+</html>

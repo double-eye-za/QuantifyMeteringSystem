@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy import or_
 
 from app.db import db
-from app.models import Unit, Estate
+from app.models import Unit, Estate, Person, UnitTenancy
 
 
 def list_units(
@@ -13,16 +13,35 @@ def list_units(
     occupancy_status: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    query = Unit.query
+    # Always join to Estate for sorting by estate name
+    query = Unit.query.outerjoin(Estate, Unit.estate_id == Estate.id)
+
     if estate_id is not None:
         query = query.filter(Unit.estate_id == estate_id)
     if occupancy_status is not None:
         query = query.filter(Unit.occupancy_status == occupancy_status)
     if search:
         like = f"%{search}%"
-        query = query.filter(
-            or_(Unit.unit_number.ilike(like), Unit.building.ilike(like))
+        # Search across unit_number, building, estate name, and tenant name
+        # Use outerjoin to include units without tenants
+        query = (
+            query.outerjoin(UnitTenancy, Unit.id == UnitTenancy.unit_id)
+            .outerjoin(Person, UnitTenancy.person_id == Person.id)
+            .filter(
+                or_(
+                    Unit.unit_number.ilike(like),
+                    Unit.building.ilike(like),
+                    Estate.name.ilike(like),
+                    Person.first_name.ilike(like),
+                    Person.last_name.ilike(like),
+                )
+            )
+            .distinct()
         )
+
+    # Sort by Estate name, then by Unit number
+    query = query.order_by(Estate.name.asc(), Unit.unit_number.asc())
+
     return query
 
 
@@ -31,12 +50,12 @@ def get_unit_by_id(unit_id: int):
 
 
 def create_unit(payload: dict, user_id: Optional[int] = None):
+    from ..models import Wallet
+
     estate = (
         Estate.query.get(payload["estate_id"]) if payload.get("estate_id") else None
     )
-    occupancy = payload.get("occupancy_status")
-    if occupancy is None and payload.get("resident_id"):
-        occupancy = "occupied"
+    occupancy = payload.get("occupancy_status") or "vacant"
     unit = Unit(
         estate_id=payload["estate_id"],
         unit_number=payload["unit_number"],
@@ -45,8 +64,7 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
         bedrooms=payload.get("bedrooms"),
         bathrooms=payload.get("bathrooms"),
         size_sqm=payload.get("size_sqm"),
-        occupancy_status=occupancy or "vacant",
-        resident_id=payload.get("resident_id"),
+        occupancy_status=occupancy,
         electricity_meter_id=payload.get("electricity_meter_id"),
         water_meter_id=payload.get("water_meter_id"),
         solar_meter_id=payload.get("solar_meter_id"),
@@ -60,6 +78,21 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
     )
     db.session.add(unit)
     db.session.commit()
+
+    # Auto-create wallet for this unit
+    existing_wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+    if not existing_wallet:
+        wallet = Wallet(
+            unit_id=unit.id,
+            balance=0.0,
+            electricity_balance=0.0,
+            water_balance=0.0,
+            solar_balance=0.0,
+            hot_water_balance=0.0
+        )
+        db.session.add(wallet)
+        db.session.commit()
+
     return unit
 
 
@@ -73,7 +106,6 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
         "bathrooms",
         "size_sqm",
         "occupancy_status",
-        "resident_id",
         "electricity_meter_id",
         "water_meter_id",
         "solar_meter_id",
@@ -90,9 +122,86 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
     return unit
 
 
+class UnitDeleteError(Exception):
+    """Raised when a unit cannot be deleted due to dependencies."""
+    pass
+
+
 def delete_unit(unit: Unit):
+    """
+    Delete a unit safely.
+
+    Rules:
+    - If wallet has transactions, raise error (can't delete financial history)
+    - If wallet exists but no transactions, delete wallet first
+    - Unlink meters (don't delete them, they can be repurposed)
+    - Delete unit
+    """
+    from ..models import Wallet, Transaction
+
+    # Check if unit has a wallet
+    wallet = Wallet.query.filter_by(unit_id=unit.id).first()
+
+    if wallet:
+        # Check if wallet has any transactions (financial history)
+        transaction_count = Transaction.query.filter_by(wallet_id=wallet.id).count()
+
+        if transaction_count > 0:
+            raise UnitDeleteError(
+                f"Cannot delete unit '{unit.unit_number}': wallet has {transaction_count} transaction(s). "
+                f"Consider decommissioning the unit instead to preserve financial history."
+            )
+
+        # No transactions - safe to delete wallet
+        db.session.delete(wallet)
+
+    # Unlink meters (don't delete them - they can be repurposed)
+    unit.electricity_meter_id = None
+    unit.water_meter_id = None
+    unit.solar_meter_id = None
+    unit.hot_water_meter_id = None
+
+    # Now delete the unit
     db.session.delete(unit)
     db.session.commit()
+
+
+def decommission_unit(unit: Unit):
+    """
+    Decommission a unit (soft delete).
+
+    This preserves financial history while removing the unit from active use.
+    - Sets is_active = False
+    - Unlinks all meters (they can be repurposed)
+    - Keeps wallet and transactions for audit trail
+    """
+    # Unlink meters (don't delete them - they can be repurposed)
+    unit.electricity_meter_id = None
+    unit.water_meter_id = None
+    unit.solar_meter_id = None
+    unit.hot_water_meter_id = None
+
+    # Mark as inactive
+    unit.is_active = False
+
+    db.session.commit()
+    return unit
+
+
+def recommission_unit(unit: Unit):
+    """
+    Recommission a previously decommissioned unit.
+
+    This brings the unit back to active status.
+    - Sets is_active = True
+    - Sets occupancy_status to 'vacant' (meters need to be reassigned)
+    - Meters must be reassigned manually after recommissioning
+    """
+    unit.is_active = True
+    unit.occupancy_status = "vacant"
+
+    db.session.commit()
+    return unit
 
 
 def count_units():

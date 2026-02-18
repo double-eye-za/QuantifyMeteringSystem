@@ -19,10 +19,10 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
     </h3>
     <div class="space-y-3">
       <div class="flex justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">Meter ID</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">Device EUI</span>
         <span
           class="text-sm font-mono font-medium text-gray-900 dark:text-white"
-          >{{ meter.serial_number if meter else meter_id }}</span
+          >{{ meter.device_eui if meter else meter_id }}</span
         >
       </div>
       <div class="flex justify-between">
@@ -37,7 +37,18 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         </span>
       </div>
       <div class="flex justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">Status</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">Device Status</span>
+        <span
+          class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if device_status=='online' else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }}"
+        >
+          <i
+            class="fas {{ 'fa-wifi' if device_status=='online' else 'fa-unlink' }} mr-1"
+          ></i
+          >{{ 'Online' if device_status=='online' else 'Offline' }}
+        </span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Credit Status</span>
         <span
           class="inline-flex items-center px-2 py-1 rounded text-xs {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if credit_status=='ok' else ('bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' if credit_status=='low' else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300') }}"
         >
@@ -74,7 +85,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <div class="flex justify-between">
         <span class="text-sm text-gray-600 dark:text-gray-400">Estate</span>
         <span class="text-sm font-medium text-gray-900 dark:text-white"
-          >{{ unit.estate_name if unit else '—' }}</span
+          >{{ estate.name if estate else '—' }}</span
         >
       </div>
       <div class="flex justify-between">
@@ -86,7 +97,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <div class="flex justify-between">
         <span class="text-sm text-gray-600 dark:text-gray-400">Tenant</span>
         <span class="text-sm font-medium text-gray-900 dark:text-white"
-          >{{ unit.resident_name if unit and unit.resident_name else '—'
+          >{{ (resident.first_name ~ ' ' ~ resident.last_name) if resident else '—'
           }}</span
         >
       </div>
@@ -118,11 +129,17 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">&nbsp;</div>
       <div class="mt-4 space-y-2">
+        <!-- Debug: is_super_admin = {{ is_super_admin() }}, wallet = {{ 'exists' if wallet else 'none' }}, unit = {{ 'exists' if unit else 'none' }} -->
+        {% if is_super_admin() %}
         <button
+          id="topUpBtn"
           class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
         >
           <i class="fas fa-plus-circle mr-2"></i>Top Up
         </button>
+        {% else %}
+        <!-- Not super admin or missing wallet/unit -->
+        {% endif %}
         <button
           class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
         >
@@ -164,46 +181,44 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   <div class="p-6">
     <!-- Live Readings -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <!-- Card 1: Today's Usage -->
       <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Current Load</span
-          >
-          <i class="fas fa-bolt text-yellow-500"></i>
-        </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          2.4 kW
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Updated: 14:32:45
-        </div>
-      </div>
-
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Voltage</span>
-          <i class="fas fa-plug text-green-500"></i>
-        </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          230 V
-        </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Normal range
-        </div>
-      </div>
-
-      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400"
-            >Today's Usage</span
-          >
+          <span class="text-sm text-gray-600 dark:text-gray-400">Today's Usage</span>
           <i class="fas fa-chart-line text-primary"></i>
         </div>
-        <div class="text-2xl font-bold text-gray-900 dark:text-white">
-          12.5 kWh
+        <div class="text-2xl font-bold text-gray-900 dark:text-white" id="today-usage">
+          —
         </div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Cost: R 20.83
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="today-cost">
+          Loading...
+        </div>
+      </div>
+
+      <!-- Card 2: Total Consumption -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Total Consumption</span>
+          <i class="fas fa-bolt text-yellow-500"></i>
+        </div>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white" id="total-reading">
+          —
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" id="last-reading-time">
+          Loading...
+        </div>
+      </div>
+
+      <!-- Card 3: Device Status -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Device Status</span>
+          <i class="fas fa-battery-full text-green-500" id="battery-icon"></i>
+        </div>
+        <div class="text-sm text-gray-900 dark:text-white space-y-1">
+          <div>Battery: <span id="battery-level" class="font-bold">—</span></div>
+          <div>Temp: <span id="temperature" class="font-bold">—</span></div>
+          <div>Signal: <span id="signal-strength" class="font-bold">—</span></div>
         </div>
       </div>
     </div>
@@ -216,20 +231,26 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         </h4>
         <div class="flex space-x-2">
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="hour"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Hour
           </button>
-          <button class="px-3 py-1 text-xs bg-primary text-white rounded-lg">
+          <button
+            data-period="day"
+            class="period-btn px-3 py-1 text-xs bg-primary text-white rounded-lg active"
+          >
             Day
           </button>
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="week"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Week
           </button>
           <button
-            class="px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg"
+            data-period="month"
+            class="period-btn px-3 py-1 text-xs bg-white dark:bg-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-500 transition-colors"
           >
             Month
           </button>
@@ -240,11 +261,114 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
     </div>
 
+    <!-- Billing Transactions Table -->
+    <div class="mt-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 md:mb-0">
+          Billing Transactions
+        </h4>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div class="flex items-center gap-2">
+            <label for="txnStartDate" class="text-sm text-gray-600 dark:text-gray-400">From:</label>
+            <input type="date" id="txnStartDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="txnEndDate" class="text-sm text-gray-600 dark:text-gray-400">To:</label>
+            <input type="date" id="txnEndDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <button id="filterTxnBtn" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-blue-600">
+            <i class="fas fa-filter mr-1"></i>Filter
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Consumption</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnTotalConsumption">—</div>
+        </div>
+        <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Billed</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnTotalAmount">—</div>
+        </div>
+        <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
+          <div class="text-xs text-gray-600 dark:text-gray-400">Transactions</div>
+          <div class="text-lg font-bold text-gray-900 dark:text-white" id="txnCount">—</div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+          <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+              <th scope="col" class="px-4 py-3">Date/Time</th>
+              <th scope="col" class="px-4 py-3">Consumption</th>
+              <th scope="col" class="px-4 py-3">Rate</th>
+              <th scope="col" class="px-4 py-3">Amount</th>
+              <th scope="col" class="px-4 py-3">Balance After</th>
+              <th scope="col" class="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody id="txnTableBody">
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading transactions...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4" id="txnPagination">
+        <div class="text-sm text-gray-600 dark:text-gray-400" id="txnPaginationInfo">
+          Showing 0 of 0 transactions
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="txnPrevBtn" disabled class="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div id="txnPageNumbers" class="flex gap-1">
+            <!-- Page numbers will be inserted here -->
+          </div>
+          <button id="txnNextBtn" disabled class="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Recent Readings Table -->
     <div class="mt-6">
-      <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Recent Readings
-      </h4>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 md:mb-0">
+          Recent Readings
+        </h4>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div class="flex items-center gap-2">
+            <label for="readingsStartDate" class="text-sm text-gray-600 dark:text-gray-400">From:</label>
+            <input type="date" id="readingsStartDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="readingsEndDate" class="text-sm text-gray-600 dark:text-gray-400">To:</label>
+            <input type="date" id="readingsEndDate"
+              class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="readingsMinConsumption" class="text-sm text-gray-600 dark:text-gray-400">Min:</label>
+            <input type="number" id="readingsMinConsumption" step="0.0001" min="0" placeholder="0"
+              class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+              title="Minimum consumption to show">
+          </div>
+          <button id="filterReadingsBtn" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-blue-600">
+            <i class="fas fa-filter mr-1"></i>Filter
+          </button>
+        </div>
+      </div>
       <div class="overflow-x-auto">
         <table
           class="w-full text-sm text-left text-gray-500 dark:text-gray-400"
@@ -254,37 +378,52 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
           >
             <tr>
               <th scope="col" class="px-6 py-3">Timestamp</th>
-              <th scope="col" class="px-6 py-3">Reading (kWh)</th>
+              <th scope="col" class="px-6 py-3">
+                {% if meter and meter.meter_type in ('electricity', 'solar') %}
+                  Reading (kWh)
+                {% elif meter and meter.meter_type in ('water', 'hot_water') %}
+                  Reading (L)
+                {% else %}
+                  Reading
+                {% endif %}
+              </th>
               <th scope="col" class="px-6 py-3">Consumption</th>
-              <th scope="col" class="px-6 py-3">Load (kW)</th>
-              <th scope="col" class="px-6 py-3">Voltage</th>
+              {% if meter and meter.meter_type in ('electricity', 'solar') %}
+                <th scope="col" class="px-6 py-3">Load (kW)</th>
+                <th scope="col" class="px-6 py-3">Voltage (V)</th>
+              {% elif meter and meter.meter_type in ('water', 'hot_water') %}
+                <th scope="col" class="px-6 py-3">Flow Rate (L/h)</th>
+                <th scope="col" class="px-6 py-3">Temperature (°C)</th>
+              {% endif %}
               <th scope="col" class="px-6 py-3">Status</th>
             </tr>
           </thead>
-          <tbody>
-            {% for r in recent_readings %}
-            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-              <td class="px-6 py-4">
-                {{ (((r.reading_date or r.timestamp)[:19]) if (r.reading_date or
-                r.timestamp) else '-')|replace('T',' ') }}
+          <tbody id="readingsTableBody">
+            <tr>
+              <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading readings...
               </td>
-              <td class="px-6 py-4 font-mono">
-                {{ r.reading_value if r.reading_value is not none else '-' }}
-              </td>
-              <td class="px-6 py-4">
-                {{ r.consumption if r.consumption is not none else '-' }}
-              </td>
-              <td class="px-6 py-4">
-                {{ r.load_kw if r.load_kw is not none else '-' }}
-              </td>
-              <td class="px-6 py-4">
-                {{ r.voltage if r.voltage is not none else '-' }}
-              </td>
-              <td class="px-6 py-4">{{ r.status or '-' }}</td>
             </tr>
-            {% endfor %}
           </tbody>
         </table>
+      </div>
+
+      <!-- Readings Pagination -->
+      <div class="flex items-center justify-between mt-4" id="readingsPagination">
+        <div class="text-sm text-gray-600 dark:text-gray-400" id="readingsPaginationInfo">
+          Showing 0 of 0 readings
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="readingsPrevBtn" disabled class="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div id="readingsPageNumbers" class="flex gap-1">
+            <!-- Page numbers will be inserted here -->
+          </div>
+          <button id="readingsNextBtn" disabled class="px-2 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -295,7 +434,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
     Quick Actions
   </h3>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
     <button
       class="px-4 py-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-800"
     >
@@ -312,13 +451,197 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <i class="fas fa-bell mr-2"></i>Set Alert
     </button>
     <button
-      class="px-4 py-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800"
+      id="disconnectBtn"
+      {% if not meter or not meter.device_eui %}disabled{% endif %}
+      class="px-4 py-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <i class="fas fa-power-off mr-2"></i>Disconnect
     </button>
+    <button
+      id="reconnectBtn"
+      {% if not meter or not meter.device_eui %}disabled{% endif %}
+      class="px-4 py-3 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <i class="fas fa-plug mr-2"></i>Reconnect
+    </button>
+  </div>
+  {% if not meter or not meter.device_eui %}
+  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+    <i class="fas fa-info-circle mr-1"></i>Disconnect/Reconnect requires a device EUI to be configured.
+  </p>
+  {% endif %}
+</div>
+
+<!-- Relay Control Confirmation Modal -->
+<div id="relayModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 id="relayModalTitle" class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-power-off text-red-500 mr-2"></i>Confirm Disconnect
+      </h3>
+      <button id="closeRelayModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <div id="relayModalBody" class="mb-4">
+        <p class="text-gray-700 dark:text-gray-300">
+          Are you sure you want to <strong id="relayActionText">disconnect</strong> power for this meter?
+        </p>
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm mt-3">
+          <div class="flex justify-between mb-1">
+            <span class="text-gray-600 dark:text-gray-400">Meter:</span>
+            <span class="font-mono font-medium text-gray-900 dark:text-white">{{ meter.device_eui if meter else '—' }}</span>
+          </div>
+          <div class="flex justify-between mb-1">
+            <span class="text-gray-600 dark:text-gray-400">Unit:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else '—' }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+          <i class="fas fa-info-circle mr-1"></i>
+          Command will be queued and delivered on next device uplink (may take up to 15 minutes for Class A devices).
+        </p>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6">
+        <button
+          type="button"
+          id="cancelRelayBtn"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirmRelayBtn"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          <i class="fas fa-power-off mr-2"></i>Disconnect
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Top Up Modal -->
+<div id="topUpModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-plus-circle text-primary mr-2"></i>Top Up Wallet
+      </h3>
+      <button id="closeTopUpModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <form id="topUpForm">
+        <input type="hidden" id="walletId" value="{{ unit.wallet.id if unit and unit.wallet else '' }}">
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Unit Information
+          </label>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Unit:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ unit.unit_number if unit else '—' }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Estate:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ estate.name if estate else '—' }}</span>
+            </div>
+            <div class="flex justify-between mb-1">
+              <span class="text-gray-600 dark:text-gray-400">Current Balance:</span>
+              <span class="font-medium text-gray-900 dark:text-white">R {{ (balance_value or 0) | format_number(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Top Up Amount (R) <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            id="topUpAmount"
+            step="0.01"
+            min="1"
+            required
+            placeholder="Enter amount"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpUtilityType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Utility Type <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="topUpUtilityType"
+            required
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Select utility type</option>
+            {% if meter and meter.meter_type == 'electricity' %}
+              <option value="electricity" selected>Electricity</option>
+            {% elif meter and meter.meter_type == 'water' %}
+              <option value="water" selected>Water</option>
+            {% elif meter and meter.meter_type == 'solar' %}
+              <option value="solar" selected>Solar</option>
+            {% elif meter and meter.meter_type == 'hot_water' %}
+              <option value="hot_water" selected>Hot Water</option>
+            {% else %}
+              <option value="electricity">Electricity</option>
+              <option value="water">Water</option>
+              <option value="solar">Solar</option>
+              <option value="hot_water">Hot Water</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label for="topUpReference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Reference / Notes
+          </label>
+          <input
+            type="text"
+            id="topUpReference"
+            placeholder="Optional reference or notes"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelTopUpBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="submitTopUpBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-check mr-2"></i>Confirm Top Up
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+<script>
+  // Make meter_id and meter_type available to JavaScript
+  window.METER_ID = "{{ meter_id }}";
+  window.METER_TYPE = "{{ meter.meter_type if meter else 'unknown' }}";
+</script>
 <script src="/static/js/meters/meter-details.js"></script>
 {% endblock %}

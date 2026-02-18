@@ -47,7 +47,7 @@ block breadcrumb %}
         <p class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ totals.units }}
         </p>
-        <p class="text-xs text-success mt-2">All connected</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Across all estates</p>
       </div>
       <div
         class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center"
@@ -69,7 +69,7 @@ block breadcrumb %}
           {{ totals.meters }}
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          300 unit + 4 bulk
+          {{ totals.unit_meters }} unit + {{ totals.bulk_meters }} bulk
         </p>
       </div>
       <div
@@ -91,7 +91,7 @@ block breadcrumb %}
         <p class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ totals.dc450s }}
         </p>
-        <p class="text-xs text-success mt-2">All online</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Communicating</p>
       </div>
       <div
         class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/20 rounded-lg flex items-center justify-center"
@@ -154,7 +154,7 @@ block breadcrumb %}
         </div>
         <div>
           <p class="text-xs text-gray-500 dark:text-gray-400">Total Meters</p>
-          <p class="text-lg font-semibold text-gray-900 dark:text-white">—</p>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ meter_configs[estate.id].total }}</p>
         </div>
       </div>
 
@@ -611,7 +611,6 @@ block breadcrumb %}
               step="0.01"
               min="0"
               max="100"
-              value="20"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 20"
             />
@@ -633,7 +632,6 @@ block breadcrumb %}
               step="0.01"
               min="0"
               max="100"
-              value="0"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 0"
             />
@@ -654,7 +652,6 @@ block breadcrumb %}
               name="solar_free_kwh"
               step="0.01"
               min="0"
-              value="50"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 50"
             />
@@ -810,7 +807,6 @@ block breadcrumb %}
               required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., Willow Creek Estate"
-              value="Willow Creek Estate"
             />
           </div>
 
@@ -827,7 +823,6 @@ block breadcrumb %}
               required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 123 Main Road, Johannesburg"
-              value="123 Main Road, Johannesburg"
             />
           </div>
 
@@ -844,7 +839,6 @@ block breadcrumb %}
               required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., Johannesburg"
-              value="Johannesburg"
             />
           </div>
 
@@ -860,7 +854,6 @@ block breadcrumb %}
               name="postal_code"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 2000"
-              value="2000"
             />
           </div>
 
@@ -878,7 +871,6 @@ block breadcrumb %}
               min="1"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 50"
-              value="50"
             />
           </div>
 
@@ -894,7 +886,6 @@ block breadcrumb %}
               name="estate_code"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., WC001"
-              value="WC001"
             />
           </div>
         </div>
@@ -919,7 +910,6 @@ block breadcrumb %}
               required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., John Smith"
-              value="John Smith"
             />
           </div>
 
@@ -936,7 +926,6 @@ block breadcrumb %}
               required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., +27 11 123 4567"
-              value="+27 11 123 4567"
             />
           </div>
 
@@ -952,7 +941,6 @@ block breadcrumb %}
               name="manager_email"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., manager@estate.com"
-              value="manager@estate.com"
             />
           </div>
         </div>
@@ -971,12 +959,12 @@ block breadcrumb %}
               Electricity Markup (%)
             </label>
             <input
+              id="edit_electricity_markup_field"
               type="number"
               name="electricity_markup"
               step="0.01"
               min="0"
               max="100"
-              value="20"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 20"
             />
@@ -992,12 +980,12 @@ block breadcrumb %}
               Water Markup (%)
             </label>
             <input
+              id="edit_water_markup_field"
               type="number"
               name="water_markup"
               step="0.01"
               min="0"
               max="100"
-              value="0"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 0"
             />
@@ -1013,36 +1001,16 @@ block breadcrumb %}
               Solar Free Allocation (kWh)
             </label>
             <input
+              id="edit_solar_free_kwh_field"
               type="number"
               name="solar_free_kwh"
               step="0.01"
               min="0"
-              value="50"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="e.g., 50"
             />
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Free kWh per unit per month
-            </p>
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Low Balance Threshold (ZAR)
-            </label>
-            <input
-              type="number"
-              name="low_balance_threshold"
-              step="0.01"
-              min="0"
-              value="50"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="e.g., 50"
-            />
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Alert when balance drops below
             </p>
           </div>
         </div>
