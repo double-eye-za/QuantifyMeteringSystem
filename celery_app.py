@@ -50,13 +50,22 @@ def make_celery(app_name: str = __name__) -> Celery:
             'schedule': crontab(hour=6, minute=0),
             'options': {'queue': 'notifications'}
         },
-        # Disconnect zero balance electricity meters at 6 AM
-        # NOTE: Actual disconnect is COMMENTED OUT in the task for safety
-        'disconnect-zero-balance-meters': {
-            'task': 'app.tasks.prepaid_disconnect_tasks.disconnect_zero_balance_meters',
-            'schedule': crontab(hour=6, minute=0),
-            'options': {'queue': 'prepaid'}
-        },
+        # DISABLED: Automated credit control tasks — DO NOT enable until
+        # proper testing with real meters is complete. Manual relay switching
+        # is working and must not be disrupted. Code is ready in
+        # app/tasks/prepaid_disconnect_tasks.py, gated behind feature flag.
+        # Uncomment when ready for production testing:
+        #
+        # 'disconnect-zero-balance-meters': {
+        #     'task': 'app.tasks.prepaid_disconnect_tasks.disconnect_zero_balance_meters',
+        #     'schedule': crontab(hour=6, minute=0),
+        #     'options': {'queue': 'prepaid'}
+        # },
+        # 'reconnect-topped-up-meters': {
+        #     'task': 'app.tasks.prepaid_disconnect_tasks.reconnect_topped_up_meters',
+        #     'schedule': crontab(minute='*/30'),
+        #     'options': {'queue': 'prepaid'}
+        # },
         # Analyze high usage patterns every night at 7 AM
         'analyze-high-usage-daily': {
             'task': 'app.tasks.notification_tasks.analyze_high_usage',

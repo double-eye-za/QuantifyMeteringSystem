@@ -34,6 +34,7 @@ class Wallet(db.Model):
     last_topup_date: Optional[datetime]
     is_suspended: Optional[bool]
     suspension_reason: Optional[str]
+    credit_limit: Optional[float]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     unit_id = db.Column(
@@ -59,6 +60,7 @@ class Wallet(db.Model):
     last_topup_date = db.Column(db.DateTime)
     is_suspended = db.Column(db.Boolean, default=False)
     suspension_reason = db.Column(db.Text)
+    credit_limit = db.Column(db.Numeric(10, 2), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
@@ -112,6 +114,9 @@ class Wallet(db.Model):
             else None,
             "is_suspended": self.is_suspended,
             "suspension_reason": self.suspension_reason,
+            "credit_limit": float(self.credit_limit)
+            if self.credit_limit is not None
+            else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

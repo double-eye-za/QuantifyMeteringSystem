@@ -4,11 +4,14 @@ from flask import render_template, request, jsonify
 from flask_login import login_required, current_user
 
 from ...services.system_settings import (
+    get_setting,
     list_settings_as_dict,
+    save_setting,
     save_settings as svc_save_settings,
 )
 from ...utils.audit import log_action
 from ...utils.decorators import requires_permission
+from ...utils.feature_flags import FEATURE_FLAGS, is_feature_enabled
 from . import api_v1
 
 
@@ -158,6 +161,129 @@ def save_notification_settings():
         )
 
         return jsonify({"message": "Notification settings saved successfully"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Feature Flags ──────────────────────────────────────────────────────────
+
+
+@api_v1.route("/api/feature-flags", methods=["GET"])
+@login_required
+@requires_permission("settings.view")
+def get_feature_flags():
+    """Get all registered feature flags and their current state."""
+    try:
+        flags = []
+        for name, description in FEATURE_FLAGS.items():
+            flags.append({
+                "name": name,
+                "key": f"feature_{name}",
+                "description": description,
+                "enabled": is_feature_enabled(name),
+            })
+        return jsonify({"flags": flags})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_v1.route("/settings/feature-flags", methods=["POST"])
+@login_required
+@requires_permission("settings.edit")
+def save_feature_flags():
+    """Save feature flag settings."""
+    try:
+        data = request.get_json()
+        flags = data.get("flags", {})
+
+        for name in FEATURE_FLAGS:
+            value = str(flags.get(name, False)).lower()
+            save_setting(
+                f"feature_{name}", value, "boolean", "features", current_user.id
+            )
+
+        log_action(
+            "settings.feature_flags.update",
+            entity_type="system_setting",
+            entity_id=None,
+            new_values={"settings_category": "features", "flags": flags},
+        )
+
+        return jsonify({"message": "Feature flags saved successfully"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Credit Control Status ──────────────────────────────────────────────────
+
+
+@api_v1.route("/api/credit-control/status", methods=["GET"])
+@login_required
+@requires_permission("settings.view")
+def get_credit_control_status():
+    """Get credit control status report — read-only, no relay commands."""
+    try:
+        from ...models import Meter, Unit, Wallet
+        from ...db import db
+
+        credit_control_active = is_feature_enabled("credit_control")
+
+        # Zero/negative balance meters (with LoRaWAN device)
+        zero_balance_meters = (
+            db.session.query(Unit, Wallet, Meter)
+            .join(Wallet, Unit.id == Wallet.unit_id)
+            .join(Meter, Unit.electricity_meter_id == Meter.id)
+            .filter(
+                Wallet.electricity_balance <= 0,
+                Meter.device_eui.isnot(None),
+                Meter.is_active == True,
+                Unit.is_active == True,
+            )
+            .all()
+        )
+
+        # Currently suspended meters
+        suspended_count = (
+            db.session.query(Wallet)
+            .filter(Wallet.is_suspended == True)
+            .count()
+        )
+
+        # Eligible for reconnection (suspended + balance >= minimum activation)
+        eligible_count = (
+            db.session.query(Wallet)
+            .join(Unit, Wallet.unit_id == Unit.id)
+            .join(Meter, Unit.electricity_meter_id == Meter.id)
+            .filter(
+                Wallet.is_suspended == True,
+                Wallet.electricity_balance >= Wallet.electricity_minimum_activation,
+                Meter.device_eui.isnot(None),
+                Meter.is_active == True,
+                Unit.is_active == True,
+            )
+            .count()
+        )
+
+        meters = []
+        for unit, wallet, meter in zero_balance_meters:
+            meters.append({
+                "unit_number": unit.unit_number,
+                "meter_serial": meter.serial_number,
+                "device_eui": meter.device_eui,
+                "electricity_balance": float(wallet.electricity_balance),
+                "total_balance": float(wallet.balance),
+                "is_suspended": wallet.is_suspended,
+            })
+
+        return jsonify({
+            "credit_control_active": credit_control_active,
+            "total_zero_balance": len(meters),
+            "total_suspended": suspended_count,
+            "total_eligible_reconnect": eligible_count,
+            "meters": meters,
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

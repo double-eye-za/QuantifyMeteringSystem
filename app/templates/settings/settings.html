@@ -31,6 +31,20 @@
       >
         <i class="fas fa-bell mr-2"></i> Notifications
       </button>
+      <button
+        onclick="showSettingSection('feature-flags')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="feature-flags"
+      >
+        <i class="fas fa-toggle-on mr-2"></i> Feature Flags
+      </button>
+      <button
+        onclick="showSettingSection('credit-control')"
+        class="setting-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+        data-section="credit-control"
+      >
+        <i class="fas fa-bolt mr-2"></i> Credit Control
+      </button>
       <!-- Commented out for now - will implement later
       <button
         onclick="showSettingSection('api')"
@@ -503,6 +517,145 @@
         class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
       >
         Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Flags Settings -->
+<div
+  id="feature-flags-section"
+  class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Feature Flags
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Enable or disable system features. Changes take effect immediately.
+    </p>
+  </div>
+  <div class="p-6 space-y-6">
+    <!-- Flags loaded dynamically -->
+    <div id="feature-flags-container">
+      <div class="flex items-center justify-center py-8">
+        <i class="fas fa-spinner fa-spin text-gray-400 mr-2"></i>
+        <span class="text-sm text-gray-500 dark:text-gray-400">Loading feature flags...</span>
+      </div>
+    </div>
+  </div>
+  <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex justify-end space-x-3">
+      <button
+        onclick="loadFeatureFlags()"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+      >
+        Reset
+      </button>
+      <button
+        onclick="saveFeatureFlags()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Credit Control Status -->
+<div
+  id="credit-control-section"
+  class="setting-section bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden"
+>
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+      Credit Control Status
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      Overview of prepaid electricity credit control across all estates
+    </p>
+  </div>
+  <div class="p-6 space-y-6">
+    <!-- Status Banner -->
+    <div id="cc-status-banner" class="rounded-lg p-4">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Zero Balance Meters</p>
+            <p id="cc-zero-balance" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">--</p>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-500"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Meters with R0.00 or negative balance</p>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Currently Suspended</p>
+            <p id="cc-suspended" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">--</p>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <i class="fas fa-power-off text-orange-500"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Meters currently disconnected</p>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Eligible for Reconnect</p>
+            <p id="cc-eligible" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">--</p>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <i class="fas fa-plug text-green-500"></i>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Suspended but balance restored above minimum</p>
+      </div>
+    </div>
+
+    <!-- Meter Details Table -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+        Zero Balance Meter Details
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Meter Serial</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Device EUI</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Elec Balance</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total Balance</th>
+              <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+            </tr>
+          </thead>
+          <tbody id="cc-meter-table" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Loading...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex justify-end">
+      <button
+        onclick="loadCreditControlStatus()"
+        class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg transition-colors"
+      >
+        <i class="fas fa-sync-alt mr-2"></i> Refresh
       </button>
     </div>
   </div>

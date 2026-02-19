@@ -184,4 +184,211 @@ function showSettingSection(sectionName) {
     "text-gray-700",
     "dark:text-gray-300"
   );
+
+  // Load data for dynamic tabs
+  if (sectionName === "feature-flags") {
+    loadFeatureFlags();
+  } else if (sectionName === "credit-control") {
+    loadCreditControlStatus();
+  }
+}
+
+// ── Feature Flags ───────────────────────────────────────────────────────
+
+async function loadFeatureFlags() {
+  try {
+    const response = await fetch("/api/v1/api/feature-flags");
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to load feature flags:", result.error);
+      return;
+    }
+
+    const container = document.getElementById("feature-flags-container");
+    if (result.flags.length === 0) {
+      container.innerHTML =
+        '<p class="text-sm text-gray-500 dark:text-gray-400">No feature flags registered.</p>';
+      return;
+    }
+
+    let html = '<div class="space-y-4">';
+    for (const flag of result.flags) {
+      const displayName = flag.name
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      html += `
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              ${displayName}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              ${flag.description}
+            </p>
+            <p class="text-xs mt-1 ${
+              flag.enabled
+                ? "text-green-600 dark:text-green-400"
+                : "text-gray-400 dark:text-gray-500"
+            }">
+              ${flag.enabled ? "Currently: Enabled" : "Currently: Disabled"}
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="flag_${flag.name}"
+              class="sr-only peer"
+              ${flag.enabled ? "checked" : ""}
+            />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"
+            ></div>
+          </label>
+        </div>`;
+    }
+    html += "</div>";
+
+    // Warning banner
+    html += `
+      <div class="mt-6 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4">
+        <div class="flex">
+          <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Important</p>
+            <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+              Feature flags take effect immediately. The automated credit control tasks are
+              currently disabled in the scheduler. Enabling the credit control flag here only
+              affects manual task execution, not automatic scheduling.
+            </p>
+          </div>
+        </div>
+      </div>`;
+
+    container.innerHTML = html;
+  } catch (error) {
+    console.error("Error loading feature flags:", error);
+  }
+}
+
+async function saveFeatureFlags() {
+  try {
+    // Collect all flag states from checkboxes
+    const flags = {};
+    document
+      .querySelectorAll('[id^="flag_"]')
+      .forEach((cb) => {
+        const name = cb.id.replace("flag_", "");
+        flags[name] = cb.checked;
+      });
+
+    const response = await fetch(`${BASE_URL}/feature-flags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flags }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      showFlashMessage("Feature flags saved successfully", "success");
+      loadFeatureFlags(); // Refresh to show updated status text
+    } else {
+      showFlashMessage(result.error || "Failed to save feature flags", "error");
+    }
+  } catch (error) {
+    showFlashMessage("Network error while saving feature flags", "error");
+  }
+}
+
+// ── Credit Control Status ───────────────────────────────────────────────
+
+async function loadCreditControlStatus() {
+  try {
+    const response = await fetch("/api/v1/api/credit-control/status");
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to load credit control status:", result.error);
+      return;
+    }
+
+    // Status banner
+    const banner = document.getElementById("cc-status-banner");
+    if (result.credit_control_active) {
+      banner.className =
+        "rounded-lg p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800";
+      banner.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-check-circle text-green-500 text-lg mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-green-800 dark:text-green-300">Credit Control is Enabled</p>
+            <p class="text-xs text-green-700 dark:text-green-400 mt-1">
+              Automated disconnect/reconnect tasks will execute when scheduled.
+              Note: The beat schedule entries must also be uncommented in celery_app.py.
+            </p>
+          </div>
+        </div>`;
+    } else {
+      banner.className =
+        "rounded-lg p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600";
+      banner.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-info-circle text-gray-400 text-lg mr-3"></i>
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Credit Control is Disabled</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Tasks run in dry-run mode. No relay commands will be sent.
+              Enable via Feature Flags tab when ready.
+            </p>
+          </div>
+        </div>`;
+    }
+
+    // Summary cards
+    document.getElementById("cc-zero-balance").textContent =
+      result.total_zero_balance;
+    document.getElementById("cc-suspended").textContent =
+      result.total_suspended;
+    document.getElementById("cc-eligible").textContent =
+      result.total_eligible_reconnect;
+
+    // Meter table
+    const tbody = document.getElementById("cc-meter-table");
+    if (result.meters.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            No meters with zero or negative balance
+          </td>
+        </tr>`;
+      return;
+    }
+
+    let rows = "";
+    for (const m of result.meters) {
+      const balanceClass =
+        m.electricity_balance < 0
+          ? "text-red-600 dark:text-red-400"
+          : "text-orange-600 dark:text-orange-400";
+
+      const statusBadge = m.is_suspended
+        ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Suspended</span>'
+        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Active</span>';
+
+      rows += `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${m.unit_number}</td>
+          <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">${m.meter_serial}</td>
+          <td class="px-4 py-3 text-xs font-mono text-gray-500 dark:text-gray-400">${m.device_eui}</td>
+          <td class="px-4 py-3 text-sm text-right ${balanceClass}">R${m.electricity_balance.toFixed(2)}</td>
+          <td class="px-4 py-3 text-sm text-right text-gray-600 dark:text-gray-300">R${m.total_balance.toFixed(2)}</td>
+          <td class="px-4 py-3 text-center">${statusBadge}</td>
+        </tr>`;
+    }
+    tbody.innerHTML = rows;
+  } catch (error) {
+    console.error("Error loading credit control status:", error);
+  }
 }
