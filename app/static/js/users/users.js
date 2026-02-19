@@ -58,6 +58,7 @@ function renderUserRow(user) {
       <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.email || ''}</td>
       <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.phone || '-'}</td>
       <td class="px-4 py-3 text-gray-900 dark:text-gray-100">${user.role_name || '-'}</td>
+      <td class="px-4 py-3 text-gray-600 dark:text-gray-400 text-sm">${user.estate_name || '-'}</td>
       <td class="px-4 py-3">
         <span class="px-2 py-1 rounded text-white text-xs ${statusClass}">
           ${statusText}
@@ -165,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
       role: { element: '#roleFilter', param: 'role_id' }
     },
     renderRow: renderUserRow,
-    colSpan: 7,
+    colSpan: 8,
     onError: (error) => showFlashMessage(error, 'error', false),
     onAfterFetch: () => {
       // Re-attach event listeners after table is re-rendered
@@ -268,9 +269,11 @@ function populateEditForm(user) {
   document.getElementById("edit-email").value = user.email;
   document.getElementById("edit-phone").value = user.phone || "";
   document.getElementById("edit-role").value = user.role_id || "";
+  document.getElementById("edit-estate").value = user.estate_id || "";
 }
 
 async function createUser() {
+  const estateVal = document.getElementById("invite-estate").value;
   const payload = {
     username: document.getElementById("invite-username").value,
     email: document.getElementById("invite-email").value,
@@ -278,6 +281,7 @@ async function createUser() {
     last_name: document.getElementById("invite-last-name").value,
     phone: document.getElementById("invite-phone").value,
     role_id: document.getElementById("invite-role").value,
+    estate_id: estateVal ? parseInt(estateVal) : null,
     password: document.getElementById("temp-password").value,
   };
 
@@ -312,12 +316,14 @@ async function createUser() {
 
 async function updateUser() {
   const userId = document.getElementById("edit-id").value;
+  const editEstateVal = document.getElementById("edit-estate").value;
   const payload = {
     first_name: document.getElementById("edit-first-name").value,
     last_name: document.getElementById("edit-last-name").value,
     email: document.getElementById("edit-email").value,
     phone: document.getElementById("edit-phone").value,
     role_id: document.getElementById("edit-role").value,
+    estate_id: editEstateVal ? parseInt(editEstateVal) : null,
   };
 
   try {

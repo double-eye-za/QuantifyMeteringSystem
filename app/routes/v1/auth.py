@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, case
 from sqlalchemy.sql import extract
 from ...models import Transaction, MeterReading, Meter, Unit, Estate
+from ...utils.decorators import get_user_estate_filter, get_allowed_estates
 import re
 
 
@@ -81,8 +82,12 @@ def dashboard():
     from sqlalchemy import func, case
     from ...db import db
 
-    # Get filter parameters
-    estate_id = request.args.get("estate", "all")
+    # Get filter parameters — estate-scoped users are locked to their estate
+    user_estate = get_user_estate_filter()
+    if user_estate:
+        estate_id = str(user_estate)
+    else:
+        estate_id = request.args.get("estate", "all")
     period = request.args.get("period", "current-month")
 
 
@@ -331,8 +336,8 @@ def dashboard():
 
     # 3. Estate Overview Widgets
 
-    # Estate Selector data
-    estates = [e.to_dict() for e in Estate.query.all()]
+    # Estate Selector data — scoped users only see their estate
+    estates = [e.to_dict() for e in get_allowed_estates()]
 
     # Live Status Summary
     live_status = {
@@ -722,6 +727,7 @@ def dashboard():
         estate_usage_data=estate_usage_data,
         daily_consumption_data=daily_consumption_data,
         estate_filter=estate_id,
+        estate_locked=bool(user_estate),
         period=period,
         estates=estates,
         current_month=current_month,

@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from ...models import Unit, Estate, Person, Meter, RateTable, SystemSetting
 from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
-from ...utils.decorators import requires_permission
+from ...utils.decorators import requires_permission, get_user_estate_filter, get_allowed_estates
 from . import api_v1
 from ...utils.rates import calculate_estate_bill
 
@@ -44,7 +44,8 @@ from ...services.mobile_users import (
 @requires_permission("units.view")
 def units_page():
     """Render the units page with units, estates, filters and pagination."""
-    estate_id = request.args.get("estate_id", type=int)
+    user_estate = get_user_estate_filter()
+    estate_id = user_estate or request.args.get("estate_id", type=int)
     occupancy_status = request.args.get("occupancy_status")
     q = request.args.get("q")
 
@@ -64,7 +65,7 @@ def units_page():
     units = [u.to_dict() for u in items]
     estates = [
         {"id": e.id, "name": e.name}
-        for e in Estate.query.order_by(Estate.name.asc()).all()
+        for e in get_allowed_estates()
     ]
 
     # Count units per estate for header display (within the current filtered result set)

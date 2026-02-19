@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     last_login: Optional[datetime]
     failed_login_attempts: Optional[int]
     locked_until: Optional[datetime]
+    estate_id: Optional[int]
     created_by: Optional[int]
     updated_by: Optional[int]
     created_at: Optional[datetime]
@@ -40,6 +41,7 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"))
     is_active = db.Column(db.Boolean, default=True)
     is_super_admin = db.Column(db.Boolean, default=False)
+    estate_id = db.Column(db.Integer, db.ForeignKey("estates.id"), nullable=True)
     last_login = db.Column(db.DateTime)
     failed_login_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
@@ -50,6 +52,7 @@ class User(UserMixin, db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True
     )
     role = db.relationship("Role", backref="users")
+    estate = db.relationship("Estate", foreign_keys=[estate_id], backref="managers")
 
     def get_id(self):
         return str(self.id)

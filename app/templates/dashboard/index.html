@@ -10,6 +10,13 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
     <div class="flex flex-wrap items-center gap-4 flex-1">
       <!-- Estate Selector -->
       <div>
+        {% if estate_locked %}
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Estate</label>
+        <div class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+          <i class="fas fa-building mr-1 text-primary"></i>
+          {% for estate in estates %}{{ estate.name }}{% endfor %}
+        </div>
+        {% else %}
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Estate</label>
     <select
       id="estateFilter"
@@ -20,6 +27,7 @@ page_title %}System Overview{% endblock %} {% block breadcrumb %}
           <option value="{{ estate.id }}" {% if estate_filter == estate.id|string %}selected{% endif %}>{{ estate.name }}</option>
       {% endfor %}
     </select>
+        {% endif %}
   </div>
 
       <!-- Time Range Selector -->

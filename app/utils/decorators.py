@@ -7,6 +7,28 @@ from flask import abort, request, jsonify, redirect, url_for, flash
 from flask_login import current_user
 
 
+def get_user_estate_filter(user=None):
+    """Return estate_id to filter by, or None for unrestricted access.
+
+    Super admins and users without an estate assignment see everything.
+    Estate-scoped users are restricted to their assigned estate.
+    """
+    user = user or current_user
+    if getattr(user, "is_super_admin", False):
+        return None
+    return getattr(user, "estate_id", None)
+
+
+def get_allowed_estates(user=None):
+    """Return estates the user can access — all for super_admin, one for estate managers."""
+    from ..models.estate import Estate
+
+    user = user or current_user
+    if getattr(user, "is_super_admin", False) or not getattr(user, "estate_id", None):
+        return Estate.query.filter_by(is_active=True).order_by(Estate.name).all()
+    return Estate.query.filter_by(id=user.estate_id, is_active=True).all()
+
+
 def requires_permission(permission_code: str):
     """Decorator to require a specific permission for a route."""
 

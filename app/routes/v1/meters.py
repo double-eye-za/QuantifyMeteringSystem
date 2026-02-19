@@ -14,7 +14,7 @@ from reportlab.lib.units import inch
 from ...models import Meter, MeterReading, Unit, Wallet, Estate, MeterAlert, Transaction
 from ...utils.pagination import paginate_query, parse_pagination_params
 from ...utils.audit import log_action
-from ...utils.decorators import requires_permission
+from ...utils.decorators import requires_permission, get_user_estate_filter, get_allowed_estates
 from . import api_v1
 
 from ...services.meters import (
@@ -38,7 +38,8 @@ def meters_page():
     search = request.args.get("search", "").strip() or None
     meter_type = request.args.get("meter_type") or None
     comm_status = request.args.get("communication_status") or None
-    estate_id = request.args.get("estate_id", type=int) or None
+    user_estate = get_user_estate_filter()
+    estate_id = user_estate or request.args.get("estate_id", type=int) or None
     credit_status = request.args.get("credit_status") or None
 
     # Get pagination params
@@ -109,7 +110,7 @@ def meters_page():
 
     estates = [
         {"id": e.id, "name": e.name}
-        for e in Estate.query.order_by(Estate.name.asc()).all()
+        for e in get_allowed_estates()
     ]
 
     # Count meters per estate for header display (within the current result set)
@@ -195,7 +196,8 @@ def list_meters_api():
     search = request.args.get("search", "").strip() or None
     meter_type = request.args.get("meter_type") or None
     comm_status = request.args.get("communication_status") or None
-    estate_id = request.args.get("estate_id", type=int) or None
+    user_estate = get_user_estate_filter()
+    estate_id = user_estate or request.args.get("estate_id", type=int) or None
     credit_status = request.args.get("credit_status") or None
 
     # Get pagination params

@@ -11,6 +11,7 @@ def list_users(
     search: Optional[str] = None,
     is_active: Optional[bool] = None,
     role_id: Optional[int] = None,
+    estate_id: Optional[int] = None,
     page: int = 1,
     per_page: int = 25,
 ):
@@ -30,6 +31,8 @@ def list_users(
         query = query.filter(User.is_active == is_active)
     if role_id is not None:
         query = query.filter(User.role_id == role_id)
+    if estate_id is not None:
+        query = query.filter(User.estate_id == estate_id)
 
     total = query.count()
     users = (
@@ -54,6 +57,7 @@ def create_user(**data):
         phone=data.get("phone"),
         is_active=data.get("is_active", True),
         role_id=data.get("role_id"),
+        estate_id=data.get("estate_id") or None,
     )
     user.set_password(data["password"])
     db.session.add(user)
@@ -72,6 +76,7 @@ def update_user(user_id: int, payload: dict):
         "last_name",
         "phone",
         "role_id",
+        "estate_id",
         "is_active",
     ]:
         if f in payload and payload[f] is not None:

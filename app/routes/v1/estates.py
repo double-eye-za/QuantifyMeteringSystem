@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from ...models import Estate, Unit, Meter, RateTable
 from ...utils.audit import log_action
 from ...utils.pagination import paginate_query
-from ...utils.decorators import requires_permission
+from ...utils.decorators import requires_permission, get_user_estate_filter
 from . import api_v1
 
 from sqlalchemy import union, func
@@ -35,6 +35,12 @@ def estates_page():
         is_active_bool = is_active.lower() in ("1", "true", "yes")
 
     query = svc_list_estates(search=q, is_active=is_active_bool)
+
+    # Estate-scoped users only see their assigned estate
+    user_estate = get_user_estate_filter()
+    if user_estate:
+        query = query.filter(Estate.id == user_estate)
+
     items, meta = paginate_query(query)
 
     # Summary counts via services

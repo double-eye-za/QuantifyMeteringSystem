@@ -8,6 +8,7 @@ from ...utils.pagination import paginate_query
 from ...utils.audit import log_action
 from . import api_v1
 
+from ...utils.decorators import get_user_estate_filter, get_allowed_estates
 from ...services.wallets import get_wallet_by_id as svc_get_wallet_by_id, credit_wallet
 from ...services.transactions import (
     list_transactions as svc_list_transactions,
@@ -24,8 +25,12 @@ def billing_page():
     from sqlalchemy import func
     from datetime import datetime, date, timedelta
 
-    # Get filter parameters
-    estate_id = request.args.get("estate", "all")
+    # Get filter parameters — estate-scoped users are locked to their estate
+    user_estate = get_user_estate_filter()
+    if user_estate:
+        estate_id = str(user_estate)
+    else:
+        estate_id = request.args.get("estate", "all")
     status_filter = request.args.get("status", "all")
     search_query = request.args.get("search", "")
 
@@ -108,8 +113,8 @@ def billing_page():
         zero_balance_query = zero_balance_query.filter(*estate_filter)
     zero_balance_units = zero_balance_query.scalar() or 0
 
-    # Get estate
-    estates = Estate.query.all()
+    # Get estates — scoped users only see their estate
+    estates = get_allowed_estates()
 
     # Get wallet overview data with last topup date
     from sqlalchemy import func, case

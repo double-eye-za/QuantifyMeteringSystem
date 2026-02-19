@@ -5,7 +5,7 @@ from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.models.role import Role
-from app.utils.decorators import requires_permission
+from app.utils.decorators import requires_permission, get_user_estate_filter, get_allowed_estates
 from app.utils.audit import log_action
 from app.utils.pagination import paginate_query
 
@@ -46,10 +46,14 @@ def users_page():
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 25))
 
+    # Estate-scoped users only see users from their estate
+    estate_scope = get_user_estate_filter()
+
     users, total = svc_list_users(
         search=search if search else None,
         is_active=is_active,
         role_id=role_id_int,
+        estate_id=estate_scope,
         page=page,
         per_page=per_page,
     )
@@ -69,6 +73,8 @@ def users_page():
                 "is_super_admin": user.is_super_admin,
                 "role_id": user.role_id,
                 "role_name": user.role.name if user.role else None,
+                "estate_id": user.estate_id,
+                "estate_name": user.estate.name if user.estate else None,
                 "created_at": user.created_at.strftime("%Y-%m-%d %H:%M")
                 if user.created_at
                 else None,
@@ -76,6 +82,7 @@ def users_page():
         )
 
     roles = svc_list_roles_for_dropdown()
+    estates = [{"id": e.id, "name": e.name} for e in get_allowed_estates()]
 
     pagination = {
         "page": page,
@@ -88,6 +95,7 @@ def users_page():
         "users/users.html",
         users=users_data,
         roles=roles,
+        estates=estates,
         pagination=pagination,
         current_filters={"search": search, "status": status, "role_id": role_id},
     )
@@ -118,10 +126,14 @@ def list_users_api():
     page = int(request.args.get("page", 1))
     per_page = int(request.args.get("per_page", 25))
 
+    # Estate-scoped users only see users from their estate
+    estate_scope = get_user_estate_filter()
+
     users, total = svc_list_users(
         search=search if search else None,
         is_active=is_active,
         role_id=role_id_int,
+        estate_id=estate_scope,
         page=page,
         per_page=per_page,
     )
@@ -141,6 +153,8 @@ def list_users_api():
                 "is_super_admin": user.is_super_admin,
                 "role_id": user.role_id,
                 "role_name": user.role.name if user.role else None,
+                "estate_id": user.estate_id,
+                "estate_name": user.estate.name if user.estate else None,
                 "created_at": user.created_at.strftime("%Y-%m-%d %H:%M")
                 if user.created_at
                 else None,
