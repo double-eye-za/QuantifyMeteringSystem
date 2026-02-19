@@ -203,12 +203,12 @@ block breadcrumb %}
                                                 Inactive
                                             </span>
               {% else %}
-              {% set eb = (u.wallet.electricity_balance if u.wallet else 0) %}
-              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if eb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if eb|float < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ eb|float | format_number(2) }}</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if eb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if eb|float < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
-                <i class="fas {{ 'fa-times-circle' if eb|float <= 0 else ('fa-exclamation-triangle' if eb|float < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
-                {{ 'Disconnected' if eb|float <= 0 else ('Low' if eb|float < low_threshold else 'Active') }}
+              {% set bal = (u.wallet.balance if u.wallet else 0)|float %}
+              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50)|float %}
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if bal <= 0 else ('text-yellow-600 dark:text-yellow-400' if bal < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ bal | format_number(2) }}</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if bal <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if bal < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
+                <i class="fas {{ 'fa-times-circle' if bal <= 0 else ('fa-exclamation-triangle' if bal < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
+                {{ 'Disconnected' if bal <= 0 else ('Low' if bal < low_threshold else 'Active') }}
               </span>
               {% endif %}
                                         </div>
@@ -223,12 +223,12 @@ block breadcrumb %}
                                                 Inactive
                                             </span>
               {% else %}
-              {% set wb = (u.wallet.water_balance if u.wallet else 0) %}
-              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if wb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if wb|float < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ wb|float | format_number(2) }}</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if wb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if wb|float < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
-                <i class="fas {{ 'fa-times-circle' if wb|float <= 0 else ('fa-exclamation-triangle' if wb|float < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
-                {{ 'Disconnected' if wb|float <= 0 else ('Low' if wb|float < low_threshold else 'Active') }}
+              {% set bal = (u.wallet.balance if u.wallet else 0)|float %}
+              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50)|float %}
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if bal <= 0 else ('text-yellow-600 dark:text-yellow-400' if bal < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ bal | format_number(2) }}</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if bal <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if bal < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
+                <i class="fas {{ 'fa-times-circle' if bal <= 0 else ('fa-exclamation-triangle' if bal < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
+                {{ 'Disconnected' if bal <= 0 else ('Low' if bal < low_threshold else 'Active') }}
               </span>
               {% endif %}
                                         </div>
@@ -243,12 +243,12 @@ block breadcrumb %}
                                                 Inactive
                                             </span>
               {% else %}
-              {% set hwb = (u.wallet.hot_water_balance if u.wallet else 0) %}
-              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if hwb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if hwb|float < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ hwb|float | format_number(2) }}</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if hwb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if hwb|float < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
-                <i class="fas {{ 'fa-times-circle' if hwb|float <= 0 else ('fa-exclamation-triangle' if hwb|float < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
-                {{ 'Disconnected' if hwb|float <= 0 else ('Low' if hwb|float < low_threshold else 'Active') }}
+              {% set bal = (u.wallet.balance if u.wallet else 0)|float %}
+              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50)|float %}
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if bal <= 0 else ('text-yellow-600 dark:text-yellow-400' if bal < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ bal | format_number(2) }}</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if bal <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if bal < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
+                <i class="fas {{ 'fa-times-circle' if bal <= 0 else ('fa-exclamation-triangle' if bal < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
+                {{ 'Disconnected' if bal <= 0 else ('Low' if bal < low_threshold else 'Active') }}
               </span>
               {% endif %}
                                         </div>
@@ -263,12 +263,12 @@ block breadcrumb %}
                                                 Inactive
                                             </span>
               {% else %}
-              {% set sb = (u.wallet.solar_balance if u.wallet else 0) %}
-              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50) %}
-              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if sb|float <= 0 else ('text-yellow-600 dark:text-yellow-400' if sb|float < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ sb|float | format_number(2) }}</span>
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if sb|float <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if sb|float < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
-                <i class="fas {{ 'fa-times-circle' if sb|float <= 0 else ('fa-exclamation-triangle' if sb|float < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
-                {{ 'Disconnected' if sb|float <= 0 else ('Low' if sb|float < low_threshold else 'Active') }}
+              {% set bal = (u.wallet.balance if u.wallet else 0)|float %}
+              {% set low_threshold = (u.wallet.low_balance_threshold if u.wallet and u.wallet.low_balance_threshold else 50)|float %}
+              <span class="text-xs font-semibold {{ 'text-red-600 dark:text-red-400' if bal <= 0 else ('text-yellow-600 dark:text-yellow-400' if bal < low_threshold else 'text-gray-900 dark:text-white') }}">R {{ bal | format_number(2) }}</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs mt-1 {{ 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400' if bal <= 0 else ('bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400' if bal < low_threshold else 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400') }}">
+                <i class="fas {{ 'fa-times-circle' if bal <= 0 else ('fa-exclamation-triangle' if bal < low_threshold else 'fa-circle') }} mr-1" style="font-size: 8px"></i>
+                {{ 'Disconnected' if bal <= 0 else ('Low' if bal < low_threshold else 'Active') }}
                                         </span>
               {% endif %}
                                         </div>

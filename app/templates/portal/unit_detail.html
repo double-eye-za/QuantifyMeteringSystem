@@ -19,11 +19,13 @@
     <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
       <div>
         <span class="opacity-70"><i class="fas fa-bolt mr-1"></i> Electricity</span>
-        <p class="font-semibold">R {{ "%.2f"|format(wallet.electricity_balance if wallet else 0) }}</p>
+        <p class="font-semibold">R {{ "%.2f"|format((wallet.electricity_balance|abs) if wallet and wallet.electricity_balance else 0) }}</p>
+        <p class="text-xs opacity-60">spent</p>
       </div>
       <div>
         <span class="opacity-70"><i class="fas fa-droplet mr-1"></i> Water</span>
-        <p class="font-semibold">R {{ "%.2f"|format(wallet.water_balance if wallet else 0) }}</p>
+        <p class="font-semibold">R {{ "%.2f"|format((wallet.water_balance|abs) if wallet and wallet.water_balance else 0) }}</p>
+        <p class="text-xs opacity-60">spent</p>
       </div>
     </div>
     <div class="mt-4">

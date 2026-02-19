@@ -324,8 +324,9 @@
             <i class="fas fa-bolt text-yellow-500"></i>
           </div>
           <div class="text-2xl font-bold text-yellow-600">
-            R {{ wallet.electricity_balance | format_number(2) if wallet and wallet.electricity_balance else '0.00' }}
+            R {{ "%.2f"|format((wallet.electricity_balance|abs) if wallet and wallet.electricity_balance else 0) }}
           </div>
+          <p class="text-xs text-gray-400 mt-1">spent</p>
         </div>
 
         <div
@@ -338,8 +339,9 @@
             <i class="fas fa-tint text-blue-500"></i>
           </div>
           <div class="text-2xl font-bold text-blue-600">
-            R {{ wallet.water_balance | format_number(2) if wallet and wallet.water_balance else '0.00' }}
+            R {{ "%.2f"|format((wallet.water_balance|abs) if wallet and wallet.water_balance else 0) }}
           </div>
+          <p class="text-xs text-gray-400 mt-1">spent</p>
         </div>
 
         <div
@@ -352,8 +354,9 @@
             <i class="fas fa-fire text-red-500"></i>
           </div>
           <div class="text-2xl font-bold text-red-600">
-            R {{ wallet.hot_water_balance | format_number(2) if wallet and wallet.hot_water_balance else '0.00' }}
+            R {{ "%.2f"|format((wallet.hot_water_balance|abs) if wallet and wallet.hot_water_balance else 0) }}
           </div>
+          <p class="text-xs text-gray-400 mt-1">spent</p>
         </div>
 
         <div
@@ -366,7 +369,7 @@
             <i class="fas fa-solar-panel text-green-500"></i>
           </div>
           <div class="text-2xl font-bold text-green-600">
-            {{ wallet.solar_balance | format_number(2) if wallet and wallet.solar_balance else '0' }} kWh
+            Free
           </div>
         </div>
       </div>
