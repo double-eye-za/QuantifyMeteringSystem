@@ -94,20 +94,10 @@ def portal_wallet_topup(unit_id):
     if not wallet:
         abort(404)
 
-    # Determine which utility types are available for top-up.
-    # Electricity and water are always available (standard utilities).
-    # Solar and hot water only show if the unit has a linked meter.
-    available_utilities = ['electricity', 'water']
-    if unit.solar_meter_id:
-        available_utilities.append('solar')
-    if unit.hot_water_meter_id:
-        available_utilities.append('hot_water')
-
     return render_template(
         'portal/wallet_topup.html',
         unit=unit,
         wallet=wallet,
-        available_utilities=available_utilities,
     )
 
 
@@ -130,38 +120,21 @@ def portal_wallet_topup_post(unit_id):
         flash('Invalid amount.', 'error')
         return redirect(url_for('portal.portal_wallet_topup', unit_id=unit_id))
 
-    utility_type = request.form.get('utility_type', 'electricity')
-    if utility_type not in UTILITY_TYPES:
-        flash('Invalid utility type.', 'error')
-        return redirect(url_for('portal.portal_wallet_topup', unit_id=unit_id))
-
     if amount < MIN_TOPUP or amount > MAX_TOPUP:
         flash(f'Amount must be between R{MIN_TOPUP} and R{MAX_TOPUP:,}.', 'error')
         return redirect(url_for('portal.portal_wallet_topup', unit_id=unit_id))
 
-    # Determine meter_id for this utility
-    meter_id = None
-    if utility_type == 'electricity':
-        meter_id = unit.electricity_meter_id
-    elif utility_type == 'water':
-        meter_id = unit.water_meter_id
-    elif utility_type == 'solar':
-        meter_id = unit.solar_meter_id
-    elif utility_type == 'hot_water':
-        meter_id = unit.hot_water_meter_id
-
     # Generate unique payment reference (PP = Portal Payment)
     m_payment_id = f"PP{int(time.time() * 1000)}"
 
-    # Create pending transaction
+    # Unified wallet: top-up goes to the shared balance pool, no utility type needed
     txn = svc_create_transaction(
         wallet_id=wallet.id,
         transaction_type='topup',
         amount=amount,
         reference=m_payment_id,
         payment_method='card',
-        metadata={'utility_type': utility_type, 'source': 'portal'},
-        meter_id=meter_id,
+        metadata={'source': 'portal'},
     )
 
     # Store PayFast gateway info on the transaction
@@ -198,7 +171,7 @@ def portal_wallet_topup_post(unit_id):
     pf_fields.extend([
         ('m_payment_id', m_payment_id),
         ('amount', f"{amount:.2f}"),
-        ('item_name', f"Wallet Top-up - {utility_type.replace('_', ' ').title()}"),
+        ('item_name', 'Wallet Top-up'),
         ('item_description', f"Top-up for unit {unit.unit_number or unit.id}"),
     ])
 

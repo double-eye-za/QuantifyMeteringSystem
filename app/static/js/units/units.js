@@ -73,12 +73,9 @@ function renderUnitRow(u) {
   const estateName = estatesMap[u.estate_id] || '';
   const isVacant = u.occupancy_status === 'vacant';
 
-  // Wallet data
+  // Wallet data — unified wallet: all meters share the same balance pool
   const wallet = u.wallet || {};
-  const electricityBalance = wallet.electricity_balance || 0;
-  const waterBalance = wallet.water_balance || 0;
-  const hotWaterBalance = wallet.hot_water_balance || 0;
-  const solarBalance = wallet.solar_balance || 0;
+  const unifiedBalance = wallet.balance || 0;
   const lowBalanceThreshold = wallet.low_balance_threshold || 50;
 
   // Build tenants HTML
@@ -153,10 +150,10 @@ function renderUnitRow(u) {
       <td class="px-4 py-3">
         <div>${tenantsHtml}</div>
       </td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.electricity_meter_id, electricityBalance, isVacant, lowBalanceThreshold)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.water_meter_id, waterBalance, isVacant, lowBalanceThreshold)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, hotWaterBalance, isVacant, lowBalanceThreshold)}</td>
-      <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, solarBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.electricity_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.water_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
+      <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
       <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
       <td class="px-4 py-3">${actionsHtml}</td>
     </tr>

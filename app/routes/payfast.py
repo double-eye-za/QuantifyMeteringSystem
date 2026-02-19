@@ -75,18 +75,20 @@ def _extract_utility_type(txn: Transaction) -> str:
 def _complete_transaction(txn: Transaction) -> str:
     """Credit the wallet and mark the transaction as completed.
 
-    Returns the utility_type used.  Does NOT commit — caller must commit.
+    Returns the utility_type (for historical reference / notifications).
+    Does NOT commit — caller must commit.
     """
     wallet = Wallet.query.get(txn.wallet_id)
     if not wallet:
         raise ValueError(f"Wallet {txn.wallet_id} not found")
 
-    utility_type = _extract_utility_type(txn)
-
-    credit_wallet(wallet, float(txn.amount), utility_type)
+    # Unified wallet: top-up credits the main balance pool only
+    credit_wallet(wallet, float(txn.amount))
     txn.status = "completed"
     txn.completed_at = datetime.utcnow()
 
+    # Still extract utility_type for backward compat (notifications, receipts)
+    utility_type = _extract_utility_type(txn)
     return utility_type
 
 
@@ -134,7 +136,7 @@ def payfast_itn():
         logger.info("PayFast ITN: transaction %s already completed", m_payment_id)
         return "OK", 200
 
-    # --- Read utility_type BEFORE overwriting payment_metadata ---
+    # --- Read utility_type BEFORE overwriting payment_metadata (for notifications) ---
     utility_type = _extract_utility_type(txn)
 
     # --- Store PayFast data on the transaction ---
@@ -152,7 +154,8 @@ def payfast_itn():
             logger.error("PayFast ITN: wallet %s not found for txn %s", txn.wallet_id, m_payment_id)
             return "WALLET NOT FOUND", 500
 
-        credit_wallet(wallet, float(txn.amount), utility_type)
+        # Unified wallet: top-up credits the main balance pool only
+        credit_wallet(wallet, float(txn.amount))
 
         txn.status = "completed"
         txn.completed_at = datetime.utcnow()

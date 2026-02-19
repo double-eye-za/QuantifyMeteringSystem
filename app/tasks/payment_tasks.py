@@ -46,9 +46,8 @@ def send_topup_receipt_email(self, wallet_id: int, amount: float,
         )
         return {"sent": False, "reason": "no_email"}
 
-    # Calculate the utility-specific balance for the receipt
-    balance_field = f"{utility_type}_balance"
-    new_balance = float(getattr(wallet, balance_field, wallet.balance))
+    # Unified wallet: receipt shows the main balance (single fund pool)
+    new_balance = float(wallet.balance)
 
     try:
         sent = send_topup_receipt(

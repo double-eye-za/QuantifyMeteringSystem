@@ -230,13 +230,13 @@ def get_credit_control_status():
 
         credit_control_active = is_feature_enabled("credit_control")
 
-        # Zero/negative balance meters (with LoRaWAN device)
+        # Unified wallet: check main balance (the single fund pool)
         zero_balance_meters = (
             db.session.query(Unit, Wallet, Meter)
             .join(Wallet, Unit.id == Wallet.unit_id)
             .join(Meter, Unit.electricity_meter_id == Meter.id)
             .filter(
-                Wallet.electricity_balance <= 0,
+                Wallet.balance <= 0,
                 Meter.device_eui.isnot(None),
                 Meter.is_active == True,
                 Unit.is_active == True,
@@ -251,14 +251,14 @@ def get_credit_control_status():
             .count()
         )
 
-        # Eligible for reconnection (suspended + balance >= minimum activation)
+        # Eligible for reconnection (suspended + main balance >= minimum activation)
         eligible_count = (
             db.session.query(Wallet)
             .join(Unit, Wallet.unit_id == Unit.id)
             .join(Meter, Unit.electricity_meter_id == Meter.id)
             .filter(
                 Wallet.is_suspended == True,
-                Wallet.electricity_balance >= Wallet.electricity_minimum_activation,
+                Wallet.balance >= Wallet.electricity_minimum_activation,
                 Meter.device_eui.isnot(None),
                 Meter.is_active == True,
                 Unit.is_active == True,
@@ -272,8 +272,8 @@ def get_credit_control_status():
                 "unit_number": unit.unit_number,
                 "meter_serial": meter.serial_number,
                 "device_eui": meter.device_eui,
-                "electricity_balance": float(wallet.electricity_balance),
-                "total_balance": float(wallet.balance),
+                "balance": float(wallet.balance),
+                "electricity_spent": float(wallet.electricity_balance),
                 "is_suspended": wallet.is_suspended,
             })
 

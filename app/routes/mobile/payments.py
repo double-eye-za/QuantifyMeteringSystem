@@ -71,12 +71,8 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     except (ValueError, TypeError):
         return jsonify({'error': 'Invalid amount', 'message': 'Amount must be a number'}), 400
 
-    utility_type = data.get('utility_type', 'electricity')
-    if utility_type not in UTILITY_TYPES:
-        return jsonify({
-            'error': 'Invalid utility type',
-            'message': f'utility_type must be one of: {", ".join(UTILITY_TYPES)}',
-        }), 400
+    # Unified wallet: utility_type accepted for backward compat but ignored
+    utility_type = data.get('utility_type', None)
 
     if amount < MIN_TOPUP or amount > MAX_TOPUP:
         return jsonify({
@@ -84,29 +80,17 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
             'message': f'Amount must be between R{MIN_TOPUP} and R{MAX_TOPUP:,}',
         }), 400
 
-    # --- Resolve meter_id for the requested utility ---
-    meter_id = None
-    if utility_type == 'electricity':
-        meter_id = unit.electricity_meter_id
-    elif utility_type == 'water':
-        meter_id = unit.water_meter_id
-    elif utility_type == 'solar':
-        meter_id = unit.solar_meter_id
-    elif utility_type == 'hot_water':
-        meter_id = unit.hot_water_meter_id
-
     # --- Generate unique payment reference (MP = Mobile Payment) ---
     m_payment_id = f"MP{int(time.time() * 1000)}"
 
-    # --- Create pending transaction (same service as portal) ---
+    # --- Create pending transaction (unified wallet — no meter_id or utility_type) ---
     txn = svc_create_transaction(
         wallet_id=wallet.id,
         transaction_type='topup',
         amount=amount,
         reference=m_payment_id,
         payment_method='card',
-        metadata={'utility_type': utility_type, 'source': 'mobile'},
-        meter_id=meter_id,
+        metadata={'source': 'mobile'},
     )
 
     # Store PayFast gateway info
@@ -156,7 +140,7 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     # (see: https://github.com/youngcet/payfast/issues/14)
     pf_data['m_payment_id'] = m_payment_id
     pf_data['amount'] = f"{amount:.2f}"
-    pf_data['item_name'] = f"{utility_type.replace('_', '').capitalize()}Topup"
+    pf_data['item_name'] = 'WalletTopup'
 
     # NOTE: We do NOT generate a signature here. The PayFast Flutter package
     # regenerates the signature itself (using alphabetical key sorting and
@@ -276,20 +260,11 @@ def mobile_sandbox_confirm(unit_id: int, transaction_id: int, mobile_user: Mobil
         logger.info("Sandbox confirm: used _complete_transaction successfully")
     except Exception as exc:
         logger.warning("Sandbox confirm: _complete_transaction failed (%s), using fallback", exc)
-        # Fallback: do it directly
+        # Fallback: do it directly (unified wallet — credit main balance)
         from ...services.wallets import credit_wallet
         from datetime import datetime
-        import json as _json
-        # payment_metadata is stored as a JSON string, not a dict
-        utility_type = 'electricity'
-        if txn.payment_metadata:
-            try:
-                meta = _json.loads(txn.payment_metadata)
-                if isinstance(meta, dict):
-                    utility_type = meta.get('utility_type', 'electricity')
-            except (ValueError, TypeError):
-                pass
-        credit_wallet(wallet, float(txn.amount), utility_type)
+        utility_type = None
+        credit_wallet(wallet, float(txn.amount))
         txn.status = 'completed'
         txn.completed_at = datetime.utcnow()
 

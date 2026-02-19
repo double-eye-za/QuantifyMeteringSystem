@@ -29,53 +29,6 @@
   {% endwith %}
 
   <form method="POST" action="{{ url_for('portal.portal_wallet_topup_post', unit_id=unit.id) }}" id="topup-form">
-    <!-- Utility Type Selection -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-      <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Select Utility</h4>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {% if 'electricity' in available_utilities %}
-        <label class="utility-card cursor-pointer">
-          <input type="radio" name="utility_type" value="electricity" class="sr-only peer" checked>
-          <div class="rounded-lg border-2 border-gray-200 dark:border-gray-600 p-4 text-center peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 transition-colors">
-            <i class="fas fa-bolt text-2xl text-blue-500 mb-2"></i>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Electricity</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">R {{ "%.2f"|format(wallet.electricity_balance) }}</p>
-          </div>
-        </label>
-        {% endif %}
-        {% if 'water' in available_utilities %}
-        <label class="utility-card cursor-pointer">
-          <input type="radio" name="utility_type" value="water" class="sr-only peer" {% if 'electricity' not in available_utilities %}checked{% endif %}>
-          <div class="rounded-lg border-2 border-gray-200 dark:border-gray-600 p-4 text-center peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition-colors">
-            <i class="fas fa-droplet text-2xl text-cyan-500 mb-2"></i>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Water</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">R {{ "%.2f"|format(wallet.water_balance) }}</p>
-          </div>
-        </label>
-        {% endif %}
-        {% if 'solar' in available_utilities %}
-        <label class="utility-card cursor-pointer">
-          <input type="radio" name="utility_type" value="solar" class="sr-only peer">
-          <div class="rounded-lg border-2 border-gray-200 dark:border-gray-600 p-4 text-center peer-checked:border-yellow-500 peer-checked:bg-yellow-50 dark:peer-checked:bg-yellow-900/20 transition-colors">
-            <i class="fas fa-sun text-2xl text-yellow-500 mb-2"></i>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Solar</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">R {{ "%.2f"|format(wallet.solar_balance) }}</p>
-          </div>
-        </label>
-        {% endif %}
-        {% if 'hot_water' in available_utilities %}
-        <label class="utility-card cursor-pointer">
-          <input type="radio" name="utility_type" value="hot_water" class="sr-only peer">
-          <div class="rounded-lg border-2 border-gray-200 dark:border-gray-600 p-4 text-center peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/20 transition-colors">
-            <i class="fas fa-fire text-2xl text-orange-500 mb-2"></i>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">Hot Water</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">R {{ "%.2f"|format(wallet.hot_water_balance) }}</p>
-          </div>
-        </label>
-        {% endif %}
-      </div>
-    </div>
-
     <!-- Amount Selection -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
       <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Top-Up Amount</h4>

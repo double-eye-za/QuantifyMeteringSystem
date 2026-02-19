@@ -330,19 +330,20 @@ def wallet_statement_page(unit_id: int):
     # Group by date and calculate balance at end of each day
     from collections import defaultdict
 
-    daily_balances = defaultdict(lambda: float(wallet.electricity_balance))
+    # Unified wallet: use main balance for trend chart baseline
+    daily_balances = defaultdict(lambda: float(wallet.balance))
 
     if historical_txns:
-        # Calculate balance progression
-        current_balance = float(wallet.electricity_balance)
+        # Calculate balance progression from current main balance
+        current_balance = float(wallet.balance)
 
         # Work backwards from current balance
         for txn in reversed(historical_txns):
             txn_date = txn.completed_at.date()
             # Reverse the transaction to get previous balance
-            if txn.transaction_type.startswith("topup"):
+            if txn.transaction_type.startswith("topup") or txn.transaction_type.startswith("refund"):
                 current_balance -= float(txn.amount)
-            elif txn.transaction_type.startswith("deduction"):
+            elif txn.transaction_type.startswith("deduction") or txn.transaction_type.startswith("consumption"):
                 current_balance += float(txn.amount)
             daily_balances[txn_date] = current_balance
 
@@ -352,7 +353,7 @@ def wallet_statement_page(unit_id: int):
         balance_history.append({
             "day": i + 1,
             "label": day.strftime("%b %d") if i < 9 else f"{day.strftime('%b %d')} (Today)",
-            "balance": daily_balances.get(day, float(wallet.electricity_balance))
+            "balance": daily_balances.get(day, float(wallet.balance))
         })
 
     return render_template(

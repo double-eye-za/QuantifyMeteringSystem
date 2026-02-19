@@ -2,7 +2,7 @@
 Celery tasks for prepaid meter credit control.
 
 These tasks handle:
-- Scheduled checks for zero/negative credit electricity meters
+- Scheduled checks for zero/negative wallet balance meters
 - Automatic relay disconnect for non-paying accounts (feature-flagged)
 - Automatic relay reconnect when balance restored above minimum
 - Audit logging of all disconnect/reconnect actions
@@ -10,6 +10,9 @@ These tasks handle:
 Credit control is gated behind the 'credit_control' feature flag.
 When the flag is OFF, tasks run in dry-run mode (report only, no relay commands).
 When the flag is ON, tasks send relay commands via ChirpStack.
+
+Unified wallet: All balance checks use wallet.balance (the single fund pool),
+not utility-specific balances. Utility columns are cumulative spend trackers.
 
 Architecture note: The core logic lives in plain functions (_run_disconnect,
 _run_reconnect, _run_report) so it can be tested without Celery. The
@@ -41,14 +44,15 @@ def _run_disconnect():
     logger.info(f"Credit control enabled: {credit_control_active}")
     logger.info("=" * 60)
 
-    # Find all units with electricity meters that have zero or negative balance
+    # Find all units with electricity meters that have zero or negative wallet balance
+    # Unified wallet: check main balance (the single fund pool)
     # Exclude wallets already suspended (already disconnected)
     zero_balance_units = (
         db.session.query(Unit, Wallet, Meter)
         .join(Wallet, Unit.id == Wallet.unit_id)
         .join(Meter, Unit.electricity_meter_id == Meter.id)
         .filter(
-            Wallet.electricity_balance <= 0,  # Zero or negative balance
+            Wallet.balance <= 0,              # Zero or negative main balance
             Wallet.is_suspended == False,     # Not already disconnected
             Meter.device_eui.isnot(None),     # Has LoRaWAN device
             Meter.is_active == True,           # Meter is active
@@ -73,7 +77,8 @@ def _run_disconnect():
             "meter_id": meter.id,
             "meter_serial": meter.serial_number,
             "device_eui": meter.device_eui,
-            "electricity_balance": float(wallet.electricity_balance),
+            "balance": float(wallet.balance),
+            "electricity_spend": float(wallet.electricity_balance),
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -81,7 +86,7 @@ def _run_disconnect():
         logger.info(f"Processing Unit {unit.unit_number}:")
         logger.info(f"  Meter: {meter.serial_number}")
         logger.info(f"  Device EUI: {meter.device_eui}")
-        logger.info(f"  Electricity Balance: R{wallet.electricity_balance:.2f}")
+        logger.info(f"  Wallet Balance: R{wallet.balance:.2f}")
 
         if credit_control_active:
             # Feature flag ON — send actual disconnect command
@@ -99,7 +104,7 @@ def _run_disconnect():
                     # Mark wallet as suspended
                     wallet.is_suspended = True
                     wallet.suspension_reason = (
-                        f"Auto-disconnected: electricity balance R{wallet.electricity_balance:.2f} "
+                        f"Auto-disconnected: wallet balance R{wallet.balance:.2f} "
                         f"at {datetime.now().isoformat()}"
                     )
                     db.session.commit()
@@ -166,18 +171,19 @@ def _run_reconnect():
     logger.info(f"Credit control enabled: {credit_control_active}")
     logger.info("=" * 60)
 
-    # Find suspended wallets where balance has been restored
+    # Find suspended wallets where main balance has been restored above minimum
+    # Unified wallet: check main balance, not electricity_balance
     # electricity_minimum_activation defaults to R20.00
     eligible_units = (
         db.session.query(Unit, Wallet, Meter)
         .join(Wallet, Unit.id == Wallet.unit_id)
         .join(Meter, Unit.electricity_meter_id == Meter.id)
         .filter(
-            Wallet.is_suspended == True,                                       # Currently disconnected
-            Wallet.electricity_balance >= Wallet.electricity_minimum_activation,  # Balance restored
-            Meter.device_eui.isnot(None),                                      # Has LoRaWAN device
-            Meter.is_active == True,                                           # Meter is active
-            Unit.is_active == True,                                            # Unit is active
+            Wallet.is_suspended == True,                                    # Currently disconnected
+            Wallet.balance >= Wallet.electricity_minimum_activation,        # Balance restored
+            Meter.device_eui.isnot(None),                                  # Has LoRaWAN device
+            Meter.is_active == True,                                       # Meter is active
+            Unit.is_active == True,                                        # Unit is active
         )
         .all()
     )
@@ -198,7 +204,7 @@ def _run_reconnect():
             "meter_id": meter.id,
             "meter_serial": meter.serial_number,
             "device_eui": meter.device_eui,
-            "electricity_balance": float(wallet.electricity_balance),
+            "balance": float(wallet.balance),
             "minimum_activation": float(wallet.electricity_minimum_activation),
             "timestamp": datetime.now().isoformat(),
         }
@@ -207,7 +213,7 @@ def _run_reconnect():
         logger.info(f"Processing Unit {unit.unit_number}:")
         logger.info(f"  Meter: {meter.serial_number}")
         logger.info(f"  Device EUI: {meter.device_eui}")
-        logger.info(f"  Electricity Balance: R{wallet.electricity_balance:.2f}")
+        logger.info(f"  Wallet Balance: R{wallet.balance:.2f}")
         logger.info(f"  Minimum Activation: R{wallet.electricity_minimum_activation:.2f}")
 
         if credit_control_active:
@@ -282,12 +288,13 @@ def _run_report():
 
     logger.info("Generating zero balance meters report...")
 
+    # Unified wallet: check main balance (the single fund pool)
     zero_balance_units = (
         db.session.query(Unit, Wallet, Meter)
         .join(Wallet, Unit.id == Wallet.unit_id)
         .join(Meter, Unit.electricity_meter_id == Meter.id)
         .filter(
-            Wallet.electricity_balance <= 0,
+            Wallet.balance <= 0,
             Meter.device_eui.isnot(None),
             Meter.is_active == True,
             Unit.is_active == True,
@@ -304,8 +311,9 @@ def _run_report():
             "meter_id": meter.id,
             "meter_serial": meter.serial_number,
             "device_eui": meter.device_eui,
-            "electricity_balance": float(wallet.electricity_balance),
-            "total_balance": float(wallet.balance),
+            "balance": float(wallet.balance),
+            "electricity_spend": float(wallet.electricity_balance),
+            "water_spend": float(wallet.water_balance),
             "is_suspended": wallet.is_suspended,
         })
 
@@ -326,7 +334,7 @@ def _run_report():
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def disconnect_zero_balance_meters(self):
     """
-    Scheduled task to disconnect electricity meters with zero or negative credit.
+    Scheduled task to disconnect electricity meters with zero or negative wallet balance.
     Runs daily at 6 AM. Gated behind 'credit_control' feature flag.
     """
     try:
@@ -339,7 +347,7 @@ def disconnect_zero_balance_meters(self):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def reconnect_topped_up_meters(self):
     """
-    Scheduled task to reconnect meters where balance restored above minimum.
+    Scheduled task to reconnect meters where wallet balance restored above minimum.
     Runs every 30 min. Gated behind 'credit_control' feature flag.
     """
     try:
@@ -352,7 +360,7 @@ def reconnect_topped_up_meters(self):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def get_zero_balance_meters_report(self):
     """
-    Generate a report of all meters with zero or negative balance.
+    Generate a report of all meters with zero or negative wallet balance.
     Does NOT disconnect - just reports for review.
     """
     try:

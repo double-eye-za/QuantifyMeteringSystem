@@ -368,8 +368,9 @@ async function loadCreditControlStatus() {
 
     let rows = "";
     for (const m of result.meters) {
+      // Unified wallet: color based on main balance
       const balanceClass =
-        m.electricity_balance < 0
+        m.balance < 0
           ? "text-red-600 dark:text-red-400"
           : "text-orange-600 dark:text-orange-400";
 
@@ -382,8 +383,8 @@ async function loadCreditControlStatus() {
           <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${m.unit_number}</td>
           <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">${m.meter_serial}</td>
           <td class="px-4 py-3 text-xs font-mono text-gray-500 dark:text-gray-400">${m.device_eui}</td>
-          <td class="px-4 py-3 text-sm text-right ${balanceClass}">R${m.electricity_balance.toFixed(2)}</td>
-          <td class="px-4 py-3 text-sm text-right text-gray-600 dark:text-gray-300">R${m.total_balance.toFixed(2)}</td>
+          <td class="px-4 py-3 text-sm text-right ${balanceClass}">R${m.balance.toFixed(2)}</td>
+          <td class="px-4 py-3 text-sm text-right text-gray-600 dark:text-gray-300">R${m.electricity_spent.toFixed(2)}</td>
           <td class="px-4 py-3 text-center">${statusBadge}</td>
         </tr>`;
     }

@@ -81,6 +81,7 @@ class Wallet(db.Model):
         return {
             "id": self.id,
             "unit_id": self.unit_id,
+            "wallet_mode": "unified",
             "balance": float(self.balance),
             "electricity_balance": float(self.electricity_balance),
             "water_balance": float(self.water_balance),

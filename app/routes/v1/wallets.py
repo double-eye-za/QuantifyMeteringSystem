@@ -257,27 +257,10 @@ def topup_wallet(wallet_id: int):
         if not getattr(current_user, "is_super_admin", False):
             return jsonify({"error": "Unauthorized. Super admin access required.", "code": 403}), 403
 
-    # Determine utility type from metadata (transaction type is always "topup")
-    utility_type = metadata.get("utility_type", "electricity")
+    # Unified wallet: top-up goes to the shared balance pool
     transaction_type = "topup"
 
-    # Get the meter_id for this utility type from the unit
-    from ...db import db
-    from ...models import Unit
-    unit = db.session.query(Unit).filter(Unit.id == wallet.unit_id).first()
-    meter_id = None
-
-    if unit:
-        if utility_type == "electricity":
-            meter_id = unit.electricity_meter_id
-        elif utility_type == "water":
-            meter_id = unit.water_meter_id
-        elif utility_type == "solar":
-            meter_id = unit.solar_meter_id
-        elif utility_type == "hot_water":
-            meter_id = unit.hot_water_meter_id
-
-    # Create transaction with meter_id link
+    # Create transaction (no meter_id — top-up isn't tied to a specific meter)
     txn = svc_create_transaction(
         wallet_id=wallet_id,
         transaction_type=transaction_type,
@@ -285,11 +268,11 @@ def topup_wallet(wallet_id: int):
         reference=reference,
         payment_method=payment_method,
         metadata=metadata,
-        meter_id=meter_id,  # Link to specific meter
     )
 
-    # Update wallet balance for the specific utility type
-    credit_wallet(wallet, float(amount), utility_type)
+    # Credit the main wallet balance
+    from ...db import db
+    credit_wallet(wallet, float(amount))
     db.session.commit()
 
     log_action(
@@ -301,7 +284,6 @@ def topup_wallet(wallet_id: int):
             "payment_method": payment_method,
             "reference": reference,
             "transaction_id": txn.id,
-            "utility_type": utility_type,
         },
     )
 
@@ -312,7 +294,6 @@ def topup_wallet(wallet_id: int):
             wallet_id=wallet_id,
             amount=float(amount),
             payment_method=payment_method,
-            utility_type=utility_type
         )
     except Exception as e:
         # Don't fail the transaction if notification fails

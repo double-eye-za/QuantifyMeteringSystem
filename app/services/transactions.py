@@ -51,26 +51,13 @@ def create_transaction(
     if not wallet:
         raise ValueError(f"Wallet with id {wallet_id} not found")
 
-    # Determine which balance to use based on metadata utility_type or transaction type
-    utility_type = metadata.get("utility_type") if metadata else None
-
-    # Check metadata first, then fall back to transaction type for backwards compatibility
-    if utility_type == "electricity" or transaction_type in ("topup_electricity", "deduction_electricity", "purchase_electricity"):
-        balance_before = float(wallet.electricity_balance)
-    elif utility_type == "water" or transaction_type in ("topup_water", "deduction_water", "purchase_water"):
-        balance_before = float(wallet.water_balance)
-    elif utility_type == "solar" or transaction_type in ("topup_solar", "deduction_solar"):
-        balance_before = float(wallet.solar_balance)
-    elif utility_type == "hot_water" or transaction_type in ("topup_hot_water", "deduction_hot_water"):
-        balance_before = float(wallet.hot_water_balance)
-    else:
-        # Default to general balance
-        balance_before = float(wallet.balance)
+    # Unified wallet: always track the main balance pool
+    balance_before = float(wallet.balance)
 
     # Calculate balance after transaction
     if transaction_type.startswith("topup") or transaction_type.startswith("refund"):
         balance_after = balance_before + float(amount)
-    elif transaction_type.startswith("deduction") or transaction_type.startswith("purchase"):
+    elif transaction_type.startswith("deduction") or transaction_type.startswith("purchase") or transaction_type.startswith("consumption"):
         balance_after = balance_before - float(amount)
     else:
         balance_after = balance_before
