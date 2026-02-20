@@ -239,7 +239,6 @@ async function handleTopUpSubmit(event) {
 
   const walletId = document.getElementById("walletId").value;
   const amount = parseFloat(document.getElementById("topUpAmount").value);
-  const utilityType = document.getElementById("topUpUtilityType").value;
   const reference = document.getElementById("topUpReference").value;
 
   if (!walletId) {
@@ -249,11 +248,6 @@ async function handleTopUpSubmit(event) {
 
   if (!amount || amount <= 0) {
     alert("Please enter a valid amount");
-    return;
-  }
-
-  if (!utilityType) {
-    alert("Please select a utility type");
     return;
   }
 
@@ -271,9 +265,8 @@ async function handleTopUpSubmit(event) {
       body: JSON.stringify({
         amount: amount,
         payment_method: "manual_admin",
-        reference: reference || `Admin top-up for ${utilityType}`,
+        reference: reference || "Admin wallet top-up",
         metadata: {
-          utility_type: utilityType,
           added_by: "admin",
           source: "meter_details_page"
         }

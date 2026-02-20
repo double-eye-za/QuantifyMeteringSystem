@@ -577,33 +577,6 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
         </div>
 
         <div class="mb-4">
-          <label for="topUpUtilityType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Utility Type <span class="text-red-500">*</span>
-          </label>
-          <select
-            id="topUpUtilityType"
-            required
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
-          >
-            <option value="">Select utility type</option>
-            {% if meter and meter.meter_type == 'electricity' %}
-              <option value="electricity" selected>Electricity</option>
-            {% elif meter and meter.meter_type == 'water' %}
-              <option value="water" selected>Water</option>
-            {% elif meter and meter.meter_type == 'solar' %}
-              <option value="solar" selected>Solar</option>
-            {% elif meter and meter.meter_type == 'hot_water' %}
-              <option value="hot_water" selected>Hot Water</option>
-            {% else %}
-              <option value="electricity">Electricity</option>
-              <option value="water">Water</option>
-              <option value="solar">Solar</option>
-              <option value="hot_water">Hot Water</option>
-            {% endif %}
-          </select>
-        </div>
-
-        <div class="mb-4">
           <label for="topUpReference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Reference / Notes
           </label>

@@ -68,10 +68,10 @@ def create_transaction(
     # Convert metadata dict to JSON string for storage
     metadata_json = json.dumps(metadata) if metadata else None
 
-    # Generate description based on transaction type and utility
+    # Generate description based on transaction type
     description = None
-    if transaction_type == "topup" and utility_type:
-        description = f"Top-up for {utility_type.replace('_', ' ').title()}"
+    if transaction_type == "topup":
+        description = "Wallet Top-up"
 
     # Set status and completed_at based on payment method
     is_pending = transaction_type.startswith("purchase") or payment_method in ("eft", "card", "instant_eft")

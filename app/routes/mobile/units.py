@@ -62,21 +62,24 @@ def get_unit_meters(unit_id: int, mobile_user: MobileUser):
         ('hot_water', unit.hot_water_meter_id),
     ]
 
+    # Unified wallet: all meters share the same available balance
+    shared_balance = float(wallet.balance) if wallet and wallet.balance else 0.0
+
     for utility_type, meter_id in meter_mappings:
         if meter_id:
             meter = Meter.query.get(meter_id)
             if meter:
-                # Get the utility-specific balance from wallet
-                balance = 0.0
+                # Get cumulative consumption cost for this utility
+                utility_spent = 0.0
                 if wallet:
                     if utility_type == 'electricity':
-                        balance = float(wallet.electricity_balance) if wallet.electricity_balance else 0.0
+                        utility_spent = float(wallet.electricity_balance) if wallet.electricity_balance else 0.0
                     elif utility_type == 'water':
-                        balance = float(wallet.water_balance) if wallet.water_balance else 0.0
+                        utility_spent = float(wallet.water_balance) if wallet.water_balance else 0.0
                     elif utility_type == 'solar':
-                        balance = float(wallet.solar_balance) if wallet.solar_balance else 0.0
+                        utility_spent = float(wallet.solar_balance) if wallet.solar_balance else 0.0
                     elif utility_type == 'hot_water':
-                        balance = float(wallet.hot_water_balance) if wallet.hot_water_balance else 0.0
+                        utility_spent = float(wallet.hot_water_balance) if wallet.hot_water_balance else 0.0
 
                 meters.append({
                     'id': meter.id,
@@ -90,7 +93,8 @@ def get_unit_meters(unit_id: int, mobile_user: MobileUser):
                     'lorawan_device_type': meter.lorawan_device_type,
                     'communication_type': meter.communication_type,
                     'is_active': meter.is_active,
-                    'balance': balance,  # Add utility-specific balance
+                    'balance': shared_balance,  # Unified wallet balance (shared pool)
+                    'utility_spent': utility_spent,  # Cumulative consumption cost
                 })
 
     return jsonify({
@@ -160,18 +164,19 @@ def get_meter_details(meter_id: int, mobile_user: MobileUser):
     elif unit.hot_water_meter_id == meter_id:
         utility_type = 'hot_water'
 
-    # Get wallet balance for this utility
+    # Unified wallet: shared balance + per-utility consumption cost
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
-    balance = 0.0
+    balance = float(wallet.balance) if wallet and wallet.balance else 0.0
+    utility_spent = 0.0
     if wallet:
         if utility_type == 'electricity':
-            balance = float(wallet.electricity_balance) if wallet.electricity_balance else 0.0
+            utility_spent = float(wallet.electricity_balance) if wallet.electricity_balance else 0.0
         elif utility_type == 'water':
-            balance = float(wallet.water_balance) if wallet.water_balance else 0.0
+            utility_spent = float(wallet.water_balance) if wallet.water_balance else 0.0
         elif utility_type == 'solar':
-            balance = float(wallet.solar_balance) if wallet.solar_balance else 0.0
+            utility_spent = float(wallet.solar_balance) if wallet.solar_balance else 0.0
         elif utility_type == 'hot_water':
-            balance = float(wallet.hot_water_balance) if wallet.hot_water_balance else 0.0
+            utility_spent = float(wallet.hot_water_balance) if wallet.hot_water_balance else 0.0
 
     return jsonify({
         'meter': {
@@ -188,7 +193,8 @@ def get_meter_details(meter_id: int, mobile_user: MobileUser):
             'lorawan_device_type': meter.lorawan_device_type,
             'communication_type': meter.communication_type,
             'is_active': meter.is_active,
-            'balance': balance,  # Add utility-specific balance
+            'balance': balance,  # Unified wallet balance (shared pool)
+            'utility_spent': utility_spent,  # Cumulative consumption cost
         }
     }), 200
 
@@ -342,6 +348,7 @@ def get_unit_wallet(unit_id: int, mobile_user: MobileUser):
         'wallet': {
             'id': wallet.id,
             'unit_id': wallet.unit_id,
+            'wallet_mode': 'unified',
             'balance': float(wallet.balance) if wallet.balance else 0.0,
             'electricity_balance': float(wallet.electricity_balance) if wallet.electricity_balance else 0.0,
             'water_balance': float(wallet.water_balance) if wallet.water_balance else 0.0,
