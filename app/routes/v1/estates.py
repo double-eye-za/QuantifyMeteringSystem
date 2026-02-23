@@ -172,7 +172,7 @@ def estates_page():
                         "meter_type_color": "text-blue-500",
                         "serial_number": bulk_water_meter.serial_number,
                         "current_reading": bulk_water_meter.last_reading,
-                        "reading_unit": "kL",
+                        "reading_unit": "L",
                         "status": bulk_water_meter.communication_status,
                         "last_update": bulk_water_meter.last_reading_date,
                         "last_communication": bulk_water_meter.last_communication,
