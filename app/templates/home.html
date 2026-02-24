@@ -10,19 +10,21 @@
 <body class="h-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
     <div class="min-h-full flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8 text-center">
-            <!-- Logo/Icon -->
+            <!-- Logo -->
             <div class="flex justify-center">
-                <div class="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
-                    <i class="fas fa-bolt text-white text-5xl"></i>
-                </div>
+                <img
+                    src="{{ url_for('static', filename='img/quantify-logo.png') }}"
+                    alt="Quantify"
+                    class="h-16 dark:brightness-0 dark:invert"
+                />
             </div>
 
             <!-- Title -->
             <div>
-                <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                    Quantify Metering System
+                <h1 class="text-2xl font-medium text-gray-600 dark:text-gray-300 mb-2">
+                    Metering System
                 </h1>
-                <p class="text-lg text-gray-600 dark:text-gray-300">
+                <p class="text-lg text-gray-500 dark:text-gray-400">
                     Manage your prepaid utilities efficiently
                 </p>
             </div>

@@ -121,15 +121,12 @@
       >
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-3">
-            <div
-              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-            >
-              <i class="fas fa-bolt text-white"></i>
-            </div>
-            <span class="font-bold text-lg text-gray-900 dark:text-white"
-              >Quantify Metering</span
-            >
+          <div class="flex items-center justify-center">
+            <img
+              src="{{ url_for('static', filename='img/quantify-logo.png') }}"
+              alt="Quantify"
+              class="h-8 dark:brightness-0 dark:invert"
+            />
           </div>
         </div>
 
