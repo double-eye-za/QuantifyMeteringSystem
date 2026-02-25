@@ -6,10 +6,24 @@ document.addEventListener("DOMContentLoaded", function () {
   setupSessionHandling();
 });
 
-// Global session handling for AJAX requests
+// Global session handling for AJAX requests + CSRF token injection
 function setupSessionHandling() {
+  var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  var csrfToken = csrfMeta ? csrfMeta.getAttribute("content") : null;
+
   const originalFetch = window.fetch;
   window.fetch = async function (...args) {
+    // Inject CSRF token into non-GET requests
+    if (csrfToken && args.length >= 2 && args[1]) {
+      var method = (args[1].method || "GET").toUpperCase();
+      if (method !== "GET" && method !== "HEAD") {
+        args[1].headers = args[1].headers || {};
+        if (!args[1].headers["X-CSRFToken"]) {
+          args[1].headers["X-CSRFToken"] = csrfToken;
+        }
+      }
+    }
+
     const response = await originalFetch.apply(this, args);
 
     if (response.status === 401) {

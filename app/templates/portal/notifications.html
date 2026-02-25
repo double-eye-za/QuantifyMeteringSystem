@@ -11,6 +11,7 @@
 {% if unread_count > 0 %}
 <div class="flex justify-end mb-4">
   <form method="POST" action="{{ url_for('portal.portal_mark_all_notifications_read') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <button type="submit" class="text-sm text-primary hover:text-blue-700"><i class="fas fa-check-double mr-1"></i> Mark all as read ({{ unread_count }})</button>
   </form>
 </div>

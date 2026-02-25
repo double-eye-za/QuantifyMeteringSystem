@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, render_template, send_from_directory
+from flask_wtf.csrf import CSRFProtect
 from config import Config
 from app.db import db
 from app.routes.v1 import api_v1
@@ -13,6 +14,8 @@ import os
 from flask_migrate import Migrate
 from datetime import timedelta
 from flask_login import current_user
+
+csrf = CSRFProtect()
 
 # Celery instance (will be initialized with app context)
 celery = None
@@ -30,6 +33,7 @@ def create_app() -> Flask:
     db.init_app(app)
     Migrate(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # Initialise Flask-Mail
     from flask_mail import Mail
@@ -146,17 +150,19 @@ def create_app() -> Flask:
         # Register API blueprints
         app.register_blueprint(api_v1)
 
-        # Register mobile API blueprint
+        # Register mobile API blueprint (JWT auth — exempt from CSRF)
         from app.routes.mobile import mobile_api
         app.register_blueprint(mobile_api)
+        csrf.exempt(mobile_api)
 
         # Register portal blueprint (owner/tenant web portal)
         from app.routes.portal import portal
         app.register_blueprint(portal)
 
-        # Register PayFast ITN webhook blueprint
+        # Register PayFast ITN webhook blueprint (server-to-server — exempt from CSRF)
         from app.routes.payfast import payfast_bp
         app.register_blueprint(payfast_bp)
+        csrf.exempt(payfast_bp)
 
         # Configure session timeout from settings
         configure_session_timeout(app)

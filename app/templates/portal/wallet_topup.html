@@ -29,6 +29,7 @@
   {% endwith %}
 
   <form method="POST" action="{{ url_for('portal.portal_wallet_topup_post', unit_id=unit.id) }}" id="topup-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <!-- Amount Selection -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
       <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Top-Up Amount</h4>

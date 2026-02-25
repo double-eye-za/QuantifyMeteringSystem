@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>{% block title %}Quantify Metering System{% endblock %}</title>
 
     <script>
@@ -564,6 +565,34 @@
         //   }
         // }
       });
+    </script>
+
+    <!-- CSRF token injection for all fetch() requests -->
+    <script>
+      (function () {
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfMeta) return;
+        var csrfToken = csrfMeta.getAttribute("content");
+        var _origFetch = window.fetch;
+        window.fetch = function (url, opts) {
+          opts = opts || {};
+          var method = (opts.method || "GET").toUpperCase();
+          if (method !== "GET" && method !== "HEAD") {
+            opts.headers = opts.headers || {};
+            // Support both Headers object and plain object
+            if (opts.headers instanceof Headers) {
+              if (!opts.headers.has("X-CSRFToken")) {
+                opts.headers.set("X-CSRFToken", csrfToken);
+              }
+            } else {
+              if (!opts.headers["X-CSRFToken"]) {
+                opts.headers["X-CSRFToken"] = csrfToken;
+              }
+            }
+          }
+          return _origFetch.call(this, url, opts);
+        };
+      })();
     </script>
 
     <!-- Additional JavaScript -->

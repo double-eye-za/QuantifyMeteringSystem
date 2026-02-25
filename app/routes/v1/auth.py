@@ -791,8 +791,44 @@ def login():
         user = User.query.filter(
             (User.username == credential) | (User.email == credential)
         ).first()
+
+        # Check account lockout before verifying password
+        if user and user.locked_until and user.locked_until > datetime.utcnow():
+            remaining = int((user.locked_until - datetime.utcnow()).total_seconds() / 60) + 1
+            log_action(
+                "user.login_locked",
+                entity_type="user",
+                entity_id=user.id,
+                new_values={"reason": "account_locked", "locked_until": user.locked_until.isoformat()},
+            )
+            return jsonify({
+                "error": f"Account locked. Try again in {remaining} minute(s).",
+                "code": 429,
+            }), 429
+
         if not user or not user.check_password(password):
+            # Increment failed attempts on the actual user (if found)
+            if user:
+                user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+                if user.failed_login_attempts >= 5:
+                    user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    log_action(
+                        "user.login_lockout",
+                        entity_type="user",
+                        entity_id=user.id,
+                        new_values={
+                            "failed_attempts": user.failed_login_attempts,
+                            "locked_until": user.locked_until.isoformat(),
+                        },
+                    )
+                db.session.commit()
             return jsonify({"error": "Invalid credentials", "code": 401}), 401
+
+        # Successful login — reset failed attempts
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        user.last_login = datetime.utcnow()
+        db.session.commit()
 
         logged_in = login_user(user, force=True)
         if not logged_in:

@@ -94,5 +94,5 @@ def create_transaction(
         meter_id=meter_id,  # Link transaction to specific meter
     )
     db.session.add(txn)
-    db.session.commit()
+    db.session.flush()  # Persist (generates txn.id) without committing — caller controls the transaction boundary
     return txn

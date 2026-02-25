@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from flask import request
@@ -7,6 +8,8 @@ from flask_login import current_user
 
 from ..db import db
 from ..models.audit_log import AuditLog
+
+logger = logging.getLogger(__name__)
 
 
 def log_action(
@@ -19,7 +22,7 @@ def log_action(
     request_id: Optional[str] = None,
 ) -> None:
     """Persist an audit log entry.
-    Safe to call from any route; swallows errors to avoid breaking primary flow.
+    Safe to call from any route; logs errors but does not break primary flow.
     """
     try:
         log = AuditLog(
@@ -37,9 +40,10 @@ def log_action(
         )
         db.session.add(log)
         db.session.commit()
-    except Exception:
+    except Exception as exc:
+        logger.error("Audit log failed for action=%s entity=%s/%s: %s",
+                      action, entity_type, entity_id, exc)
         db.session.rollback()
-        # Intentionally ignore audit failures
         return
 
 
@@ -48,5 +52,6 @@ def _safe_json(obj: Any) -> str:
 
     try:
         return json.dumps(obj, default=str)
-    except Exception:
+    except Exception as exc:
+        logger.warning("Audit JSON serialization failed: %s", exc)
         return "{}"
