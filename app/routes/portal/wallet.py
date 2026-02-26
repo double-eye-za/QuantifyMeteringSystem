@@ -155,7 +155,14 @@ def portal_wallet_topup_post(unit_id):
     person = current_user.person
     return_url = url_for('portal.portal_payment_complete', _external=True)
     cancel_url = url_for('portal.portal_payment_cancelled', unit_id=unit_id, _external=True)
-    notify_url = url_for('payfast.payfast_itn', _external=True)
+    # Build notify_url — must be publicly reachable by PayFast's servers.
+    # url_for(_external=True) may produce http://localhost:5000/... when
+    # SERVER_NAME is not configured, so prefer an explicit base URL.
+    payfast_notify_base = current_app.config.get('PAYFAST_NOTIFY_BASE_URL', '')
+    if payfast_notify_base:
+        notify_url = f"{payfast_notify_base.rstrip('/')}/api/payfast/notify"
+    else:
+        notify_url = url_for('payfast.payfast_itn', _external=True)
 
     # Use a list of tuples to guarantee insertion order
     pf_fields = [
