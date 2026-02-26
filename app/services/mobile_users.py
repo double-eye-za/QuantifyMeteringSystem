@@ -317,6 +317,7 @@ def get_user_units(person_id: int) -> List[Dict]:
             'role': 'owner',
             'is_primary': ownership.is_primary_owner,
             'ownership_percentage': float(ownership.ownership_percentage) if ownership.ownership_percentage else None,
+            'can_topup': True,  # Owners can always top up
         })
 
     # Get rented units (active tenancies only)
@@ -325,6 +326,7 @@ def get_user_units(person_id: int) -> List[Dict]:
         status='active'
     ).all()
     for tenancy in tenancies:
+        effective_role = tenancy.payment_role or 'delegated_payer'
         units.append({
             'unit_id': tenancy.unit_id,
             'unit_number': tenancy.unit.unit_number,
@@ -335,6 +337,8 @@ def get_user_units(person_id: int) -> List[Dict]:
             'monthly_rent': float(tenancy.monthly_rent) if tenancy.monthly_rent else None,
             'lease_start_date': tenancy.lease_start_date.isoformat() if tenancy.lease_start_date else None,
             'lease_end_date': tenancy.lease_end_date.isoformat() if tenancy.lease_end_date else None,
+            'can_topup': effective_role == 'delegated_payer',
+            'payment_role': effective_role,
         })
 
     return units
@@ -366,6 +370,53 @@ def can_access_unit(person_id: int, unit_id: int) -> bool:
         status='active'
     ).first()
     if tenancy:
+        return True
+
+    return False
+
+
+def can_topup_unit(person_id: int, unit_id: int) -> bool:
+    """
+    Check if a person can top up a unit's wallet.
+
+    Owners always can. Tenants depend on their payment_role:
+      - 'delegated_payer' (or NULL for backward compat) → can topup
+      - 'sponsored' → cannot topup
+
+    A person listed as delegated_payer_id on any active tenancy for
+    the unit can also topup (even if they have no direct tenancy).
+
+    Args:
+        person_id: ID of the person
+        unit_id: ID of the unit
+
+    Returns:
+        True if person is allowed to top up, False otherwise
+    """
+    # Owners always can topup
+    ownership = UnitOwnership.query.filter_by(
+        person_id=person_id,
+        unit_id=unit_id,
+    ).first()
+    if ownership:
+        return True
+
+    # Check tenant's own payment role
+    tenancy = UnitTenancy.query.filter_by(
+        person_id=person_id,
+        unit_id=unit_id,
+        status='active',
+    ).first()
+    if tenancy:
+        return (tenancy.payment_role or 'delegated_payer') == 'delegated_payer'
+
+    # Check if person is a delegated payer for any tenant on this unit
+    delegated = UnitTenancy.query.filter_by(
+        unit_id=unit_id,
+        delegated_payer_id=person_id,
+        status='active',
+    ).first()
+    if delegated:
         return True
 
     return False

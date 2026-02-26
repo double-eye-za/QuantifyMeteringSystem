@@ -102,6 +102,7 @@ def persons_page():
                         "unit_number": unit.unit_number,
                         "estate_name": estate.name if estate else None,
                         "is_primary": tenancy.is_primary_tenant,
+                        "payment_role": tenancy.effective_payment_role,
                     }
                 )
 
@@ -205,6 +206,7 @@ def list_persons():
                         "unit_number": unit.unit_number,
                         "estate_name": estate.name if estate else None,
                         "is_primary": tenancy.is_primary_tenant,
+                        "payment_role": tenancy.effective_payment_role,
                     }
                 )
 

@@ -89,6 +89,8 @@ def add_tenant(
     move_in_date: Optional[date] = None,
     status: str = "active",
     notes: Optional[str] = None,
+    payment_role: Optional[str] = None,
+    delegated_payer_id: Optional[int] = None,
 ) -> Tuple[bool, UnitTenancy | Dict]:
     """
     Add a tenant to a unit.
@@ -104,6 +106,9 @@ def add_tenant(
         move_in_date: Actual move-in date
         status: Tenancy status (active, expired, terminated)
         notes: Additional notes
+        payment_role: 'delegated_payer' (can topup) or 'sponsored' (view only).
+                      None treated as 'delegated_payer' for backward compat.
+        delegated_payer_id: Person ID of the payer (required when sponsored)
 
     Returns:
         Tuple of (success: bool, tenancy_record or error_dict)
@@ -140,6 +145,29 @@ def add_tenant(
             "message": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
         }
 
+    # Validate payment_role if provided
+    if payment_role is not None:
+        valid_roles = ["delegated_payer", "sponsored"]
+        if payment_role not in valid_roles:
+            return False, {
+                "code": 400,
+                "message": f"Invalid payment_role. Must be one of: {', '.join(valid_roles)}"
+            }
+        if payment_role == "sponsored" and not delegated_payer_id:
+            return False, {
+                "code": 400,
+                "message": "Sponsored tenants must have a delegated payer assigned"
+            }
+
+    # Validate delegated_payer_id if provided
+    if delegated_payer_id is not None:
+        payer = Person.query.get(delegated_payer_id)
+        if not payer:
+            return False, {
+                "code": 404,
+                "message": f"Delegated payer person with ID {delegated_payer_id} not found"
+            }
+
     # If this is the first tenant, make them primary automatically
     existing_tenants = get_unit_tenants(unit_id, active_only=True)
     if not existing_tenants:
@@ -163,6 +191,8 @@ def add_tenant(
         move_in_date=move_in_date or date.today(),
         status=status,
         notes=notes,
+        payment_role=payment_role,
+        delegated_payer_id=delegated_payer_id,
     )
 
     db.session.add(tenancy)
@@ -181,6 +211,8 @@ def update_tenancy(
     move_out_date: Optional[date] = None,
     status: Optional[str] = None,
     notes: Optional[str] = None,
+    payment_role: Optional[str] = None,
+    delegated_payer_id: Optional[int] = None,
 ) -> Tuple[bool, UnitTenancy | Dict]:
     """
     Update an existing tenancy record.
@@ -196,6 +228,8 @@ def update_tenancy(
         move_out_date: New move-out date
         status: New status
         notes: New notes
+        payment_role: New payment role ('delegated_payer' or 'sponsored')
+        delegated_payer_id: New delegated payer person ID
 
     Returns:
         Tuple of (success: bool, tenancy_record or error_dict)
@@ -235,6 +269,30 @@ def update_tenancy(
         tenancy.move_out_date = move_out_date
     if notes is not None:
         tenancy.notes = notes
+
+    # Payment role updates
+    if payment_role is not None:
+        valid_roles = ["delegated_payer", "sponsored"]
+        if payment_role not in valid_roles:
+            return False, {
+                "code": 400,
+                "message": f"Invalid payment_role. Must be one of: {', '.join(valid_roles)}"
+            }
+        if payment_role == "sponsored" and not (delegated_payer_id or tenancy.delegated_payer_id):
+            return False, {
+                "code": 400,
+                "message": "Sponsored tenants must have a delegated payer assigned"
+            }
+        tenancy.payment_role = payment_role
+
+    if delegated_payer_id is not None:
+        payer = Person.query.get(delegated_payer_id)
+        if not payer:
+            return False, {
+                "code": 404,
+                "message": f"Delegated payer person with ID {delegated_payer_id} not found"
+            }
+        tenancy.delegated_payer_id = delegated_payer_id
 
     db.session.commit()
     return True, tenancy

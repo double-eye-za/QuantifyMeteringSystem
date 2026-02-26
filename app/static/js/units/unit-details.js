@@ -81,6 +81,21 @@ function showAddTenantModal() {
 function closeAddTenantModal() {
   document.getElementById('addTenantModal').classList.add('hidden');
   document.getElementById('addTenantForm').reset();
+  // Reset payer container visibility (if payment_roles feature enabled)
+  var payerContainer = document.getElementById('payerSelectContainer');
+  if (payerContainer) payerContainer.classList.add('hidden');
+}
+
+function togglePayerSelect() {
+  var roleSelect = document.getElementById('tenantPaymentRole');
+  var payerContainer = document.getElementById('payerSelectContainer');
+  if (roleSelect && payerContainer) {
+    if (roleSelect.value === 'sponsored') {
+      payerContainer.classList.remove('hidden');
+    } else {
+      payerContainer.classList.add('hidden');
+    }
+  }
 }
 
 async function submitAddTenant() {
@@ -91,14 +106,33 @@ async function submitAddTenant() {
     return;
   }
 
+  // Build payload
+  var payload = {
+    person_id: personId,
+    status: 'active'
+  };
+
+  // Include payment_role if the fields exist (feature flag enabled)
+  var roleSelect = document.getElementById('tenantPaymentRole');
+  if (roleSelect) {
+    payload.payment_role = roleSelect.value;
+
+    if (roleSelect.value === 'sponsored') {
+      var payerSelect = document.getElementById('tenantDelegatedPayerId');
+      var payerId = payerSelect ? parseInt(payerSelect.value) : null;
+      if (!payerId) {
+        showFlashMessage('Please select a delegated payer for the sponsored tenant', 'error', true);
+        return;
+      }
+      payload.delegated_payer_id = payerId;
+    }
+  }
+
   try {
     const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        person_id: personId,
-        status: 'active'
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -108,7 +142,7 @@ async function submitAddTenant() {
       closeAddTenantModal();
       window.location.reload();
     } else {
-      showFlashMessage(data.message || 'Failed to add tenant', 'error', true);
+      showFlashMessage(data.message || data.error || 'Failed to add tenant', 'error', true);
     }
   } catch (error) {
     console.error('Error:', error);
@@ -137,6 +171,83 @@ async function removeTenant(personId) {
   } catch (error) {
     console.error('Error:', error);
     showFlashMessage('Failed to remove tenant', 'error', true);
+  }
+}
+
+// =====================
+// Edit Payment Role
+// =====================
+function showEditPaymentRoleModal(personId, personName, currentRole, currentPayerId) {
+  document.getElementById('editRolePersonId').value = personId;
+  document.getElementById('editRolePersonName').textContent = personName;
+
+  var roleSelect = document.getElementById('editPaymentRole');
+  roleSelect.value = currentRole;
+
+  var payerSelect = document.getElementById('editDelegatedPayerId');
+  if (currentPayerId && payerSelect) {
+    payerSelect.value = currentPayerId;
+  }
+
+  toggleEditPayerSelect();
+  document.getElementById('editPaymentRoleModal').classList.remove('hidden');
+}
+
+function closeEditPaymentRoleModal() {
+  document.getElementById('editPaymentRoleModal').classList.add('hidden');
+  document.getElementById('editPaymentRoleForm').reset();
+  var container = document.getElementById('editPayerSelectContainer');
+  if (container) container.classList.add('hidden');
+}
+
+function toggleEditPayerSelect() {
+  var roleSelect = document.getElementById('editPaymentRole');
+  var payerContainer = document.getElementById('editPayerSelectContainer');
+  if (roleSelect && payerContainer) {
+    if (roleSelect.value === 'sponsored') {
+      payerContainer.classList.remove('hidden');
+    } else {
+      payerContainer.classList.add('hidden');
+    }
+  }
+}
+
+async function submitEditPaymentRole() {
+  var personId = parseInt(document.getElementById('editRolePersonId').value);
+  var roleSelect = document.getElementById('editPaymentRole');
+  var paymentRole = roleSelect.value;
+
+  var payload = { payment_role: paymentRole };
+
+  if (paymentRole === 'sponsored') {
+    var payerSelect = document.getElementById('editDelegatedPayerId');
+    var payerId = payerSelect ? parseInt(payerSelect.value) : null;
+    if (!payerId) {
+      showFlashMessage('Please select a delegated payer for the sponsored tenant', 'error', true);
+      return;
+    }
+    payload.delegated_payer_id = payerId;
+  }
+
+  try {
+    const response = await fetch(`/api/v1/api/units/${UNIT_ID}/tenants/${personId}/payment-role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showFlashMessage('Payment role updated successfully', 'success', false);
+      closeEditPaymentRoleModal();
+      window.location.reload();
+    } else {
+      showFlashMessage(data.error || 'Failed to update payment role', 'error', true);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showFlashMessage('Failed to update payment role', 'error', true);
   }
 }
 

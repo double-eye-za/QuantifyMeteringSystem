@@ -6,10 +6,11 @@ from flask import render_template, request, abort, redirect, url_for, current_ap
 from flask_login import current_user
 from . import portal
 from .decorators import portal_login_required
-from ...services.mobile_users import get_user_units, can_access_unit
+from ...services.mobile_users import get_user_units, can_access_unit, can_topup_unit
 from ...services.transactions import create_transaction as svc_create_transaction
 from ...models import Unit, Wallet, Transaction
 from ...utils.payfast import generate_signature
+from ...utils.feature_flags import is_feature_enabled
 from ...db import db
 from datetime import datetime, timedelta
 
@@ -29,6 +30,7 @@ def portal_wallet():
                 wallet_data.append({
                     'unit': unit_info,
                     'wallet': wallet,
+                    'can_topup': unit_info.get('can_topup', True),
                 })
 
     return render_template('portal/wallet.html', wallet_data=wallet_data)
@@ -89,6 +91,10 @@ def portal_wallet_topup(unit_id):
     if not can_access_unit(current_user.person_id, unit_id):
         abort(403)
 
+    if is_feature_enabled('payment_roles') and not can_topup_unit(current_user.person_id, unit_id):
+        flash('You do not have permission to top up this unit. Contact the unit owner.', 'error')
+        return redirect(url_for('portal.portal_wallet'))
+
     unit = Unit.query.get_or_404(unit_id)
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
     if not wallet:
@@ -106,6 +112,9 @@ def portal_wallet_topup(unit_id):
 def portal_wallet_topup_post(unit_id):
     """Create a pending transaction and redirect the user to PayFast."""
     if not can_access_unit(current_user.person_id, unit_id):
+        abort(403)
+
+    if is_feature_enabled('payment_roles') and not can_topup_unit(current_user.person_id, unit_id):
         abort(403)
 
     unit = Unit.query.get_or_404(unit_id)

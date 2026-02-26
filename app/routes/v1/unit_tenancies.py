@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from ...models import Unit
 from ...services.unit_tenancies import (
     get_unit_tenants,
+    get_tenancy,
     add_tenant,
     update_tenancy,
     remove_tenant,
@@ -40,6 +41,10 @@ def get_tenants(unit_id: int):
                 "move_out_date": t.move_out_date.isoformat() if t.move_out_date else None,
                 "status": t.status,
                 "monthly_rent": float(t.monthly_rent) if t.monthly_rent else None,
+                "payment_role": t.effective_payment_role,
+                "delegated_payer_id": t.delegated_payer_id,
+                "delegated_payer_name": t.delegated_payer.full_name if t.delegated_payer else None,
+                "can_topup": t.can_topup,
             }
             for t in tenants
         ]
@@ -69,6 +74,8 @@ def add_unit_tenant(unit_id: int):
         move_in_date=payload.get("move_in_date"),
         status=payload.get("status", "active"),
         notes=payload.get("notes"),
+        payment_role=payload.get("payment_role"),
+        delegated_payer_id=payload.get("delegated_payer_id"),
     )
 
     if not success:
@@ -78,7 +85,10 @@ def add_unit_tenant(unit_id: int):
         "unit.tenant_added",
         entity_type="unit",
         entity_id=unit_id,
-        new_values={"person_id": payload["person_id"]},
+        new_values={
+            "person_id": payload["person_id"],
+            "payment_role": payload.get("payment_role", "delegated_payer"),
+        },
     )
 
     # Auto-create mobile user account if person doesn't have one
@@ -132,6 +142,54 @@ def add_unit_tenant(unit_id: int):
         response_data["mobile_user"] = mobile_user_info
 
     return jsonify(response_data), 201
+
+
+@api_v1.put("/api/units/<int:unit_id>/tenants/<int:person_id>/payment-role")
+@login_required
+@requires_permission("units.edit")
+def update_tenant_payment_role(unit_id: int, person_id: int):
+    """Update a tenant's payment role"""
+    tenancy = get_tenancy(unit_id, person_id)
+    if not tenancy:
+        return jsonify({"error": "Tenancy not found"}), 404
+
+    payload = request.get_json(force=True) or {}
+
+    payment_role = payload.get("payment_role")
+    if not payment_role:
+        return jsonify({"error": "payment_role is required"}), 400
+
+    old_role = tenancy.effective_payment_role
+
+    success, result = update_tenancy(
+        tenancy,
+        payment_role=payment_role,
+        delegated_payer_id=payload.get("delegated_payer_id"),
+    )
+
+    if not success:
+        return jsonify({"error": result.get("message", "Failed to update payment role")}), result.get("code", 400)
+
+    log_action(
+        "unit.tenant_payment_role_updated",
+        entity_type="unit",
+        entity_id=unit_id,
+        old_values={"payment_role": old_role},
+        new_values={
+            "person_id": person_id,
+            "payment_role": payment_role,
+            "delegated_payer_id": payload.get("delegated_payer_id"),
+        },
+    )
+
+    return jsonify({
+        "message": "Payment role updated successfully",
+        "data": {
+            "payment_role": result.effective_payment_role,
+            "delegated_payer_id": result.delegated_payer_id,
+            "can_topup": result.can_topup,
+        }
+    })
 
 
 @api_v1.delete("/api/units/<int:unit_id>/tenants/<int:person_id>")

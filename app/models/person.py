@@ -55,7 +55,8 @@ class Person(db.Model):
         "UnitOwnership", back_populates="person", cascade="all, delete-orphan"
     )
     tenancies = db.relationship(
-        "UnitTenancy", back_populates="person", cascade="all, delete-orphan"
+        "UnitTenancy", back_populates="person", cascade="all, delete-orphan",
+        foreign_keys="[UnitTenancy.person_id]",
     )
 
     @property

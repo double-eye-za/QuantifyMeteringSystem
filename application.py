@@ -84,6 +84,12 @@ def create_app() -> Flask:
             return False
         return not str(current_user.get_id()).startswith('mobile:')
 
+    @app.template_global()
+    def is_feature_enabled(flag_name: str):
+        """Check if a feature flag is enabled. For use in Jinja templates."""
+        from app.utils.feature_flags import is_feature_enabled as _check
+        return _check(flag_name)
+
     @app.template_filter("format_number")
     def format_number(value, decimals=0):
         """Format number with a thousand separators (commas)"""

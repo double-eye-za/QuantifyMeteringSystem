@@ -24,6 +24,7 @@ from app.services.system_settings import get_setting
 # Used by admin UI to show available toggles.
 FEATURE_FLAGS = {
     "credit_control": "Enable wallet credit limits and meter disconnect for zero-balance electricity",
+    "payment_roles": "Enable payment_role permission on unit tenancies (delegated_payer vs sponsored)",
 }
 
 

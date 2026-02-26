@@ -3,7 +3,8 @@ from flask import render_template, abort
 from flask_login import current_user
 from . import portal
 from .decorators import portal_login_required
-from ...services.mobile_users import get_user_units, can_access_unit
+from ...services.mobile_users import get_user_units, can_access_unit, can_topup_unit
+from ...utils.feature_flags import is_feature_enabled
 from ...models import Unit, Wallet, Meter, MeterReading
 from ...db import db
 
@@ -64,9 +65,13 @@ def portal_unit_detail(unit_id):
                     'last_reading_date': last_reading.reading_date if last_reading else None,
                 })
 
+    # Determine if user can top up this unit's wallet
+    _can_topup = can_topup_unit(current_user.person_id, unit_id) if is_feature_enabled('payment_roles') else True
+
     return render_template(
         'portal/unit_detail.html',
         unit=unit,
         wallet=wallet,
         meters=meters,
+        can_topup=_can_topup,
     )

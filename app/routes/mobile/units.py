@@ -4,8 +4,9 @@ from __future__ import annotations
 from flask import jsonify, request
 from datetime import datetime, timedelta
 
-from ...services.mobile_users import can_access_unit
+from ...services.mobile_users import can_access_unit, can_topup_unit
 from ...services.meters import get_meter_by_id as svc_get_meter_by_id
+from ...utils.feature_flags import is_feature_enabled
 from ...models import MobileUser, Unit, Meter, Wallet
 from .auth import require_mobile_auth
 from . import mobile_api
@@ -97,8 +98,11 @@ def get_unit_meters(unit_id: int, mobile_user: MobileUser):
                     'utility_spent': utility_spent,  # Cumulative consumption cost
                 })
 
+    _can_topup = can_topup_unit(mobile_user.person_id, unit_id) if is_feature_enabled('payment_roles') else True
+
     return jsonify({
-        'meters': meters
+        'meters': meters,
+        'can_topup': _can_topup,
     }), 200
 
 
@@ -178,6 +182,8 @@ def get_meter_details(meter_id: int, mobile_user: MobileUser):
         elif utility_type == 'hot_water':
             utility_spent = float(wallet.hot_water_balance) if wallet.hot_water_balance else 0.0
 
+    _can_topup = can_topup_unit(mobile_user.person_id, unit.id) if is_feature_enabled('payment_roles') else True
+
     return jsonify({
         'meter': {
             'id': meter.id,
@@ -195,6 +201,7 @@ def get_meter_details(meter_id: int, mobile_user: MobileUser):
             'is_active': meter.is_active,
             'balance': balance,  # Unified wallet balance (shared pool)
             'utility_spent': utility_spent,  # Cumulative consumption cost
+            'can_topup': _can_topup,
         }
     }), 200
 
@@ -360,6 +367,7 @@ def get_unit_wallet(unit_id: int, mobile_user: MobileUser):
             'low_balance_threshold': float(wallet.low_balance_threshold) if wallet.low_balance_threshold else 50.0,
             'low_balance_alert_type': wallet.low_balance_alert_type or 'fixed',
             'low_balance_days_threshold': wallet.low_balance_days_threshold or 3,
+            'can_topup': can_topup_unit(mobile_user.person_id, unit_id) if is_feature_enabled('payment_roles') else True,
         }
     }), 200
 

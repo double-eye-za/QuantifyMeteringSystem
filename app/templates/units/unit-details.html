@@ -190,6 +190,11 @@
                     Primary
                   </span>
                   {% endif %}
+                  {% if is_feature_enabled('payment_roles') and tenant.payment_role == 'sponsored' %}
+                  <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                    Sponsored
+                  </span>
+                  {% endif %}
                 </span>
               </div>
               {% if has_permission('units.edit') %}
@@ -229,6 +234,37 @@
                 </button>
               </span>
             </div>
+            {% endif %}
+            {% if is_feature_enabled('payment_roles') %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Payment Role</span>
+              <span class="text-gray-900 dark:text-white flex items-center gap-1">
+                {% if tenant.effective_payment_role == 'delegated_payer' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <i class="fas fa-wallet mr-1"></i>Delegated Payer
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                    <i class="fas fa-hand-holding-heart mr-1"></i>Sponsored
+                  </span>
+                {% endif %}
+                {% if has_permission('units.edit') %}
+                <button
+                  onclick="showEditPaymentRoleModal({{ tenant.person.id }}, '{{ tenant.person.full_name }}', '{{ tenant.effective_payment_role }}', {{ tenant.delegated_payer_id or 'null' }})"
+                  class="text-primary hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                  title="Edit payment role"
+                >
+                  <i class="fas fa-pen text-xs"></i>
+                </button>
+                {% endif %}
+              </span>
+            </div>
+            {% if tenant.delegated_payer %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-400">Payer</span>
+              <span class="text-gray-900 dark:text-white">{{ tenant.delegated_payer.full_name }}</span>
+            </div>
+            {% endif %}
             {% endif %}
             {% if tenant.move_in_date %}
             <div class="flex justify-between text-xs">
@@ -810,6 +846,33 @@
             {% endfor %}
           </select>
         </div>
+        {% if is_feature_enabled('payment_roles') %}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Payment Role
+          </label>
+          <select id="tenantPaymentRole" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            onchange="togglePayerSelect()">
+            <option value="delegated_payer" selected>Delegated Payer (can top up)</option>
+            <option value="sponsored">Sponsored (view only)</option>
+          </select>
+        </div>
+        <div id="payerSelectContainer" class="mb-4 hidden">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Delegated Payer <span class="text-red-500">*</span>
+          </label>
+          <select id="tenantDelegatedPayerId" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select who pays --</option>
+            {% for owner in owners %}
+            <option value="{{ owner.person.id }}">{{ owner.person.full_name }} (Owner)</option>
+            {% endfor %}
+            {% for tenant in tenants if tenant.status == 'active' %}
+            <option value="{{ tenant.person.id }}">{{ tenant.person.full_name }} (Tenant)</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the person responsible for topping up this unit.</p>
+        </div>
+        {% endif %}
         <div class="flex justify-end gap-3">
           <button type="button" onclick="closeAddTenantModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
             Cancel
@@ -822,6 +885,62 @@
     </div>
   </div>
 </div>
+
+<!-- Edit Payment Role Modal -->
+{% if is_feature_enabled('payment_roles') %}
+<div id="editPaymentRoleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Edit Payment Role</h3>
+      <button onclick="closeEditPaymentRoleModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="editPaymentRoleForm" onsubmit="event.preventDefault(); submitEditPaymentRole();">
+        <input type="hidden" id="editRolePersonId" />
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tenant</label>
+          <p id="editRolePersonName" class="text-sm text-gray-900 dark:text-white font-medium"></p>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Payment Role
+          </label>
+          <select id="editPaymentRole" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            onchange="toggleEditPayerSelect()">
+            <option value="delegated_payer">Delegated Payer (can top up)</option>
+            <option value="sponsored">Sponsored (view only)</option>
+          </select>
+        </div>
+        <div id="editPayerSelectContainer" class="mb-4 hidden">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Delegated Payer <span class="text-red-500">*</span>
+          </label>
+          <select id="editDelegatedPayerId" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="">-- Select who pays --</option>
+            {% for owner in owners %}
+            <option value="{{ owner.person.id }}">{{ owner.person.full_name }} (Owner)</option>
+            {% endfor %}
+            {% for tenant in tenants if tenant.status == 'active' %}
+            <option value="{{ tenant.person.id }}">{{ tenant.person.full_name }} (Tenant)</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the person responsible for topping up this unit.</p>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeEditPaymentRoleModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg">
+            <i class="fas fa-save mr-2"></i>Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %} {% block extra_js %}
 <script src="{{ url_for('static', filename='js/flash.js') }}"></script>

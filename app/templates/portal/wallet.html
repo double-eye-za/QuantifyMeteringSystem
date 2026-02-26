@@ -16,7 +16,11 @@
       <p class="text-sm text-gray-500 dark:text-gray-400">{{ item.unit.estate_name }}</p>
     </div>
     <div class="flex items-center gap-3">
+      {% if item.can_topup|default(true) %}
       <a href="{{ url_for('portal.portal_wallet_topup', unit_id=item.unit.unit_id) }}" class="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"><i class="fas fa-plus mr-1"></i> Top Up</a>
+      {% else %}
+      <span class="px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed" title="Your account is sponsored. Contact your unit payer to top up."><i class="fas fa-lock mr-1"></i> Sponsored</span>
+      {% endif %}
       <a href="{{ url_for('portal.portal_wallet_transactions', unit_id=item.unit.unit_id) }}" class="text-sm text-primary hover:text-blue-700 font-medium"><i class="fas fa-history mr-1"></i> Transactions</a>
     </div>
   </div>

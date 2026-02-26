@@ -8,8 +8,9 @@ from flask import jsonify, redirect, request, url_for, current_app
 
 from ...db import db
 from ...models import MobileUser, Unit, Wallet, Transaction
-from ...services.mobile_users import can_access_unit
+from ...services.mobile_users import can_access_unit, can_topup_unit
 from ...services.transactions import create_transaction as svc_create_transaction
+from ...utils.feature_flags import is_feature_enabled
 from .auth import require_mobile_auth
 from . import mobile_api
 
@@ -54,6 +55,13 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     # --- Access control ---
     if not can_access_unit(mobile_user.person_id, unit_id):
         return jsonify({'error': 'Access denied', 'message': 'You do not have access to this unit'}), 403
+
+    if is_feature_enabled('payment_roles') and not can_topup_unit(mobile_user.person_id, unit_id):
+        return jsonify({
+            'error': 'Payment not allowed',
+            'message': 'You do not have permission to top up this unit.',
+            'code': 'PAYMENT_ROLE_DENIED',
+        }), 403
 
     unit = Unit.query.get(unit_id)
     if not unit:
