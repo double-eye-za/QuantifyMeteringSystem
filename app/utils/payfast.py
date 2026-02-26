@@ -47,21 +47,21 @@ def validate_itn_signature(post_data: Dict[str, str], passphrase: Optional[str] 
     Returns:
         True if the computed signature matches the received signature.
     """
-    import logging
-    logger = logging.getLogger(__name__)
-
     received_signature = post_data.get('signature', '')
     if not received_signature:
-        logger.warning("ITN DEBUG: No signature field in POST data")
         return False
 
-    # Build param string from all fields except 'signature', in received order
+    # Build param string from ALL fields except 'signature', in received order.
+    # IMPORTANT: Include empty-valued fields (e.g. custom_str1=) — PayFast
+    # includes them when computing the ITN signature. Excluding them causes
+    # a mismatch.  (The outbound generate_signature() correctly excludes
+    # empty fields because we don't send them in the form.)
     params = []
     for key, value in post_data.items():
         if key == 'signature':
             continue
-        if value is not None and value != '':
-            params.append(f"{key}={urllib.parse.quote_plus(str(value))}")
+        encoded_value = urllib.parse.quote_plus(str(value)) if value else ''
+        params.append(f"{key}={encoded_value}")
 
     param_string = '&'.join(params)
 
@@ -69,19 +69,6 @@ def validate_itn_signature(post_data: Dict[str, str], passphrase: Optional[str] 
         param_string += f"&passphrase={urllib.parse.quote_plus(passphrase)}"
 
     computed = hashlib.md5(param_string.encode()).hexdigest()
-
-    # --- TEMPORARY DEBUG LOGGING (remove after fixing) ---
-    if computed != received_signature:
-        logger.warning("ITN DEBUG: Signature MISMATCH")
-        logger.warning("ITN DEBUG: Received signature = %s", received_signature)
-        logger.warning("ITN DEBUG: Computed signature = %s", computed)
-        logger.warning("ITN DEBUG: Passphrase length = %s, repr = %s",
-                        len(passphrase) if passphrase else 0,
-                        repr(passphrase) if passphrase else 'None')
-        logger.warning("ITN DEBUG: Param string = %s", param_string)
-        logger.warning("ITN DEBUG: POST data keys = %s", list(post_data.keys()))
-    # --- END TEMPORARY DEBUG LOGGING ---
-
     return computed == received_signature
 
 
