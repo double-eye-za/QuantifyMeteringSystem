@@ -196,6 +196,44 @@ breadcrumb %}
         </div>
         {% endif %}
 
+        {# Hot water dual-component from rate_structure if present #}
+        {% if rs and rs.water_component %}
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2"><i class="fas fa-fire text-orange-500 mr-1"></i>Hot Water Dual-Component</p>
+          <div class="text-xs rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium">
+              <div class="px-3 py-2">Component</div>
+              <div class="px-3 py-2 text-right">Rate</div>
+            </div>
+            {% if rs.water_component.flat_rate %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300"><i class="fas fa-tint text-blue-500 mr-1"></i>Water</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.water_component.flat_rate | format_number(2) }}/kL</div>
+            </div>
+            {% elif rs.water_component.tiers %}
+            {% for t in rs.water_component.tiers %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300"><i class="fas fa-tint text-blue-500 mr-1"></i>Water {{ t.from }}{% if t.to %}-{{ t.to }}{% else %}+{% endif %} kL</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ t.rate | format_number(2) }}/kL</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% if rs.electricity_component and rs.electricity_component.flat_rate %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300"><i class="fas fa-bolt text-yellow-500 mr-1"></i>Electricity (Heating)</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">R {{ rs.electricity_component.flat_rate | format_number(2) }}/kWh</div>
+            </div>
+            {% endif %}
+            {% if rs.conversion_factor %}
+            <div class="grid grid-cols-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="px-3 py-2 text-gray-700 dark:text-gray-300"><i class="fas fa-exchange-alt text-gray-500 mr-1"></i>Conversion Factor</div>
+              <div class="px-3 py-2 text-gray-900 dark:text-white text-right">{{ rs.conversion_factor }} kWh/L</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
         {# Fixed/Additional charges from rate_structure if present #}
         {% if rs and rs.fixed_charges and rs.fixed_charges|length %}
         <div class="mt-4">
@@ -272,6 +310,11 @@ breadcrumb %}
             <th
               class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
             >
+              Hot Water Markup
+            </th>
+            <th
+              class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+            >
               Free Solar
             </th>
             <th
@@ -315,6 +358,15 @@ breadcrumb %}
                     {% endfor %}
                                         </select>
                                         </div>
+                                        <div>
+                  <label class="block text-xs text-gray-500 mb-1">Hot Water</label>
+                  <select id="hw_rate_{{ e.id }}" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">-- Select --</option>
+                    {% for rt in hot_water_rate_tables %}
+                    <option value="{{ rt.id }}" {{ 'selected' if e.hot_water_rate_table_id == rt.id else '' }}>{{ rt.name }}</option>
+                    {% endfor %}
+                                        </select>
+                                        </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-center">
@@ -326,6 +378,12 @@ breadcrumb %}
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-1">
                 <input id="water_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.water_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                            <span class="text-sm text-gray-500">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                <input id="hw_markup_{{ e.id }}" type="number" step="0.01" value="{{ e.hot_water_markup_percentage or 0 }}" class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                                             <span class="text-sm text-gray-500">%</span>
                                         </div>
                                     </td>

@@ -199,6 +199,12 @@ def get_default_rate_structure(utility_type: str) -> Dict[str, Any]:
         return {"flat_rate": 2.50}  # R2.50/kWh
     elif utility_type == "water":
         return {"flat_rate": 15.00}  # R15.00/kL
+    elif utility_type == "hot_water":
+        return {
+            "water_component": {"flat_rate": 15.00},  # R15.00/kL
+            "electricity_component": {"flat_rate": 2.50},  # R2.50/kWh
+            "conversion_factor": 0.065,  # kWh per liter
+        }
     else:
         return {"flat_rate": 0.00}
 
@@ -227,3 +233,54 @@ def calculate_consumption_charge(
     total_amount = apply_markup(base_amount, markup_percent)
 
     return total_amount
+
+
+def compute_hot_water_cost(
+    volume_liters: float,
+    rate_structure: Dict[str, Any],
+    markup_percent: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Calculate dual-component cost for hot water.
+
+    A hot water rate structure contains:
+    - water_component: pricing for the water volume (R/kL)
+    - electricity_component: pricing for heating energy (R/kWh)
+    - conversion_factor: kWh per liter (typically ~0.065)
+
+    Falls back to single-rate calculation if no dual components found
+    (backward compat with old water-format rate structures).
+    """
+    volume_kl = volume_liters / 1000.0
+    conversion_factor = float(rate_structure.get("conversion_factor", 0.065))
+    electricity_kwh = volume_liters * conversion_factor
+
+    water_component = rate_structure.get("water_component", {})
+    elec_component = rate_structure.get("electricity_component", {})
+
+    # Backward compat: if no dual components, use standard calculation
+    if not water_component and not elec_component:
+        base = compute_from_structure(volume_kl, rate_structure)
+        total = apply_markup(base, markup_percent)
+        return {
+            "water_cost": total,
+            "electricity_cost": 0.0,
+            "total_cost": total,
+            "volume_kl": round(volume_kl, 3),
+            "electricity_kwh": 0.0,
+            "conversion_factor": conversion_factor,
+        }
+
+    water_base = compute_from_structure(volume_kl, water_component)
+    elec_base = compute_from_structure(electricity_kwh, elec_component)
+    water_total = apply_markup(water_base, markup_percent)
+    elec_total = apply_markup(elec_base, markup_percent)
+    combined = round(water_total + elec_total, 2)
+
+    return {
+        "water_cost": water_total,
+        "electricity_cost": elec_total,
+        "total_cost": combined,
+        "volume_kl": round(volume_kl, 3),
+        "electricity_kwh": round(electricity_kwh, 3),
+        "conversion_factor": conversion_factor,
+    }

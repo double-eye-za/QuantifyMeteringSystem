@@ -97,6 +97,7 @@ endblock %} {% block breadcrumb %}
           <option value="">Select Resource</option>
           <option value="electricity">Electricity</option>
           <option value="water">Water</option>
+          <option value="hot_water">Hot Water</option>
           <option value="service">Service Fee</option>
         </select>
       </div>
@@ -171,7 +172,7 @@ endblock %} {% block breadcrumb %}
     </h2>
 
     <!-- Pricing Model Selection -->
-    <div class="mb-6">
+    <div id="pricingModelsContainer" class="mb-6">
       <label
         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
       >
@@ -610,6 +611,94 @@ endblock %} {% block breadcrumb %}
             <option>Monthly peak</option>
           </select>
         </div>
+      </div>
+    </div>
+
+    <!-- Hot Water Dual-Component Section (shown only when resource type is hot_water) -->
+    <div
+      id="hotWaterSection"
+      class="hidden mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg"
+    >
+      <h3 class="text-md font-semibold text-gray-900 dark:text-white mb-2">
+        <i class="fas fa-fire text-orange-500 mr-2"></i>Hot Water Dual-Component Pricing
+      </h3>
+      <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+        Hot water billing has two components: water volume (R/kL) and electricity for heating (R/kWh).
+        <br/>Electricity kWh = Liters &times; Conversion Factor
+      </p>
+
+      <!-- Water Component -->
+      <div class="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+        <p class="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+          <i class="fas fa-tint mr-1"></i>Water Component (R/kL)
+        </p>
+        <div class="mb-2">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input type="radio" name="hwWaterModel" value="flat" checked onchange="toggleHotWaterModel('water')" />
+            Flat Rate
+          </label>
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 ml-4">
+            <input type="radio" name="hwWaterModel" value="tiered" onchange="toggleHotWaterModel('water')" />
+            Tiered
+          </label>
+        </div>
+        <div id="hwWaterFlat" class="flex items-center gap-3">
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            id="hwWaterRate"
+            value="18.00"
+            placeholder="Rate per kL"
+            class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kL</span>
+        </div>
+        <div id="hwWaterTiered" class="hidden">
+          <div id="hwWaterTiers" class="space-y-2"></div>
+          <button onclick="addHwWaterTier()" class="mt-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+            <i class="fas fa-plus mr-1"></i>Add Tier
+          </button>
+        </div>
+      </div>
+
+      <!-- Electricity Component -->
+      <div class="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+        <p class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
+          <i class="fas fa-bolt mr-1"></i>Electricity Component - Heating (R/kWh)
+        </p>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-900 dark:text-white">R</span>
+          <input
+            type="number"
+            step="0.01"
+            id="hwElecRate"
+            value="3.00"
+            placeholder="Rate per kWh"
+            class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="text-sm text-gray-900 dark:text-white">/kWh</span>
+        </div>
+      </div>
+
+      <!-- Conversion Factor -->
+      <div class="p-3 bg-white dark:bg-gray-800 rounded-lg">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-exchange-alt mr-1"></i>Conversion Factor
+        </p>
+        <div class="flex items-center gap-3">
+          <input
+            type="number"
+            step="0.001"
+            id="hwConversionFactor"
+            value="0.065"
+            class="w-32 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="text-sm text-gray-600 dark:text-gray-400">kWh per liter</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+          Example: 300L &times; 0.065 = 19.5 kWh electricity for heating
+        </p>
       </div>
     </div>
   </div>

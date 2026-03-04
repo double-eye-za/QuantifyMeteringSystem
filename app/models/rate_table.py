@@ -44,7 +44,7 @@ class RateTable(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "utility_type IN ('electricity','water','solar')",
+            "utility_type IN ('electricity','water','solar','hot_water')",
             name="ck_rate_tables_utility_type",
         ),
     )

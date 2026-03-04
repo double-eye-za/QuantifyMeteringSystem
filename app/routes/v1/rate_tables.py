@@ -28,6 +28,9 @@ def rate_tables_page():
     water_rate_tables = [
         rt.to_dict() for rt in svc_list_rate_tables(utility_type="water").all()
     ]
+    hot_water_rate_tables = [
+        rt.to_dict() for rt in svc_list_rate_tables(utility_type="hot_water").all()
+    ]
     # All rate tables
     raw_rate_tables = svc_list_rate_tables().all()
     all_rate_tables = [r.to_dict() for r in raw_rate_tables]
@@ -77,6 +80,7 @@ def rate_tables_page():
         estates=estates,
         electricity_rate_tables=electricity_rate_tables,
         water_rate_tables=water_rate_tables,
+        hot_water_rate_tables=hot_water_rate_tables,
     )
 
 
@@ -354,6 +358,7 @@ def delete_rate_table(rate_table_id: int):
         Estate.query.filter(
             (Estate.electricity_rate_table_id == rate_table_id)
             | (Estate.water_rate_table_id == rate_table_id)
+            | (Estate.hot_water_rate_table_id == rate_table_id)
         ).count()
         > 0
     )

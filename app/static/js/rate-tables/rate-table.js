@@ -6,11 +6,16 @@ async function saveEstateAssignment(estateId) {
       document.getElementById(`elec_rate_${estateId}`).value || null,
     water_rate_table_id:
       document.getElementById(`water_rate_${estateId}`).value || null,
+    hot_water_rate_table_id:
+      document.getElementById(`hw_rate_${estateId}`)?.value || null,
     electricity_markup_percentage: parseFloat(
       document.getElementById(`elec_markup_${estateId}`).value || "0"
     ),
     water_markup_percentage: parseFloat(
       document.getElementById(`water_markup_${estateId}`).value || "0"
+    ),
+    hot_water_markup_percentage: parseFloat(
+      document.getElementById(`hw_markup_${estateId}`)?.value || "0"
     ),
     solar_free_allocation_kwh: parseFloat(
       document.getElementById(`solar_free_${estateId}`).value || "0"
@@ -168,6 +173,9 @@ async function refreshOverrides() {
           : "",
         entry.water_rate_table_id
           ? `<span class=\"px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded-full\">Water: #${entry.water_rate_table_id}</span>`
+          : "",
+        entry.hot_water_rate_table_id
+          ? `<span class=\"px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 text-xs rounded-full\">Hot Water: #${entry.hot_water_rate_table_id}</span>`
           : "",
       ]
         .filter(Boolean)

@@ -222,8 +222,10 @@ def update_estate_rate_assignment(estate_id: int):
     updatable = (
         "electricity_rate_table_id",
         "water_rate_table_id",
+        "hot_water_rate_table_id",
         "electricity_markup_percentage",
         "water_markup_percentage",
+        "hot_water_markup_percentage",
         "solar_free_allocation_kwh",
     )
     for f in updatable:

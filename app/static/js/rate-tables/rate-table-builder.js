@@ -65,6 +65,64 @@ function togglePricingModel(model) {
   }
 }
 
+function updateRateTypes() {
+  const resourceType = document.getElementById("resourceType").value;
+  const hotWaterSection = document.getElementById("hotWaterSection");
+  const pricingModels = document.getElementById("pricingModelsContainer");
+
+  if (resourceType === "hot_water") {
+    // Hide standard pricing models and their sections
+    if (pricingModels) pricingModels.classList.add("hidden");
+    ["tieredSection", "touSection", "seasonalSection", "flatSection", "fixedSection", "demandSection"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("hidden");
+    });
+    // Show hot water section
+    if (hotWaterSection) hotWaterSection.classList.remove("hidden");
+  } else {
+    // Show standard pricing models, hide hot water section
+    if (pricingModels) pricingModels.classList.remove("hidden");
+    if (hotWaterSection) hotWaterSection.classList.add("hidden");
+  }
+}
+
+function toggleHotWaterModel(component) {
+  if (component === "water") {
+    const model = document.querySelector('input[name="hwWaterModel"]:checked')?.value || "flat";
+    const flatDiv = document.getElementById("hwWaterFlat");
+    const tieredDiv = document.getElementById("hwWaterTiered");
+    if (model === "flat") {
+      flatDiv.classList.remove("hidden");
+      tieredDiv.classList.add("hidden");
+    } else {
+      flatDiv.classList.add("hidden");
+      tieredDiv.classList.remove("hidden");
+      // Add initial tier if none exist
+      if (document.getElementById("hwWaterTiers").children.length === 0) {
+        addHwWaterTier();
+      }
+    }
+  }
+}
+
+function addHwWaterTier() {
+  const container = document.getElementById("hwWaterTiers");
+  const idx = container.children.length + 1;
+  const div = document.createElement("div");
+  div.className = "flex items-center gap-3";
+  div.innerHTML = `
+    <span class="text-sm font-medium w-16 text-gray-900 dark:text-white">Tier ${idx}:</span>
+    <input type="number" placeholder="From" class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="${idx === 1 ? 0 : ''}" />
+    <span class="text-gray-900 dark:text-white">-</span>
+    <input type="number" placeholder="To" class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+    <span class="text-sm text-gray-900 dark:text-white">kL @ R</span>
+    <input type="number" step="0.01" placeholder="Rate" class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+    <span class="text-sm text-gray-900 dark:text-white">/kL</span>
+    <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+  `;
+  container.appendChild(div);
+}
+
 function addTier() {
   tierCount++;
   const tieredRates = document.getElementById("tieredRates");
@@ -89,6 +147,38 @@ function addTier() {
 
 function calculateBillForUsage(usage, structure) {
   let total = 0;
+
+  // Hot water dual-component
+  if (structure.water_component) {
+    const volumeKl = usage / 1000.0; // usage in liters for hot water
+    const conversionFactor = structure.conversion_factor || 0.065;
+    const elecKwh = usage * conversionFactor;
+
+    // Water cost
+    const wc = structure.water_component;
+    if (wc.flat_rate) {
+      total += volumeKl * wc.flat_rate;
+    } else if (wc.tiers && wc.tiers.length > 0) {
+      let remaining = volumeKl;
+      for (const tier of wc.tiers) {
+        const from = tier.from || 0;
+        const to = tier.to || Infinity;
+        const range = to - from;
+        const units = Math.min(remaining, range);
+        if (units > 0) total += units * (tier.rate || 0);
+        remaining -= units;
+        if (remaining <= 0) break;
+      }
+    }
+
+    // Electricity cost
+    const ec = structure.electricity_component || {};
+    if (ec.flat_rate) {
+      total += elecKwh * ec.flat_rate;
+    }
+
+    return total;
+  }
 
   // Tiered pricing
   if (structure.tiers && structure.tiers.length > 0) {
@@ -140,6 +230,33 @@ function generatePreview() {
                 </div>
                 <div class="space-y-2">
             `;
+
+  // Hot water dual-component preview
+  if (resourceType === "hot_water") {
+    const structure = collectStructure();
+    const wc = structure.water_component || {};
+    const ec = structure.electricity_component || {};
+    const cf = structure.conversion_factor || 0.065;
+
+    previewHTML += `
+      <div class="p-3 bg-white dark:bg-gray-800 rounded">
+        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white"><i class="fas fa-tint text-blue-500 mr-1"></i> Water Component</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400">${wc.flat_rate ? 'R ' + wc.flat_rate.toFixed(2) + '/kL (flat rate)' : wc.tiers ? wc.tiers.length + ' tier(s) configured' : 'Not configured'}</p>
+      </div>
+      <div class="p-3 bg-white dark:bg-gray-800 rounded">
+        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white"><i class="fas fa-bolt text-yellow-500 mr-1"></i> Electricity Component (Heating)</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400">${ec.flat_rate ? 'R ' + ec.flat_rate.toFixed(2) + '/kWh' : 'Not configured'}</p>
+      </div>
+      <div class="p-3 bg-white dark:bg-gray-800 rounded">
+        <p class="font-medium text-sm mb-2 text-gray-900 dark:text-white"><i class="fas fa-exchange-alt text-gray-500 mr-1"></i> Conversion Factor</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400">${cf} kWh/L</p>
+      </div>
+    `;
+    previewHTML += "</div>";
+    previewContent.innerHTML = previewHTML;
+    updateSampleBills();
+    return;
+  }
 
   // Add configured pricing models to preview
   if (document.getElementById("tieredPricing").checked) {
@@ -205,18 +322,26 @@ function generatePreview() {
 
 function updateSampleBills() {
   const structure = collectStructure();
+  const resourceType = document.getElementById("resourceType").value;
   const markup = document.getElementById("applyMarkup")?.checked ?
     parseFloat(document.querySelector('#step3Content input[type="number"]')?.value || "20") / 100 : 0;
   const vat = document.getElementById("includeVAT")?.checked ? 0.15 : 0;
 
-  const usageLevels = [50, 250, 500];
+  // For hot water, sample usage is in liters; for others, kWh or kL
+  const isHotWater = resourceType === "hot_water";
+  const usageLevels = isHotWater ? [100, 300, 600] : [50, 250, 500];
   const elementIds = ["sampleBillLow", "sampleBillMid", "sampleBillHigh"];
+  const unit = isHotWater ? "L" : (resourceType === "water" ? "kL" : "kWh");
+
+  // Update sample labels
+  const labels = document.querySelectorAll("#step3Content .text-xs.text-gray-600");
+  const labelTexts = isHotWater
+    ? [`Low Usage (${usageLevels[0]}${unit})`, `Average (${usageLevels[1]}${unit})`, `High Usage (${usageLevels[2]}${unit})`]
+    : [`Low Usage (${usageLevels[0]} ${unit})`, `Average (${usageLevels[1]} ${unit})`, `High Usage (${usageLevels[2]} ${unit})`];
 
   usageLevels.forEach((usage, idx) => {
     let bill = calculateBillForUsage(usage, structure);
-    // Apply markup
     bill = bill * (1 + markup);
-    // Apply VAT
     bill = bill * (1 + vat);
 
     const el = document.getElementById(elementIds[idx]);
@@ -317,7 +442,45 @@ function collectDemandChargeStructure() {
   return { demand_charge: charge };
 }
 
+function collectHotWaterStructure() {
+  const resourceType = document.getElementById("resourceType").value;
+  if (resourceType !== "hot_water") return null;
+
+  const structure = {};
+
+  // Water component
+  const waterModel = document.querySelector('input[name="hwWaterModel"]:checked')?.value || "flat";
+  if (waterModel === "flat") {
+    const rate = parseFloat(document.getElementById("hwWaterRate")?.value || "0");
+    if (rate > 0) structure.water_component = { flat_rate: rate };
+  } else {
+    const rows = Array.from(document.getElementById("hwWaterTiers")?.children || []);
+    const tiers = rows.map(r => {
+      const inputs = r.querySelectorAll("input");
+      return {
+        from: parseFloat(inputs[0]?.value || "0"),
+        to: inputs[1]?.value === "" ? null : parseFloat(inputs[1]?.value || "0"),
+        rate: parseFloat(inputs[2]?.value || "0"),
+      };
+    }).filter(t => t.rate > 0);
+    if (tiers.length > 0) structure.water_component = { tiers };
+  }
+
+  // Electricity component
+  const elecRate = parseFloat(document.getElementById("hwElecRate")?.value || "0");
+  if (elecRate > 0) structure.electricity_component = { flat_rate: elecRate };
+
+  // Conversion factor
+  structure.conversion_factor = parseFloat(document.getElementById("hwConversionFactor")?.value || "0.065");
+
+  return Object.keys(structure).length > 0 ? structure : null;
+}
+
 function collectStructure() {
+  // Hot water uses its own dual-component structure
+  const hotWater = collectHotWaterStructure();
+  if (hotWater) return hotWater;
+
   const out = {};
   const tiered = collectTieredStructure();
   if (tiered) Object.assign(out, tiered);

@@ -32,6 +32,7 @@ class Unit(db.Model):
     hot_water_meter_id: Optional[int]
     electricity_rate_table_id: Optional[int]
     water_rate_table_id: Optional[int]
+    hot_water_rate_table_id: Optional[int]
     is_active: Optional[bool]
     created_by: Optional[int]
     updated_by: Optional[int]
@@ -74,6 +75,7 @@ class Unit(db.Model):
     hot_water_meter_id = db.Column(db.Integer, db.ForeignKey("meters.id"))
     electricity_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     water_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
+    hot_water_rate_table_id = db.Column(db.Integer, db.ForeignKey("rate_tables.id"))
     estate = db.relationship("Estate", backref="units")
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -196,6 +198,7 @@ class Unit(db.Model):
             "hot_water_meter_id": self.hot_water_meter_id,
             "electricity_rate_table_id": self.electricity_rate_table_id,
             "water_rate_table_id": self.water_rate_table_id,
+            "hot_water_rate_table_id": self.hot_water_rate_table_id,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

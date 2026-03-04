@@ -909,6 +909,8 @@ def apply_unit_overrides():
             unit_obj.electricity_rate_table_id = int(rate_table_id)
         elif utility_type == "water":
             unit_obj.water_rate_table_id = int(rate_table_id)
+        elif utility_type == "hot_water":
+            unit_obj.hot_water_rate_table_id = int(rate_table_id)
 
         svc_update_unit(unit_obj, {}, getattr(current_user, "id", None))
         updated_unit_ids.append(unit_obj.id)
@@ -961,6 +963,7 @@ def list_unit_overrides():
         db.or_(
             Unit.electricity_rate_table_id.isnot(None),
             Unit.water_rate_table_id.isnot(None),
+            Unit.hot_water_rate_table_id.isnot(None),
         )
     ).all()
 
@@ -972,6 +975,7 @@ def list_unit_overrides():
             "estate_id": unit.estate_id,
             "electricity_rate_table_id": unit.electricity_rate_table_id,
             "water_rate_table_id": unit.water_rate_table_id,
+            "hot_water_rate_table_id": unit.hot_water_rate_table_id,
         }
         overrides[str(unit.id)] = unit_data
 
@@ -997,6 +1001,8 @@ def remove_unit_overrides():
             unit_obj.electricity_rate_table_id = None
         elif utility_type == "water":
             unit_obj.water_rate_table_id = None
+        elif utility_type == "hot_water":
+            unit_obj.hot_water_rate_table_id = None
 
         svc_update_unit(unit_obj, {}, getattr(current_user, "id", None))
         updated_unit_ids.append(unit_obj.id)
