@@ -27,6 +27,7 @@ from .meter_alert import MeterAlert
 from .reconciliation_report import ReconciliationReport
 from .device_type import DeviceType
 from .communication_type import CommunicationType
+from .kpm31_telemetry import Kpm31Telemetry
 
 __all__ = [
     "User",
@@ -58,4 +59,5 @@ __all__ = [
     "ReconciliationReport",
     "DeviceType",
     "CommunicationType",
+    "Kpm31Telemetry",
 ]

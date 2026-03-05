@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+{% block title %}Meter Telemetry - Quantify Metering System{% endblock %}
+{% block page_title %}Meter Telemetry{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('api_v1.dashboard') }}" class="hover:text-primary">Home</a>
+<span class="mx-1">/</span>
+<span>Meter Telemetry</span>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Records</span>
+      <i class="fas fa-database text-primary"></i>
+    </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</div>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">All telemetry entries</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Single-Phase</span>
+      <i class="fas fa-bolt text-yellow-500"></i>
+    </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.single }}</div>
+    <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Single-phase readings</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Three-Phase</span>
+      <i class="fas fa-bolt text-blue-500"></i>
+    </div>
+    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ stats.three }}</div>
+    <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">Three-phase readings</p>
+  </div>
+</div>
+
+<!-- Header Row - Export Button -->
+<div class="flex justify-end mb-4">
+  <div class="flex items-center gap-3">
+    <a id="exportCsvBtn"
+      href="{{ url_for('api_v1.export_meter_telemetry') }}"
+      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm transition-colors"
+      title="Export to CSV">
+      <i class="fas fa-file-csv"></i>
+      Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <!-- Left side - Meter & Phase filters -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Meter Filter -->
+      <select id="meterFilter" name="meter_id"
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+        <option value="">All Meters</option>
+        {% for m in meters %}
+        <option value="{{ m.id }}" {% if current_filters.meter_id == m.id %}selected{% endif %}>
+          {{ m.serial_number }} ({{ m.model }})
+        </option>
+        {% endfor %}
+      </select>
+
+      <!-- Phase Type Filter -->
+      <select id="phaseTypeFilter" name="phase_type"
+        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+        <option value="">All Phases</option>
+        <option value="single" {% if current_filters.phase_type == 'single' %}selected{% endif %}>Single-Phase</option>
+        <option value="three" {% if current_filters.phase_type == 'three' %}selected{% endif %}>Three-Phase</option>
+      </select>
+    </div>
+
+    <!-- Right side - Date range & Clear -->
+    <div class="flex flex-wrap items-center gap-3">
+      <label class="text-sm text-gray-600 dark:text-gray-400">From:</label>
+      <input id="dateFromFilter" name="date_from" type="date"
+        value="{{ current_filters.date_from or '' }}"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" />
+
+      <label class="text-sm text-gray-600 dark:text-gray-400">To:</label>
+      <input id="dateToFilter" name="date_to" type="date"
+        value="{{ current_filters.date_to or '' }}"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-primary" />
+
+      <!-- Clear Filters Button -->
+      <button type="button" id="clearFiltersBtn"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors">
+        <i class="fas fa-times mr-2"></i> Clear
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Telemetry Table -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        KPM31 Telemetry Data
+      </h2>
+      <span class="text-sm text-gray-500 dark:text-gray-400">
+        <i class="fas fa-satellite-dish text-primary text-xs mr-1"></i>
+        Raw meter data
+      </span>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+      <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+        <tr>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Recorded At</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Meter</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Phase</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Voltage (V)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Current (A)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Power (kW)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">PF</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Freq (Hz)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Reactive (kvar)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Apparent (kVA)</th>
+          <th scope="col" class="px-4 py-3 whitespace-nowrap">Balance (kWh)</th>
+        </tr>
+      </thead>
+      <tbody id="telemetryTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- Populated by AJAX via TableFilter -->
+        <tr>
+          <td colspan="11" class="px-4 py-12 text-center">
+            <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
+              <span>Loading telemetry data...</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div id="paginationContainer" class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flash.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common/table-filters.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Helper: format datetime ──
+  function formatDate(isoStr) {
+    if (!isoStr) return '-';
+    const d = new Date(isoStr);
+    return d.toLocaleString('en-ZA', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+  }
+
+  // ── Helper: format number ──
+  function fmt(val, decimals) {
+    if (val === null || val === undefined) return '-';
+    return Number(val).toFixed(decimals !== undefined ? decimals : 2);
+  }
+
+  // ── Helper: get display voltage/current for both phase types ──
+  function getVoltage(row) {
+    if (row.phase_type === 'single') {
+      return fmt(row.voltage);
+    }
+    // Three-phase: show average of phase voltages or individual
+    var vals = [row.voltage_a, row.voltage_b, row.voltage_c].filter(v => v !== null && v > 0);
+    if (vals.length === 0) return '-';
+    var avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return fmt(avg) + ' <span class="text-xs text-gray-400">avg</span>';
+  }
+
+  function getCurrent(row) {
+    if (row.phase_type === 'single') {
+      return fmt(row.current, 3);
+    }
+    var vals = [row.current_a, row.current_b, row.current_c].filter(v => v !== null && v > 0);
+    if (vals.length === 0) return '-';
+    var avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return fmt(avg, 3) + ' <span class="text-xs text-gray-400">avg</span>';
+  }
+
+  // ── Phase badge ──
+  function phaseBadge(phaseType) {
+    if (phaseType === 'three') {
+      return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">3-Phase</span>';
+    }
+    return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">1-Phase</span>';
+  }
+
+  // ── Instantiate TableFilter ──
+  var telemetryFilter = new TableFilter({
+    tableBodyId: 'telemetryTableBody',
+    apiEndpoint: '/api/v1/api/meter-telemetry',
+    colSpan: 11,
+    filters: {
+      meter_id: { element: '#meterFilter', param: 'meter_id' },
+      phase_type: { element: '#phaseTypeFilter', param: 'phase_type' },
+      date_from: { element: '#dateFromFilter', param: 'date_from' },
+      date_to: { element: '#dateToFilter', param: 'date_to' },
+    },
+    renderRow: function(row) {
+      return '<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">'
+        + '<td class="px-4 py-3 whitespace-nowrap text-xs">' + formatDate(row.recorded_at) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap font-mono text-xs">' + (row.serial_number || '-') + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + phaseBadge(row.phase_type) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + getVoltage(row) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + getCurrent(row) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.total_active_power, 3) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.total_power_factor, 3) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.frequency) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.total_reactive_power, 3) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.total_apparent_power, 3) + '</td>'
+        + '<td class="px-4 py-3 whitespace-nowrap">' + fmt(row.prepaid_balance_kwh, 3) + '</td>'
+        + '</tr>';
+    },
+    paginationContainerId: 'paginationContainer',
+    renderPagination: function(data) {
+      var page = data.page || 1;
+      var totalPages = data.total_pages || 1;
+      var total = data.total || 0;
+      var perPage = data.per_page || 20;
+      var start = total > 0 ? ((page - 1) * perPage) + 1 : 0;
+      var end = Math.min(page * perPage, total);
+
+      var prevDisabled = page <= 1 ? 'pointer-events-none opacity-50' : '';
+      var nextDisabled = page >= totalPages ? 'pointer-events-none opacity-50' : '';
+
+      return '<div class="flex items-center justify-between">'
+        + '<span class="text-sm text-gray-700 dark:text-gray-400">'
+        + 'Showing <span class="font-medium">' + start + '</span>'
+        + ' to <span class="font-medium">' + end + '</span>'
+        + ' of <span class="font-medium">' + total + '</span> results'
+        + '</span>'
+        + '<div class="flex space-x-1">'
+        + '<button onclick="telemetryGoToPage(' + (page - 1) + ')" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-700 ' + prevDisabled + '">Previous</button>'
+        + '<span class="px-3 py-2 text-sm bg-primary text-white rounded-lg">' + page + '</span>'
+        + '<button onclick="telemetryGoToPage(' + (page + 1) + ')" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-700 ' + nextDisabled + '">Next</button>'
+        + '</div></div>';
+    },
+    onError: function(msg) {
+      console.error('Telemetry table error:', msg);
+    }
+  });
+
+  // ── Date filters trigger on change ──
+  document.getElementById('dateFromFilter').addEventListener('change', function() {
+    telemetryFilter.fetchAndRender();
+  });
+  document.getElementById('dateToFilter').addEventListener('change', function() {
+    telemetryFilter.fetchAndRender();
+  });
+
+  // ── Clear filters ──
+  document.getElementById('clearFiltersBtn').addEventListener('click', function() {
+    telemetryFilter.clearFilters();
+  });
+
+  // ── Update export link with current filters ──
+  function updateExportLink() {
+    var params = telemetryFilter.collectFilterValues();
+    var qs = new URLSearchParams(params).toString();
+    var base = '{{ url_for("api_v1.export_meter_telemetry") }}';
+    document.getElementById('exportCsvBtn').href = qs ? base + '?' + qs : base;
+  }
+
+  // Hook into filter changes to keep export link in sync
+  var origFetch = telemetryFilter.fetchAndRender.bind(telemetryFilter);
+  telemetryFilter.fetchAndRender = function(updateURL) {
+    updateExportLink();
+    return origFetch(updateURL);
+  };
+
+  // ── Pagination helper ──
+  window.telemetryGoToPage = function(page) {
+    if (page < 1) return;
+    // Append page param and re-fetch
+    var pageInput = document.createElement('input');
+    pageInput.type = 'hidden';
+    pageInput.id = '__telemetry_page';
+    pageInput.value = page;
+
+    // Temporarily override page collection
+    var origCollect = telemetryFilter.collectFilterValues.bind(telemetryFilter);
+    telemetryFilter.collectFilterValues = function() {
+      var vals = origCollect();
+      vals.page = page;
+      return vals;
+    };
+    telemetryFilter.fetchAndRender();
+    telemetryFilter.collectFilterValues = origCollect;
+  };
+
+  // ── Initial load ──
+  telemetryFilter.fetchAndRender();
+});
+</script>
+{% endblock %}

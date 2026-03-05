@@ -32,6 +32,7 @@ from . import tickets
 from . import messages
 from . import invites
 from . import lorawan
+from . import meter_telemetry
 
 
 @login_manager.unauthorized_handler

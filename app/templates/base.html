@@ -236,6 +236,12 @@
               <i class="fas fa-broadcast-tower w-4"></i> LoRaWAN
             </a>
             {% endif %}
+            {% if has_permission('meters.view') %}
+            <a href="{{ url_for('api_v1.meter_telemetry_page') }}"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm {% if request.endpoint == 'api_v1.meter_telemetry_page' %}bg-blue-50 dark:bg-blue-900/20 text-primary{% endif %}">
+              <i class="fas fa-satellite-dish w-4"></i> Meter Telemetry
+            </a>
+            {% endif %}
           </div>
           {% endif %}
 
