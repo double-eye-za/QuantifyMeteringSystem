@@ -8,16 +8,77 @@
 {% endblock %}
 
 {% block content %}
-<p class="text-gray-500 dark:text-gray-400 mb-6">All meters across your units.</p>
+<p class="text-gray-500 dark:text-gray-400 mb-6">Usage analytics across your meters.</p>
 
+<!-- Date Range Filter Bar -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+  <form id="dateFilterForm" method="GET" class="flex flex-wrap items-end gap-3">
+    <div class="flex-1 min-w-[140px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">From</label>
+      <input type="date" name="date_from" id="dateFrom" value="{{ date_from }}"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+    </div>
+    <div class="flex-1 min-w-[140px]">
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">To</label>
+      <input type="date" name="date_to" id="dateTo" value="{{ date_to }}"
+             class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
+    </div>
+    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-700 rounded-lg transition-colors">
+      <i class="fas fa-filter mr-1"></i> Apply
+    </button>
+    <div class="flex gap-1 flex-wrap">
+      <button type="button" onclick="setPreset('7-days')" class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">7 Days</button>
+      <button type="button" onclick="setPreset('30-days')" class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">30 Days</button>
+      <button type="button" onclick="setPreset('this-month')" class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">This Month</button>
+      <button type="button" onclick="setPreset('last-month')" class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Last Month</button>
+    </div>
+  </form>
+</div>
+
+<!-- Utility Summary KPI Cards -->
+{% if utility_summary %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{{ utility_summary|length if utility_summary|length <= 4 else 4 }} gap-4 mb-6">
+  {% for util in utility_summary %}
+  {% set colors = {'electricity': 'blue', 'water': 'cyan', 'hot_water': 'orange', 'solar': 'yellow'} %}
+  {% set icons = {'electricity': 'bolt', 'water': 'droplet', 'hot_water': 'fire', 'solar': 'sun'} %}
+  {% set color = colors.get(util.key, 'gray') %}
+  {% set icon = icons.get(util.key, 'gauge') %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-{{ color }}-100 dark:bg-{{ color }}-900/20 flex items-center justify-center">
+        <i class="fas fa-{{ icon }} text-{{ color }}-500"></i>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ util.label }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Period total</p>
+      </div>
+    </div>
+    <div class="flex items-baseline gap-2">
+      <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ "%.1f"|format(util.total) }}</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ util.uom }}</span>
+    </div>
+    <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      Est. cost: <span class="font-semibold text-gray-900 dark:text-white">R {{ "%.2f"|format(util.total_cost) }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Meter Cards -->
 {% if all_meters %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
   {% for meter in all_meters %}
+  {% set colors = {'electricity': 'blue', 'water': 'cyan', 'hot_water': 'orange', 'solar': 'yellow'} %}
+  {% set icons = {'electricity': 'bolt', 'water': 'droplet', 'hot_water': 'fire', 'solar': 'sun'} %}
+  {% set color = colors.get(meter.utility_key, 'gray') %}
+  {% set icon = icons.get(meter.utility_key, 'gauge') %}
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-100 dark:bg-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-900/20 flex items-center justify-center">
-          <i class="fas fa-{{ 'bolt' if meter.utility_type == 'Electricity' else 'droplet' if meter.utility_type == 'Water' else 'fire' if meter.utility_type == 'Hot Water' else 'sun' }} text-{{ 'blue' if meter.utility_type == 'Electricity' else 'cyan' if meter.utility_type == 'Water' else 'orange' if meter.utility_type == 'Hot Water' else 'yellow' }}-500"></i>
+        <div class="w-10 h-10 rounded-lg bg-{{ color }}-100 dark:bg-{{ color }}-900/20 flex items-center justify-center">
+          <i class="fas fa-{{ icon }} text-{{ color }}-500"></i>
         </div>
         <div>
           <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ meter.utility_type }}</p>
@@ -26,13 +87,64 @@
       </div>
       <span class="px-2 py-1 text-xs rounded-full {% if meter.status == 'online' %}bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400{% elif meter.status == 'offline' %}bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400{% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">{{ meter.status or 'Unknown' }}</span>
     </div>
+
+    <!-- Unit info -->
     <div class="text-xs text-gray-500 dark:text-gray-400">
       <span><i class="fas fa-house mr-1"></i> Unit {{ meter.unit_number }} &bull; {{ meter.estate_name }}</span>
     </div>
+
+    <!-- Last reading -->
     {% if meter.current_reading is not none %}
     <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-sm">
-      <span class="text-gray-500 dark:text-gray-400">Reading:</span>
+      <span class="text-gray-500 dark:text-gray-400">Latest reading:</span>
       <span class="font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(meter.current_reading) }}</span>
+      {% if meter.last_reading_date %}
+      <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">{{ meter.last_reading_date.strftime('%d %b %Y') if meter.last_reading_date.strftime is defined else meter.last_reading_date }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Usage Analytics -->
+    {% set a = meter.analytics %}
+    {% if a.has_data %}
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Period Usage</p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+          <p class="text-sm font-bold text-gray-900 dark:text-white">{{ a.total }}</p>
+          <p class="text-[10px] text-gray-400">{{ a.uom }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Avg/Day</p>
+          <p class="text-sm font-bold text-gray-900 dark:text-white">{{ a.avg_day }}</p>
+          <p class="text-[10px] text-gray-400">{{ a.uom }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Avg/Month</p>
+          <p class="text-sm font-bold text-gray-900 dark:text-white">{{ a.avg_month }}</p>
+          <p class="text-[10px] text-gray-400">{{ a.uom }}</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-center mt-2">
+        <div class="bg-{{ color }}-50 dark:bg-{{ color }}-900/10 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Total Cost</p>
+          <p class="text-sm font-bold text-{{ color }}-600 dark:text-{{ color }}-400">R {{ a.total_cost }}</p>
+        </div>
+        <div class="bg-{{ color }}-50 dark:bg-{{ color }}-900/10 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Cost/Day</p>
+          <p class="text-sm font-bold text-{{ color }}-600 dark:text-{{ color }}-400">R {{ a.cost_day }}</p>
+        </div>
+        <div class="bg-{{ color }}-50 dark:bg-{{ color }}-900/10 rounded-lg p-2">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Cost/Month</p>
+          <p class="text-sm font-bold text-{{ color }}-600 dark:text-{{ color }}-400">R {{ a.cost_month }}</p>
+        </div>
+      </div>
+      <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-right">{{ a.readings }} readings in period</p>
+    </div>
+    {% else %}
+    <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <p class="text-xs text-gray-400 dark:text-gray-500 italic">No readings in selected period</p>
     </div>
     {% endif %}
   </div>
@@ -45,4 +157,29 @@
   <p class="text-gray-500 dark:text-gray-400">No meters are assigned to your units.</p>
 </div>
 {% endif %}
+
+<script>
+function setPreset(preset) {
+  const today = new Date();
+  let from, to;
+  to = today.toISOString().split('T')[0];
+
+  if (preset === 'this-month') {
+    from = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else if (preset === 'last-month') {
+    from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    to = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
+  } else if (preset === '7-days') {
+    from = new Date(today.getTime() - 7 * 86400000);
+  } else if (preset === '30-days') {
+    from = new Date(today.getTime() - 30 * 86400000);
+  }
+
+  if (from) {
+    document.getElementById('dateFrom').value = from instanceof Date ? from.toISOString().split('T')[0] : from;
+    document.getElementById('dateTo').value = to;
+    document.getElementById('dateFilterForm').submit();
+  }
+}
+</script>
 {% endblock %}
