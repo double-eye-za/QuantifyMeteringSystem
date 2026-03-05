@@ -26,6 +26,7 @@ def make_celery(app_name: str = __name__) -> Celery:
             'app.tasks.notification_tasks',
             'app.tasks.prepaid_disconnect_tasks',
             'app.tasks.payment_tasks',
+            'app.tasks.meter_health_tasks',
         ]
     )
 
@@ -90,12 +91,19 @@ def make_celery(app_name: str = __name__) -> Celery:
             'schedule': crontab(hour=0, minute=0),
             'options': {'queue': 'payments'}
         },
+        # Check meter communication health every 15 minutes
+        'check-meter-health': {
+            'task': 'app.tasks.meter_health_tasks.check_meter_communication_health',
+            'schedule': crontab(minute='*/15'),
+            'options': {'queue': 'notifications'}
+        },
     }
 
     celery.conf.task_routes = {
         'app.tasks.notification_tasks.*': {'queue': 'notifications'},
         'app.tasks.prepaid_disconnect_tasks.*': {'queue': 'prepaid'},
         'app.tasks.payment_tasks.*': {'queue': 'payments'},
+        'app.tasks.meter_health_tasks.*': {'queue': 'notifications'},
     }
 
     return celery

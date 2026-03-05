@@ -28,6 +28,7 @@ class Meter(db.Model):
     is_active: Optional[bool]
     device_eui: Optional[str]
     lorawan_device_type: Optional[str]
+    expected_posting_interval: Optional[int]
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
     serial_number = db.Column(db.String(100), unique=True, nullable=False)
@@ -47,6 +48,7 @@ class Meter(db.Model):
     # LoRaWAN Device Fields (for backend MQTT integration)
     device_eui = db.Column(db.String(16), unique=True, nullable=True, index=True)
     lorawan_device_type = db.Column(db.String(50), nullable=True)  # milesight_em300, qalcosonic_w1
+    expected_posting_interval = db.Column(db.Integer, nullable=True)  # seconds between expected posts
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)
     updated_at = db.Column(
@@ -94,6 +96,7 @@ class Meter(db.Model):
             "is_active": self.is_active,
             "device_eui": self.device_eui,
             "lorawan_device_type": self.lorawan_device_type,
+            "expected_posting_interval": self.expected_posting_interval,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
