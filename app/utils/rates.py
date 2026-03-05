@@ -37,18 +37,59 @@ def _compute_tiered_amount(
 
 
 def compute_from_structure(quantity: float, structure: Dict[str, Any]) -> float:
-    """Compute amount from a flexible structure.
-    Supports either flat: {"flat_rate": <number>} or tiers: {"tiers": [{from,to,rate}]}.
+    """Compute amount from a flexible rate structure.
+
+    Supports:
+      - flat:     {"flat_rate": <number>}
+      - tiered:   {"tiers": [{from, to, rate}, ...]}
+      - seasonal: {"seasonal": {"summer": <rate>, "winter": <rate>}}
+      - TOU:      {"time_of_use": [{"rate": <number>, ...}, ...]}
+      - fixed:    {"fixed_charge": <number>}
+      - demand:   {"demand_charge": <rate>}
+    Multiple keys can coexist; amounts are summed.
     """
     if not structure or quantity <= 0:
         return 0.0
-    if isinstance(structure, dict):
-        if "flat_rate" in structure:
-            return round(float(structure.get("flat_rate", 0.0)) * float(quantity), 2)
-        if "tiers" in structure and isinstance(structure["tiers"], list):
-            return _compute_tiered_amount(float(quantity), structure["tiers"])
-    # Unknown structure
-    return 0.0
+    if not isinstance(structure, dict):
+        return 0.0
+
+    total = 0.0
+
+    # Flat rate (consumption × rate)
+    if "flat_rate" in structure:
+        total += float(structure["flat_rate"]) * float(quantity)
+
+    # Tiered rates
+    if "tiers" in structure and isinstance(structure["tiers"], list):
+        total += _compute_tiered_amount(float(quantity), structure["tiers"])
+
+    # Seasonal rates — use average of summer/winter when we don't know the month
+    if "seasonal" in structure and isinstance(structure["seasonal"], dict):
+        s = structure["seasonal"]
+        summer = float(s.get("summer", 0))
+        winter = float(s.get("winter", 0))
+        from datetime import date
+        month = date.today().month
+        # SA seasons: Oct-Mar = summer, Apr-Sep = winter
+        rate = summer if month >= 10 or month <= 3 else winter
+        total += rate * float(quantity)
+
+    # Time-of-use — use weighted average of all period rates as approximation
+    if "time_of_use" in structure and isinstance(structure["time_of_use"], list):
+        periods = structure["time_of_use"]
+        if periods:
+            avg_rate = sum(float(p.get("rate", 0)) for p in periods) / len(periods)
+            total += avg_rate * float(quantity)
+
+    # Fixed charge (flat monthly fee, not per-unit)
+    if "fixed_charge" in structure:
+        total += float(structure["fixed_charge"])
+
+    # Demand charge (per-unit rate, like flat)
+    if "demand_charge" in structure:
+        total += float(structure["demand_charge"]) * float(quantity)
+
+    return round(total, 2) if total > 0 else 0.0
 
 
 def apply_markup(amount: float, markup_percent: Optional[float]) -> float:

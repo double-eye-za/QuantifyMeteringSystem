@@ -7,15 +7,17 @@
 <span>Meters</span>
 {% endblock %}
 
+{% macro fmt_date(d) %}{{ d[8:] }}/{{ d[5:7] }}/{{ d[:4] }}{% endmacro %}
+
 {% macro change_badge(current, previous) %}
-  {% if current and previous and previous > 0 %}
+  {% if current is not none and previous is not none and previous > 0 %}
     {% set pct = ((current - previous) / previous * 100)|round(1) %}
     {% if pct > 0 %}
-      <span class="inline-flex items-center text-[10px] font-semibold text-red-600 dark:text-red-400"><i class="fas fa-arrow-up mr-0.5"></i>+{{ pct }}%</span>
+      <span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400" title="Increased {{ pct }}% vs comparison period"><i class="fas fa-arrow-up"></i>+{{ pct }}%</span>
     {% elif pct < 0 %}
-      <span class="inline-flex items-center text-[10px] font-semibold text-green-600 dark:text-green-400"><i class="fas fa-arrow-down mr-0.5"></i>{{ pct }}%</span>
+      <span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600 dark:text-green-400" title="Decreased {{ pct|abs }}% vs comparison period"><i class="fas fa-arrow-down"></i>{{ pct }}%</span>
     {% else %}
-      <span class="inline-flex items-center text-[10px] font-semibold text-gray-500"><i class="fas fa-equals mr-0.5"></i>0%</span>
+      <span class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-gray-500" title="No change vs comparison period"><i class="fas fa-equals"></i>0%</span>
     {% endif %}
   {% endif %}
 {% endmacro %}
@@ -26,14 +28,13 @@
 <!-- Date Range Filter Bar -->
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
   <form id="dateFilterForm" method="GET">
-    <!-- Compare hidden field -->
     <input type="hidden" name="compare" id="compareFlag" value="{{ '1' if compare else '0' }}">
 
     <!-- Period A -->
     <div class="flex flex-wrap items-end gap-3">
       <div class="flex-1 min-w-[140px]">
         <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-          {% if compare %}<span class="text-primary font-semibold">Period A</span> &mdash; {% endif %}From
+          {% if compare %}<span class="inline-block w-2.5 h-2.5 rounded-full bg-primary mr-1"></span><span class="text-primary font-semibold">Period A</span> &mdash; {% endif %}From
         </label>
         <input type="date" name="date_from" id="dateFrom" value="{{ date_from }}"
                class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary">
@@ -63,7 +64,7 @@
       <div class="flex flex-wrap items-end gap-3">
         <div class="flex-1 min-w-[140px]">
           <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-            <span class="text-orange-500 font-semibold">Period B</span> &mdash; From
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-orange-500 mr-1"></span><span class="text-orange-500 font-semibold">Period B</span> &mdash; From
           </label>
           <input type="date" name="compare_from" id="compareFrom" value="{{ compare_from }}"
                  class="w-full px-3 py-2 text-sm rounded-lg border border-orange-300 dark:border-orange-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-400 focus:border-orange-400">
@@ -81,6 +82,28 @@
     </div>
   </form>
 </div>
+
+<!-- Comparison Legend Banner -->
+{% if compare %}
+<div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 mb-6 flex flex-wrap items-center gap-4 text-sm">
+  <span class="text-gray-500 dark:text-gray-400 font-medium">Comparing:</span>
+  <span class="inline-flex items-center gap-1.5">
+    <span class="w-3 h-3 rounded-full bg-primary"></span>
+    <span class="font-semibold text-primary">Period A</span>
+    <span class="text-gray-600 dark:text-gray-300">{{ fmt_date(date_from) }} &ndash; {{ fmt_date(date_to) }}</span>
+  </span>
+  <span class="text-gray-400">vs</span>
+  <span class="inline-flex items-center gap-1.5">
+    <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+    <span class="font-semibold text-orange-500">Period B</span>
+    <span class="text-gray-600 dark:text-gray-300">{{ fmt_date(compare_from) }} &ndash; {{ fmt_date(compare_to) }}</span>
+  </span>
+  <span class="ml-auto text-xs text-gray-400 dark:text-gray-500">
+    <i class="fas fa-arrow-up text-red-500 mr-0.5"></i> higher than B &nbsp;
+    <i class="fas fa-arrow-down text-green-500 mr-0.5"></i> lower than B
+  </span>
+</div>
+{% endif %}
 
 <!-- Utility Summary KPI Cards -->
 {% if utility_summary %}
@@ -103,7 +126,7 @@
       </div>
       <div>
         <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ util.label }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Period total</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{% if compare %}Period A total{% else %}Period total{% endif %}</p>
       </div>
     </div>
     <div class="flex items-baseline gap-2">
@@ -117,7 +140,8 @@
     </div>
     {% if ns.cmp %}
     <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-      <span class="text-orange-500">Period B:</span>
+      <span class="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>
+      <span class="text-orange-500 font-medium">Period B:</span>
       {{ "%.1f"|format(ns.cmp.total) }} {{ ns.cmp.uom }} &bull; R {{ "%.2f"|format(ns.cmp.total_cost) }}
     </div>
     {% endif %}
@@ -175,25 +199,28 @@
       <div class="grid grid-cols-2 gap-3">
         <!-- Period A column -->
         <div>
-          <p class="text-xs font-semibold text-primary mb-2">Period A</p>
+          <div class="flex items-center gap-1.5 mb-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+            <p class="text-xs font-semibold text-primary">{{ fmt_date(date_from) }} &ndash; {{ fmt_date(date_to) }}</p>
+          </div>
           {% if a.has_data %}
           <div class="space-y-1.5">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 text-center">
-              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total</p>
+            <div class="bg-blue-50 dark:bg-blue-900/10 rounded-lg p-2 text-center border-l-2 border-primary">
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Usage</p>
               <p class="text-sm font-bold text-gray-900 dark:text-white">{{ a.total }} <span class="text-[10px] font-normal text-gray-400">{{ a.uom }}</span></p>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
               <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1.5 text-center">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400">Avg/Day</p>
-                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ a.avg_day }}</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ a.avg_day }} <span class="text-[9px] font-normal text-gray-400">{{ a.uom }}</span></p>
               </div>
               <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1.5 text-center">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400">Avg/Month</p>
-                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ a.avg_month }}</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ a.avg_month }} <span class="text-[9px] font-normal text-gray-400">{{ a.uom }}</span></p>
               </div>
             </div>
-            <div class="bg-{{ color }}-50 dark:bg-{{ color }}-900/10 rounded-lg p-2 text-center">
-              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Cost</p>
+            <div class="bg-{{ color }}-50 dark:bg-{{ color }}-900/10 rounded-lg p-2 text-center border-l-2 border-{{ color }}-400">
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Est. Cost</p>
               <p class="text-sm font-bold text-{{ color }}-600 dark:text-{{ color }}-400">R {{ a.total_cost }}</p>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
@@ -206,33 +233,38 @@
                 <p class="text-xs font-bold text-{{ color }}-600 dark:text-{{ color }}-400">R {{ a.cost_month }}</p>
               </div>
             </div>
+            <p class="text-[10px] text-gray-400 text-right">{{ a.readings }} readings</p>
           </div>
           {% else %}
-          <p class="text-xs text-gray-400 italic">No data</p>
+          <p class="text-xs text-gray-400 italic py-4 text-center">No readings in this period</p>
           {% endif %}
         </div>
 
+        <!-- Divider + VS -->
         <!-- Period B column -->
         <div>
-          <p class="text-xs font-semibold text-orange-500 mb-2">Period B</p>
+          <div class="flex items-center gap-1.5 mb-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+            <p class="text-xs font-semibold text-orange-500">{{ fmt_date(compare_from) }} &ndash; {{ fmt_date(compare_to) }}</p>
+          </div>
           {% if b.has_data %}
           <div class="space-y-1.5">
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 text-center">
-              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total</p>
+            <div class="bg-orange-50 dark:bg-orange-900/10 rounded-lg p-2 text-center border-l-2 border-orange-400">
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Usage</p>
               <p class="text-sm font-bold text-gray-900 dark:text-white">{{ b.total }} <span class="text-[10px] font-normal text-gray-400">{{ b.uom }}</span></p>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
               <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1.5 text-center">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400">Avg/Day</p>
-                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ b.avg_day }}</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ b.avg_day }} <span class="text-[9px] font-normal text-gray-400">{{ b.uom }}</span></p>
               </div>
               <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1.5 text-center">
                 <p class="text-[10px] text-gray-500 dark:text-gray-400">Avg/Month</p>
-                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ b.avg_month }}</p>
+                <p class="text-xs font-bold text-gray-900 dark:text-white">{{ b.avg_month }} <span class="text-[9px] font-normal text-gray-400">{{ b.uom }}</span></p>
               </div>
             </div>
-            <div class="bg-orange-50 dark:bg-orange-900/10 rounded-lg p-2 text-center">
-              <p class="text-[10px] text-gray-500 dark:text-gray-400">Total Cost</p>
+            <div class="bg-orange-50 dark:bg-orange-900/10 rounded-lg p-2 text-center border-l-2 border-orange-400">
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Est. Cost</p>
               <p class="text-sm font-bold text-orange-600 dark:text-orange-400">R {{ b.total_cost }}</p>
             </div>
             <div class="grid grid-cols-2 gap-1.5">
@@ -245,24 +277,26 @@
                 <p class="text-xs font-bold text-orange-600 dark:text-orange-400">R {{ b.cost_month }}</p>
               </div>
             </div>
+            <p class="text-[10px] text-gray-400 text-right">{{ b.readings }} readings</p>
           </div>
           {% else %}
-          <p class="text-xs text-gray-400 italic">No data</p>
+          <p class="text-xs text-gray-400 italic py-4 text-center">No readings in this period</p>
           {% endif %}
         </div>
       </div>
 
-      <!-- Difference summary -->
+      <!-- Difference summary bar -->
       {% if a.has_data and b.has_data %}
-      <div class="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <div class="mt-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg px-3 py-2">
         <div class="flex items-center justify-between text-xs">
-          <span class="text-gray-500 dark:text-gray-400">Difference:</span>
-          <div class="flex items-center gap-3">
+          <span class="text-gray-500 dark:text-gray-400 font-medium"><i class="fas fa-chart-line mr-1"></i>Change (A vs B):</span>
+          <div class="flex items-center gap-4">
             <span class="font-medium text-gray-900 dark:text-white">
               {% set diff = a.total - b.total %}
               {{ "%+.1f"|format(diff) }} {{ a.uom }}
               {{ change_badge(a.total, b.total) }}
             </span>
+            <span class="text-gray-300 dark:text-gray-600">|</span>
             <span class="font-medium text-gray-900 dark:text-white">
               {% set cost_diff = a.total_cost - b.total_cost %}
               R {{ "%+.2f"|format(cost_diff) }}
@@ -272,13 +306,12 @@
         </div>
       </div>
       {% endif %}
-      <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 text-right">{{ a.readings }} / {{ b.readings }} readings</p>
     </div>
 
     {% elif a.has_data %}
     {# ── Standard single-period layout ── #}
     <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Period Usage</p>
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Usage &mdash; {{ fmt_date(date_from) }} to {{ fmt_date(date_to) }}</p>
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2">
           <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
@@ -358,7 +391,6 @@ function toggleCompare() {
   const btn = document.getElementById('compareToggle');
 
   if (flag.value === '1') {
-    // Turn off compare
     flag.value = '0';
     panel.classList.add('hidden');
     btn.className = 'px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
@@ -366,15 +398,12 @@ function toggleCompare() {
     document.getElementById('compareTo').value = '';
     document.getElementById('dateFilterForm').submit();
   } else {
-    // Turn on compare — show panel, auto-fill with previous month
     flag.value = '1';
     panel.classList.remove('hidden');
     btn.className = 'px-3 py-2 text-xs font-medium rounded-lg bg-primary text-white transition-colors';
-
-    // Auto-populate Period B with the previous month if empty
     if (!document.getElementById('compareFrom').value) {
       setComparePreset('prev-month');
-      return; // setComparePreset will not submit, user can review
+      return;
     }
   }
 }
