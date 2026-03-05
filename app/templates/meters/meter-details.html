@@ -73,6 +73,20 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
           >{{ meter.installation_date or '—' }}</span
         >
       </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600 dark:text-gray-400">Alert Interval</span>
+        <span id="alertIntervalDisplay" class="text-sm font-medium text-gray-900 dark:text-white">
+          {% if meter.expected_posting_interval %}
+            {% set secs = meter.expected_posting_interval %}
+            {% if secs >= 86400 %}{{ (secs / 3600)|int }}h
+            {% elif secs >= 3600 %}{{ (secs // 3600)|int }}h {{ ((secs % 3600) // 60)|int }}m
+            {% elif secs >= 60 %}{{ (secs // 60)|int }}m
+            {% else %}{{ secs }}s{% endif %}
+          {% else %}
+            <span class="text-gray-400">Not set</span>
+          {% endif %}
+        </span>
+      </div>
     </div>
   </div>
 
@@ -446,7 +460,9 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       <i class="fas fa-cog mr-2"></i>Configure
     </button>
     <button
-      class="px-4 py-3 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800"
+      id="setAlertBtn"
+      {% if not meter %}disabled{% endif %}
+      class="px-4 py-3 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <i class="fas fa-bell mr-2"></i>Set Alert
     </button>
@@ -609,6 +625,100 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   </div>
 </div>
 
+<!-- Set Alert Interval Modal -->
+<div id="alertModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-bell text-yellow-500 mr-2"></i>Communication Alert
+      </h3>
+      <button id="closeAlertModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Set how long to wait before alerting when this meter stops reporting.
+        If no data is received within this interval, the meter will be flagged as offline.
+      </p>
+
+      <form id="alertForm">
+        <div class="mb-4">
+          <label for="alertInterval" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Alert Interval
+          </label>
+          <select
+            id="alertInterval"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+            <option value="">Disabled (no alerts)</option>
+            <option value="300">5 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="1800">30 minutes</option>
+            <option value="3600">1 hour</option>
+            <option value="7200">2 hours</option>
+            <option value="14400">4 hours</option>
+            <option value="43200">12 hours</option>
+            <option value="86400">24 hours</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+
+        <div id="customIntervalGroup" class="mb-4 hidden">
+          <label for="customMinutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Custom Interval (minutes)
+          </label>
+          <input
+            type="number"
+            id="customMinutes"
+            min="1"
+            max="10080"
+            placeholder="e.g. 60"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+          >
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm mb-4">
+          <div class="flex justify-between mb-1">
+            <span class="text-gray-600 dark:text-gray-400">Meter:</span>
+            <span class="font-mono font-medium text-gray-900 dark:text-white">{{ meter.serial_number if meter else '—' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">Current Setting:</span>
+            <span id="currentIntervalText" class="font-medium text-gray-900 dark:text-white">
+              {% if meter.expected_posting_interval %}
+                {% set secs = meter.expected_posting_interval %}
+                {% if secs >= 86400 %}{{ (secs / 3600)|int }}h
+                {% elif secs >= 3600 %}{{ (secs // 3600)|int }}h {{ ((secs % 3600) // 60)|int }}m
+                {% elif secs >= 60 %}{{ (secs // 60)|int }}m
+                {% else %}{{ secs }}s{% endif %}
+              {% else %}Disabled{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelAlertBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="submitAlertBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-check mr-2"></i>Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
 <script>
@@ -617,4 +727,114 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   window.METER_TYPE = "{{ meter.meter_type if meter else 'unknown' }}";
 </script>
 <script src="/static/js/meters/meter-details.js"></script>
+<script>
+  // ─── Set Alert Interval Modal ───
+  (function() {
+    const METER_DB_ID = {{ meter.id if meter else 'null' }};
+    const currentInterval = {{ meter.expected_posting_interval if meter and meter.expected_posting_interval else 'null' }};
+
+    const modal = document.getElementById('alertModal');
+    const select = document.getElementById('alertInterval');
+    const customGroup = document.getElementById('customIntervalGroup');
+    const customInput = document.getElementById('customMinutes');
+
+    // Open modal
+    document.getElementById('setAlertBtn')?.addEventListener('click', () => {
+      // Pre-select current value
+      if (currentInterval) {
+        const option = select.querySelector(`option[value="${currentInterval}"]`);
+        if (option) {
+          select.value = currentInterval;
+        } else {
+          select.value = 'custom';
+          customGroup.classList.remove('hidden');
+          customInput.value = Math.round(currentInterval / 60);
+        }
+      } else {
+        select.value = '';
+      }
+      modal.classList.remove('hidden');
+    });
+
+    // Close modal
+    function closeModal() { modal.classList.add('hidden'); }
+    document.getElementById('closeAlertModal')?.addEventListener('click', closeModal);
+    document.getElementById('cancelAlertBtn')?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Toggle custom input
+    select?.addEventListener('change', () => {
+      if (select.value === 'custom') {
+        customGroup.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customGroup.classList.add('hidden');
+      }
+    });
+
+    // Submit
+    document.getElementById('alertForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!METER_DB_ID) return;
+
+      let intervalSeconds = null;
+      if (select.value === 'custom') {
+        const mins = parseInt(customInput.value, 10);
+        if (!mins || mins < 1) {
+          customInput.classList.add('border-red-500');
+          return;
+        }
+        intervalSeconds = mins * 60;
+      } else if (select.value) {
+        intervalSeconds = parseInt(select.value, 10);
+      }
+
+      const btn = document.getElementById('submitAlertBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+      try {
+        const resp = await fetch(`/api/v1/meters/${METER_DB_ID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expected_posting_interval: intervalSeconds })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          // Update the display on the page
+          const display = document.getElementById('alertIntervalDisplay');
+          if (display) {
+            if (intervalSeconds) {
+              display.textContent = formatInterval(intervalSeconds);
+            } else {
+              display.innerHTML = '<span class="text-gray-400">Not set</span>';
+            }
+          }
+          closeModal();
+          if (typeof showFlashMessage === 'function') {
+            showFlashMessage('Alert interval updated successfully.', 'success');
+          }
+        } else {
+          alert(data.message || 'Failed to update alert interval');
+        }
+      } catch (err) {
+        alert('Error saving: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i>Save';
+      }
+    });
+
+    function formatInterval(secs) {
+      if (secs >= 86400) return Math.round(secs / 3600) + 'h';
+      if (secs >= 3600) {
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        return m ? `${h}h ${m}m` : `${h}h`;
+      }
+      if (secs >= 60) return Math.floor(secs / 60) + 'm';
+      return secs + 's';
+    }
+  })();
+</script>
 {% endblock %}

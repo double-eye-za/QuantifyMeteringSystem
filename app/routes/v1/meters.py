@@ -502,7 +502,20 @@ def update_meter(meter_id: int):
         # Allow clearing device_eui by setting to empty string or null
         payload["device_eui"] = None
 
-    for f in ("serial_number", "meter_type", "installation_date", "is_active", "device_eui"):
+    # Validate expected_posting_interval if provided
+    if "expected_posting_interval" in payload:
+        val = payload["expected_posting_interval"]
+        if val is not None:
+            try:
+                val = int(val)
+                if val < 60:
+                    return jsonify({"message": "Alert interval must be at least 60 seconds"}), 400
+                payload["expected_posting_interval"] = val
+            except (TypeError, ValueError):
+                return jsonify({"message": "Alert interval must be a number (seconds)"}), 400
+        # None is valid — means disabled
+
+    for f in ("serial_number", "meter_type", "installation_date", "is_active", "device_eui", "expected_posting_interval"):
         if f in payload:
             setattr(meter, f, payload[f])
     from ...db import db
