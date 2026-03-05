@@ -159,9 +159,27 @@ def portal_meters():
     except ValueError:
         date_to = datetime.combine(today, datetime.max.time())
 
+    # --- Comparison mode ---
+    compare = request.args.get('compare', '') == '1'
+    cmp_from = cmp_to = None
+    if compare:
+        cmp_from_str = request.args.get('compare_from', '')
+        cmp_to_str = request.args.get('compare_to', '')
+        try:
+            cmp_from = datetime.strptime(cmp_from_str, '%Y-%m-%d') if cmp_from_str else None
+        except ValueError:
+            cmp_from = None
+        try:
+            cmp_to = datetime.strptime(cmp_to_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59) if cmp_to_str else None
+        except ValueError:
+            cmp_to = None
+        if not cmp_from or not cmp_to:
+            compare = False
+
     all_meters = []
     # Aggregate totals per utility for the summary KPIs
-    utility_totals = {}  # utility_type → {total, total_cost, days, uom}
+    utility_totals = {}  # utility_type → {total, total_cost, uom}
+    compare_totals = {}  # same structure for comparison period
 
     for unit_info in units:
         unit = Unit.query.get(unit_info['unit_id'])
@@ -194,6 +212,14 @@ def portal_meters():
                 rate_structure, markup
             )
 
+            # Comparison analytics
+            compare_analytics = None
+            if compare:
+                compare_analytics = _compute_meter_analytics(
+                    meter.id, utility_type, cmp_from, cmp_to,
+                    rate_structure, markup
+                )
+
             all_meters.append({
                 'id': meter.id,
                 'serial_number': meter.serial_number,
@@ -206,6 +232,7 @@ def portal_meters():
                 'unit_number': unit.unit_number,
                 'estate_name': unit_info.get('estate_name', ''),
                 'analytics': analytics,
+                'compare_analytics': compare_analytics,
             })
 
             # Accumulate utility-level totals
@@ -218,6 +245,15 @@ def portal_meters():
                 utility_totals[utility_type]['total'] += analytics['total']
                 utility_totals[utility_type]['total_cost'] += analytics['total_cost']
 
+            if compare and compare_analytics and compare_analytics['has_data']:
+                if utility_type not in compare_totals:
+                    compare_totals[utility_type] = {
+                        'label': label, 'uom': uom,
+                        'total': 0, 'total_cost': 0,
+                    }
+                compare_totals[utility_type]['total'] += compare_analytics['total']
+                compare_totals[utility_type]['total_cost'] += compare_analytics['total_cost']
+
     # Build summary list (sorted: electricity, water, hot_water, solar)
     utility_order = ['electricity', 'water', 'hot_water', 'solar']
     utility_summary = [
@@ -225,11 +261,20 @@ def portal_meters():
         for k in utility_order
         if k in utility_totals
     ]
+    compare_summary = [
+        {**compare_totals[k], 'key': k}
+        for k in utility_order
+        if k in compare_totals
+    ] if compare else []
 
     return render_template(
         'portal/meters.html',
         all_meters=all_meters,
         utility_summary=utility_summary,
+        compare_summary=compare_summary,
         date_from=date_from.strftime('%Y-%m-%d'),
         date_to=date_to.strftime('%Y-%m-%d'),
+        compare=compare,
+        compare_from=cmp_from.strftime('%Y-%m-%d') if cmp_from else '',
+        compare_to=cmp_to.strftime('%Y-%m-%d') if cmp_to else '',
     )
