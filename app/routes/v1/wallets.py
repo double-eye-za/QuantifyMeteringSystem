@@ -246,6 +246,12 @@ def topup_wallet(wallet_id: int):
     if not wallet:
         return jsonify({"error": "Not Found", "code": 404}), 404
 
+    # Block top-up when billing is disabled for this unit
+    from ...models import Unit
+    unit = Unit.query.filter_by(id=wallet.unit_id).first()
+    if unit and not getattr(unit, 'billing_enabled', True):
+        return jsonify({"error": "Wallet billing is disabled for this unit. Top-ups are not available.", "code": 403}), 403
+
     if amount is None or payment_method is None:
         return (
             jsonify(

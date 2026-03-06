@@ -371,6 +371,32 @@ block breadcrumb %}
                   </select>
                 </div>
               </div>
+              <!-- Photo Upload Section -->
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                  <i class="fas fa-camera mr-1"></i>Meter Photos
+                </label>
+                <!-- Existing photos thumbnail grid -->
+                <div id="editMeterPhotos" class="grid grid-cols-4 gap-2 mb-3">
+                  <p class="text-xs text-gray-400 col-span-4">Save the meter first to add photos</p>
+                </div>
+                <!-- Upload area -->
+                <div id="photoDropZone"
+                     class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors">
+                  <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 dark:text-gray-500 mb-1"></i>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Drag &amp; drop photos here, or <span class="text-primary underline">browse</span>
+                  </p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    JPG, PNG, GIF, WebP (max 5MB each, up to 10 photos)
+                  </p>
+                  <input type="file" id="photoFileInput" multiple accept="image/jpeg,image/png,image/gif,image/webp"
+                         class="hidden" />
+                </div>
+                <!-- Upload progress/preview area -->
+                <div id="photoUploadPreviews" class="grid grid-cols-4 gap-2 mt-2"></div>
+              </div>
+
               <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="hideEditMeter()" class="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded">Cancel</button>
                 <button type="submit" class="px-3 py-2 bg-primary text-white rounded">Save</button>
@@ -403,4 +429,5 @@ block breadcrumb %}
   };
 </script>
 <script src="{{ url_for('static', filename='js/meters/meters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/meters/meter-photos.js') }}"></script>
 {% endblock %}

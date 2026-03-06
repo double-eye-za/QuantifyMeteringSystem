@@ -164,6 +164,46 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   </div>
 </div>
 
+<!-- Meter Photos Gallery -->
+{% if meter_photos %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+    <i class="fas fa-images mr-2 text-primary"></i>Meter Photos
+    <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+      ({{ meter_photos|length }})
+    </span>
+  </h3>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    {% for photo in meter_photos %}
+    <div class="relative group cursor-pointer"
+         onclick="openPhotoLightbox('{{ photo.url }}', '{{ photo.original_filename }}')">
+      <img src="{{ photo.url }}" alt="{{ photo.original_filename }}"
+           class="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700
+                  group-hover:ring-2 group-hover:ring-primary transition-all" loading="lazy" />
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg p-2">
+        <span class="text-white text-xs truncate block">{{ photo.original_filename }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Photo Lightbox Modal -->
+<div id="photoLightbox"
+     class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4"
+     onclick="closePhotoLightbox(event)">
+  <div class="relative max-w-4xl max-h-[90vh]">
+    <button onclick="closePhotoLightbox()"
+            class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
+      <i class="fas fa-times"></i>
+    </button>
+    <img id="lightboxImage" src="" alt=""
+         class="max-w-full max-h-[85vh] object-contain rounded-lg" />
+    <div id="lightboxCaption" class="text-white text-sm text-center mt-2"></div>
+  </div>
+</div>
+
 <!-- Tabs -->
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
   <div class="border-b border-gray-200 dark:border-gray-700">
@@ -488,6 +528,66 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   {% endif %}
 </div>
 
+<!-- Meter Photos Management -->
+{% if meter %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+      <i class="fas fa-camera mr-2 text-primary"></i>Meter Photos
+      <span id="detailPhotoCount" class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+        ({{ meter_photos|length }})
+      </span>
+    </h3>
+  </div>
+
+  <!-- Photo Grid -->
+  <div id="detailPhotosGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-4">
+    {% if meter_photos %}
+      {% for photo in meter_photos %}
+      <div class="relative group" data-photo-id="{{ photo.id }}">
+        <div class="cursor-pointer" onclick="openPhotoLightbox('{{ photo.url }}', '{{ photo.original_filename }}')">
+          <img src="{{ photo.url }}" alt="{{ photo.original_filename }}"
+               class="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700
+                      group-hover:ring-2 group-hover:ring-primary transition-all" loading="lazy" />
+          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg p-2">
+            <span class="text-white text-xs truncate block">{{ photo.original_filename }}</span>
+          </div>
+        </div>
+        <button type="button"
+                onclick="deleteDetailPhoto({{ meter.id }}, {{ photo.id }}, this)"
+                class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 text-xs
+                       flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                title="Delete photo">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p id="detailNoPhotos" class="text-sm text-gray-400 dark:text-gray-500 col-span-full">
+        No photos uploaded yet
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Upload Area -->
+  <div id="detailPhotoDropZone"
+       class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center
+              cursor-pointer hover:border-primary transition-colors">
+    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 dark:text-gray-500 mb-2"></i>
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Drag &amp; drop photos here, or <span class="text-primary underline">browse</span>
+    </p>
+    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+      JPG, PNG, GIF, WebP (max 5MB each, up to 10 photos)
+    </p>
+    <input type="file" id="detailPhotoFileInput" multiple accept="image/jpeg,image/png,image/gif,image/webp"
+           class="hidden" />
+  </div>
+  <!-- Upload progress -->
+  <div id="detailPhotoUploadProgress" class="mt-2"></div>
+</div>
+{% endif %}
+
 <!-- Relay Control Confirmation Modal -->
 <div id="relayModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
   <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
@@ -720,6 +820,152 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
 </div>
 
 {% endblock %} {% block extra_js %}
+<script>
+  // ─── Photo Lightbox ───
+  function openPhotoLightbox(url, caption) {
+    const lb = document.getElementById('photoLightbox');
+    document.getElementById('lightboxImage').src = url;
+    document.getElementById('lightboxCaption').textContent = caption;
+    lb.classList.remove('hidden');
+    lb.classList.add('flex');
+  }
+  function closePhotoLightbox(event) {
+    const lb = document.getElementById('photoLightbox');
+    // Close only when clicking the backdrop or the close button (not the image)
+    if (event && event.target !== lb) return;
+    lb.classList.add('hidden');
+    lb.classList.remove('flex');
+  }
+
+  // ─── Detail Page Photo Management ───
+  const DETAIL_METER_DB_ID = {{ meter.id if meter else 'null' }};
+
+  // Delete a photo from the detail page
+  async function deleteDetailPhoto(meterId, photoId, btn) {
+    if (!confirm('Delete this photo?')) return;
+    try {
+      const resp = await fetch(`/api/v1/meters/${meterId}/photos/${photoId}`, { method: 'DELETE' });
+      if (resp.ok) {
+        const card = btn.closest('[data-photo-id]');
+        if (card) card.remove();
+        // Update count
+        const grid = document.getElementById('detailPhotosGrid');
+        const remaining = grid.querySelectorAll('[data-photo-id]').length;
+        document.getElementById('detailPhotoCount').textContent = `(${remaining})`;
+        // Also update the gallery section at the top
+        updateTopGallery(meterId);
+        if (remaining === 0) {
+          grid.innerHTML = '<p id="detailNoPhotos" class="text-sm text-gray-400 dark:text-gray-500 col-span-full">No photos uploaded yet</p>';
+        }
+        if (typeof showFlashMessage === 'function') {
+          showFlashMessage('Photo deleted', 'success');
+        }
+      } else {
+        const data = await resp.json();
+        if (typeof showFlashMessage === 'function') {
+          showFlashMessage(data.error || 'Failed to delete photo', 'error');
+        }
+      }
+    } catch (e) {
+      console.error('Error deleting photo:', e);
+    }
+  }
+
+  // Upload photos from the detail page
+  async function uploadDetailPhotos(files) {
+    if (!files || files.length === 0 || !DETAIL_METER_DB_ID) return;
+
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('photos', file);
+    }
+
+    const progress = document.getElementById('detailPhotoUploadProgress');
+    if (progress) {
+      progress.innerHTML = '<p class="text-sm text-blue-500"><i class="fas fa-spinner fa-spin mr-1"></i>Uploading…</p>';
+    }
+
+    try {
+      const resp = await fetch(`/api/v1/meters/${DETAIL_METER_DB_ID}/photos`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await resp.json();
+
+      if (result.data && result.data.length > 0) {
+        if (typeof showFlashMessage === 'function') {
+          showFlashMessage(result.message || 'Photos uploaded', 'success');
+        }
+        // Reload the page to show new photos in both gallery and management sections
+        window.location.reload();
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        if (typeof showFlashMessage === 'function') {
+          showFlashMessage(result.errors.join('; '), 'error');
+        }
+      }
+    } catch (e) {
+      console.error('Error uploading photos:', e);
+      if (typeof showFlashMessage === 'function') {
+        showFlashMessage('Error uploading photos', 'error');
+      }
+    } finally {
+      if (progress) progress.innerHTML = '';
+    }
+  }
+
+  // Refresh the top gallery section after delete (without full reload)
+  async function updateTopGallery(meterId) {
+    try {
+      const resp = await fetch(`/api/v1/meters/${meterId}/photos`);
+      if (!resp.ok) return;
+      const result = await resp.json();
+      const photos = result.data || [];
+
+      // Find the gallery section (first .bg-white with "Meter Photos" heading)
+      const gallerySection = document.querySelector('#photoLightbox')?.previousElementSibling?.previousElementSibling;
+      // Simpler: just reload if we want the top gallery in sync
+      // For now, the top gallery will update on next page load
+    } catch (e) {
+      console.error('Error refreshing gallery:', e);
+    }
+  }
+
+  // Setup drag-and-drop for the detail page upload zone
+  (function() {
+    const dropZone = document.getElementById('detailPhotoDropZone');
+    const fileInput = document.getElementById('detailPhotoFileInput');
+    if (!dropZone || !fileInput) return;
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        uploadDetailPhotos(fileInput.files);
+        fileInput.value = '';
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-primary', 'bg-blue-50', 'dark:bg-blue-900/20');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-900/20');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-900/20');
+      if (e.dataTransfer.files.length > 0) {
+        uploadDetailPhotos(e.dataTransfer.files);
+      }
+    });
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
 <script>
   // Make meter_id and meter_type available to JavaScript

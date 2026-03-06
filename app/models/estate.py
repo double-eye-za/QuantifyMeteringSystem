@@ -30,6 +30,7 @@ class Estate(db.Model):
     water_markup_percentage: Optional[float]
     hot_water_markup_percentage: Optional[float]
     solar_free_allocation_kwh: Optional[float]
+    billing_enabled: Optional[bool]
     is_active: Optional[bool]
     created_by: Optional[int]
     updated_by: Optional[int]
@@ -55,6 +56,7 @@ class Estate(db.Model):
     water_markup_percentage = db.Column(db.Numeric(5, 2), default=0.00)
     hot_water_markup_percentage = db.Column(db.Numeric(5, 2), default=0.00)
     solar_free_allocation_kwh = db.Column(db.Numeric(10, 2), default=50.00)
+    billing_enabled = db.Column(db.Boolean, default=True, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     updated_by = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -92,6 +94,7 @@ class Estate(db.Model):
             "solar_free_allocation_kwh": float(self.solar_free_allocation_kwh)
             if self.solar_free_allocation_kwh is not None
             else None,
+            "billing_enabled": self.billing_enabled,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

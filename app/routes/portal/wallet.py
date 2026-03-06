@@ -96,6 +96,12 @@ def portal_wallet_topup(unit_id):
         return redirect(url_for('portal.portal_wallet'))
 
     unit = Unit.query.get_or_404(unit_id)
+
+    # Block top-up when billing is disabled for this unit
+    if not getattr(unit, 'billing_enabled', True):
+        flash('Wallet billing is disabled for this unit. Top-ups are not available.', 'error')
+        return redirect(url_for('portal.portal_unit_detail', unit_id=unit_id))
+
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
     if not wallet:
         abort(404)
@@ -118,6 +124,12 @@ def portal_wallet_topup_post(unit_id):
         abort(403)
 
     unit = Unit.query.get_or_404(unit_id)
+
+    # Block top-up when billing is disabled for this unit
+    if not getattr(unit, 'billing_enabled', True):
+        flash('Wallet billing is disabled for this unit. Top-ups are not available.', 'error')
+        return redirect(url_for('portal.portal_unit_detail', unit_id=unit_id))
+
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
     if not wallet:
         abort(404)

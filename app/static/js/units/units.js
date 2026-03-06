@@ -116,10 +116,11 @@ function renderUnitRow(u) {
   actionsHtml += `<a href="/api/v1/units/${u.id}" class="text-primary hover:underline text-sm"><i class="fas fa-eye mr-1"></i>View</a>`;
 
   if (!isDecommissioned) {
+    if (permissions.canEdit) {
+      actionsHtml += `<button type="button" class="edit-unit-btn text-gray-600 dark:text-gray-400 hover:text-primary text-sm" data-unit="${unitJson}"><i class="fas fa-edit mr-1"></i>Edit</button>`;
+    }
     if (isVacant) {
       actionsHtml += `<button type="button" onclick="assignResident()" class="text-green-600 dark:text-green-400 hover:underline text-sm">Assign</button>`;
-    } else if (permissions.canEdit) {
-      actionsHtml += `<button type="button" class="edit-unit-btn text-gray-600 dark:text-gray-400 hover:text-primary text-sm" data-unit="${unitJson}"><i class="fas fa-edit mr-1"></i>Edit</button>`;
     }
 
     // Active units: show Decommission button only
@@ -155,6 +156,10 @@ function renderUnitRow(u) {
       <td class="px-4 py-3 text-center">${renderMeterCell(u.hot_water_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
       <td class="px-4 py-3 text-center">${renderMeterCell(u.solar_meter_id, unifiedBalance, isVacant, lowBalanceThreshold)}</td>
       <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
+      <td class="px-4 py-3 text-center">${u.billing_enabled !== false
+        ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"><i class="fas fa-wallet mr-1" style="font-size: 8px"></i> On</span>'
+        : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"><i class="fas fa-wallet mr-1" style="font-size: 8px"></i> Off</span>'
+      }</td>
       <td class="px-4 py-3">${actionsHtml}</td>
     </tr>
   `;
@@ -192,6 +197,9 @@ function editUnitFromData(data) {
   if (editHwmeter) editHwmeter.value = data.hot_water_meter_id || "";
   if (editSmeter) editSmeter.value = data.solar_meter_id || "";
 
+  const editBilling = document.getElementById("edit_unit_billing_enabled");
+  if (editBilling) editBilling.checked = data.billing_enabled !== false;
+
   showEditUnitModal();
 }
 
@@ -207,8 +215,29 @@ function refreshUnitsTable() {
 function showAddUnitModal() {
   addedPersons = []; // Reset on open
   renderAddedPersonsList();
+  // Set billing toggle default from selected estate
+  updateBillingToggleFromEstate();
   document.getElementById("addUnitModal").classList.remove("hidden");
 }
+
+// Update billing toggle based on selected estate's billing_enabled
+function updateBillingToggleFromEstate() {
+  const estateSelect = document.querySelector('#addUnitModal [name="estate_id"]');
+  const billingToggle = document.getElementById("add_unit_billing_enabled");
+  if (estateSelect && billingToggle) {
+    const selectedOption = estateSelect.options[estateSelect.selectedIndex];
+    const estateBilling = selectedOption?.dataset.billingEnabled !== "false";
+    billingToggle.checked = estateBilling;
+  }
+}
+
+// Listen for estate dropdown changes in Add Unit Modal
+document.addEventListener("DOMContentLoaded", function() {
+  const estateSelect = document.querySelector('#addUnitModal [name="estate_id"]');
+  if (estateSelect) {
+    estateSelect.addEventListener("change", updateBillingToggleFromEstate);
+  }
+});
 
 function hideAddUnitModal() {
   addedPersons = []; // Clear on close
@@ -519,6 +548,10 @@ function collectUnitFormPayload() {
     }
   });
 
+  // Billing enabled toggle (checkbox not captured by FormData when unchecked)
+  const billingCheckbox = document.querySelector('#addUnitModal [name="billing_enabled"]');
+  payload.billing_enabled = billingCheckbox ? billingCheckbox.checked : true;
+
   // Add owners and tenants arrays
   payload.owners = addedPersons.filter(p => p.role === 'owner').map(p => ({
     person_id: parseInt(p.person_id, 10)
@@ -544,6 +577,7 @@ function collectEditUnitFormPayload() {
     water_meter_id: valueOrNull(document.getElementById("edit_unit_wmeter")?.value),
     hot_water_meter_id: valueOrNull(document.getElementById("edit_unit_hwmeter")?.value),
     solar_meter_id: valueOrNull(document.getElementById("edit_unit_smeter")?.value),
+    billing_enabled: document.getElementById("edit_unit_billing_enabled")?.checked ?? true,
   };
   return payload;
 }

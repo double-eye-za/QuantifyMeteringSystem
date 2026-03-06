@@ -57,3 +57,9 @@ class Config:
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "noreply@quantifymetering.com")
+
+    # File upload configuration
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB max per request
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'static', 'uploads', 'meters')
+    ALLOWED_PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    MAX_PHOTOS_PER_METER = 10

@@ -79,3 +79,6 @@ tmp/
 
 # CodeSight session data
 .codesight/
+
+# Uploaded meter photos (user content, not tracked in git)
+app/static/uploads/

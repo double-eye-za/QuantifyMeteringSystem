@@ -73,6 +73,7 @@ async function saveNewEstate(event) {
         contact_phone: d.contact_number,
         contact_email: d.manager_email,
         total_units: Number(d.total_units || 0),
+        billing_enabled: document.querySelector('#addEstateModal [name="billing_enabled"]').checked,
         electricity_markup_percentage: Number(d.electricity_markup || 0),
         water_markup_percentage: Number(d.water_markup || 0),
         solar_free_allocation_kwh: Number(d.solar_free_kwh || 0),
@@ -127,6 +128,9 @@ function editEstate(buttonEl) {
     estate.contact_phone || "";
   document.getElementById("edit_manager_email").value =
     estate.contact_email || "";
+  // Billing enabled toggle
+  const billingToggle = document.getElementById("edit_billing_enabled");
+  if (billingToggle) billingToggle.checked = estate.billing_enabled !== false;
   // Billing/rates
   const electricityMarkUp = document.getElementById("edit_electricity_markup_field");
   if (electricityMarkUp)
@@ -180,6 +184,7 @@ async function saveEditedEstate(event) {
         contact_phone: updatedData.contact_number,
         contact_email: updatedData.manager_email,
         total_units: Number(updatedData.total_units || 0),
+        billing_enabled: document.getElementById("edit_billing_enabled").checked,
         electricity_markup_percentage: Number(
           updatedData.electricity_markup || 0
         ),

@@ -13,7 +13,29 @@
 >
 <span class="mx-1">/</span>
 <span>Unit {{ unit.unit_number or unit.id }}</span>
-{% endblock %} {% block content %} {% if unit.wallet_low_balance %}
+{% endblock %} {% block content %}
+{% if unit.billing_enabled is defined and not unit.billing_enabled %}
+<div class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-6">
+  <div class="flex items-center">
+    <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mr-3">
+      <i class="fas fa-wallet text-gray-400 text-lg"></i>
+    </div>
+    <div class="flex-1">
+      <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        Wallet Billing Disabled
+      </p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        Billing is turned off for this unit. Consumption will be recorded but not deducted from the wallet. Top-ups are disabled.
+      </p>
+    </div>
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+      <i class="fas fa-times-circle mr-1"></i> Billing Off
+    </span>
+  </div>
+</div>
+{% endif %}
+
+{% if unit.wallet_low_balance %}
 <div
   class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-6"
 >
@@ -27,7 +49,7 @@
         This unit has only R {{ unit.wallet_balance | default(0) }} remaining.
       </p>
     </div>
-    {% if is_super_admin() %}
+    {% if is_super_admin() and (unit.billing_enabled is not defined or unit.billing_enabled) %}
     <button
       id="topUpBtnWarning"
       class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
@@ -325,12 +347,18 @@
           Allocation
         </h3>
         {% if is_super_admin() %}
-        <button
-          id="topUpBtn"
-          class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
-        >
-          <i class="fas fa-plus-circle mr-2"></i>Top Up Wallet
-        </button>
+          {% if unit.billing_enabled is not defined or unit.billing_enabled %}
+          <button
+            id="topUpBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-plus-circle mr-2"></i>Top Up Wallet
+          </button>
+          {% else %}
+          <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed text-sm" title="Billing is disabled for this unit">
+            <i class="fas fa-ban mr-2"></i>Top Up Disabled
+          </span>
+          {% endif %}
         {% endif %}
       </div>
 

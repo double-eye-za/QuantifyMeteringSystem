@@ -125,6 +125,22 @@ def estates_page():
             "total": total_estate_meters,
         }
 
+    # Billing override counts: units where billing_enabled differs from estate
+    billing_override_counts = {}
+    for e in estates:
+        eid = e["id"]
+        estate_billing = e.get("billing_enabled", True)
+        override_count = (
+            db.session.query(func.count(Unit.id))
+            .filter(
+                Unit.estate_id == eid,
+                Unit.billing_enabled != estate_billing,
+            )
+            .scalar()
+            or 0
+        )
+        billing_override_counts[eid] = override_count
+
     # Rate tables for dropdowns
     electricity_rate_tables = [
         rt.to_dict() for rt in list_rate_tables_for_dropdown("electricity")
@@ -195,6 +211,7 @@ def estates_page():
         water_rate_tables=water_rate_tables,
         meter_configs=meter_configs,
         bulk_meters_data=bulk_meters_data,
+        billing_override_counts=billing_override_counts,
     )
 
 

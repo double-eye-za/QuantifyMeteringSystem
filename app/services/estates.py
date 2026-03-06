@@ -47,6 +47,7 @@ def create_estate(payload: dict, user_id: Optional[int] = None):
         ),
         water_markup_percentage=payload.get("water_markup_percentage", 0.00),
         solar_free_allocation_kwh=payload.get("solar_free_allocation_kwh", 50.00),
+        billing_enabled=payload.get("billing_enabled", True),
         is_active=payload.get("is_active", True),
         created_by=user_id,
     )
@@ -82,6 +83,7 @@ def update_estate(estate: Estate, payload: dict, user_id: Optional[int] = None):
         "electricity_markup_percentage",
         "water_markup_percentage",
         "solar_free_allocation_kwh",
+        "billing_enabled",
         "is_active",
     ):
         if field in payload:
@@ -89,6 +91,13 @@ def update_estate(estate: Estate, payload: dict, user_id: Optional[int] = None):
     if user_id is not None:
         estate.updated_by = user_id
     db.session.commit()
+
+    # Cascade billing_enabled to all units in this estate
+    if "billing_enabled" in payload:
+        Unit.query.filter_by(estate_id=estate.id).update(
+            {"billing_enabled": payload["billing_enabled"]}
+        )
+        db.session.commit()
 
     if (
         old_elec != estate.electricity_rate_table_id

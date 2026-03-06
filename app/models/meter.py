@@ -70,6 +70,12 @@ class Meter(db.Model):
         ),
     )
 
+    # Relationships
+    photos = db.relationship(
+        "MeterPhoto", back_populates="meter", lazy="dynamic",
+        order_by="MeterPhoto.sort_order", cascade="all, delete-orphan",
+    )
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -99,4 +105,5 @@ class Meter(db.Model):
             "expected_posting_interval": self.expected_posting_interval,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "photo_count": self.photos.count() if self.photos else 0,
         }

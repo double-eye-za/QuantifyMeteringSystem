@@ -130,6 +130,7 @@ def create_app() -> Flask:
             SystemSetting,
             MeterAlert,
             ReconciliationReport,
+            MeterPhoto,
         )
 
         # Register home page route

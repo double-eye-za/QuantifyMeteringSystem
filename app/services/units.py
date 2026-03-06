@@ -73,6 +73,7 @@ def create_unit(payload: dict, user_id: Optional[int] = None):
         or (estate.electricity_rate_table_id if estate else None),
         water_rate_table_id=payload.get("water_rate_table_id")
         or (estate.water_rate_table_id if estate else None),
+        billing_enabled=payload.get("billing_enabled", estate.billing_enabled if estate else True),
         is_active=payload.get("is_active", True),
         created_by=user_id,
     )
@@ -112,6 +113,7 @@ def update_unit(unit: Unit, payload: dict, user_id: Optional[int] = None):
         "hot_water_meter_id",
         "electricity_rate_table_id",
         "water_rate_table_id",
+        "billing_enabled",
         "is_active",
     ):
         if field in payload:

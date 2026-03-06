@@ -67,6 +67,14 @@ def mobile_initiate_topup(unit_id: int, mobile_user: MobileUser):
     if not unit:
         return jsonify({'error': 'Unit not found', 'message': f'Unit with ID {unit_id} not found'}), 404
 
+    # --- Billing toggle check ---
+    if not getattr(unit, 'billing_enabled', True):
+        return jsonify({
+            'error': 'Billing disabled',
+            'message': 'Wallet billing is disabled for this unit. Top-ups are not available.',
+            'code': 'BILLING_DISABLED',
+        }), 403
+
     wallet = Wallet.query.filter_by(unit_id=unit.id).first()
     if not wallet:
         return jsonify({'error': 'Wallet not found', 'message': 'No wallet found for this unit'}), 404

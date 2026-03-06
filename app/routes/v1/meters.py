@@ -329,6 +329,12 @@ def meter_details_page(meter_id: str):
             device_status = "online"
 
     meter_dict = meter.to_dict()
+
+    # Meter photos
+    from ...models import MeterPhoto
+    photos = MeterPhoto.query.filter_by(meter_id=meter.id).order_by(MeterPhoto.sort_order).all()
+    meter_photos = [p.to_dict() for p in photos]
+
     return render_template(
         "meters/meter-details.html",
         meter_id=meter.device_eui or meter.serial_number,
@@ -341,6 +347,7 @@ def meter_details_page(meter_id: str):
         credit_status=credit_status,
         device_status=device_status,
         recent_readings=recent_readings,
+        meter_photos=meter_photos,
     )
 
 
@@ -562,6 +569,10 @@ def delete_meter(meter_id: int):
     # Unassign from any unit
     _assign_meter_to_unit(meter, None)
     from ...db import db
+
+    # Clean up photo files from disk before DB cascade deletes the records
+    from ...utils.file_upload import delete_meter_upload_dir
+    delete_meter_upload_dir(meter_id)
 
     before = meter.to_dict()
     db.session.delete(meter)
@@ -1437,3 +1448,120 @@ def meter_transactions(meter_id: str):
             "meter_serial": meter.serial_number
         }
     }), 200
+
+
+# ---------------------------------------------------------------------------
+# Meter Photo Endpoints
+# ---------------------------------------------------------------------------
+
+@api_v1.get("/meters/<int:meter_id>/photos")
+@login_required
+@requires_permission("meters.view")
+def list_meter_photos(meter_id: int):
+    """Return all photos for a meter as JSON."""
+    from ...models import MeterPhoto
+
+    meter = svc_get_meter_by_id(meter_id)
+    if not meter:
+        return jsonify({"error": "Meter not found"}), 404
+
+    photos = (
+        MeterPhoto.query.filter_by(meter_id=meter_id)
+        .order_by(MeterPhoto.sort_order)
+        .all()
+    )
+    return jsonify({"data": [p.to_dict() for p in photos]})
+
+
+@api_v1.post("/meters/<int:meter_id>/photos")
+@login_required
+@requires_permission("meters.edit")
+def upload_meter_photos(meter_id: int):
+    """Upload one or more photos for a meter (multipart/form-data)."""
+    from ...models import MeterPhoto
+    from ...db import db
+    from ...utils.file_upload import save_upload
+    from flask import current_app
+
+    meter = svc_get_meter_by_id(meter_id)
+    if not meter:
+        return jsonify({"error": "Meter not found"}), 404
+
+    files = request.files.getlist("photos")
+    if not files or all(f.filename == "" for f in files):
+        return jsonify({"error": "No photos provided"}), 400
+
+    max_photos = current_app.config.get("MAX_PHOTOS_PER_METER", 10)
+    existing_count = MeterPhoto.query.filter_by(meter_id=meter_id).count()
+
+    saved = []
+    errors = []
+    for f in files:
+        if not f or not f.filename:
+            continue
+        if existing_count + len(saved) >= max_photos:
+            errors.append(f"Maximum {max_photos} photos per meter reached")
+            break
+        try:
+            stored_name, orig_name, size, mime = save_upload(f, meter_id)
+            photo = MeterPhoto(
+                meter_id=meter_id,
+                filename=stored_name,
+                original_filename=orig_name,
+                file_size=size,
+                mime_type=mime,
+                sort_order=existing_count + len(saved),
+            )
+            db.session.add(photo)
+            saved.append(photo)
+        except ValueError as e:
+            errors.append(f"{f.filename}: {str(e)}")
+
+    if saved:
+        db.session.commit()
+        log_action(
+            "meter.photo.upload",
+            entity_type="meter",
+            entity_id=meter_id,
+            new_values={
+                "count": len(saved),
+                "filenames": [p.original_filename for p in saved],
+            },
+        )
+
+    status_code = 201 if saved else 400
+    return jsonify({
+        "data": [p.to_dict() for p in saved],
+        "errors": errors,
+        "message": f"{len(saved)} photo(s) uploaded"
+        + (f", {len(errors)} error(s)" if errors else ""),
+    }), status_code
+
+
+@api_v1.delete("/meters/<int:meter_id>/photos/<int:photo_id>")
+@login_required
+@requires_permission("meters.edit")
+def delete_meter_photo(meter_id: int, photo_id: int):
+    """Delete a single photo from a meter."""
+    from ...models import MeterPhoto
+    from ...db import db
+    from ...utils.file_upload import delete_upload
+
+    photo = MeterPhoto.query.filter_by(id=photo_id, meter_id=meter_id).first()
+    if not photo:
+        return jsonify({"error": "Photo not found"}), 404
+
+    # Delete file from disk
+    delete_upload(meter_id, photo.filename)
+
+    old = photo.to_dict()
+    db.session.delete(photo)
+    db.session.commit()
+
+    log_action(
+        "meter.photo.delete",
+        entity_type="meter",
+        entity_id=meter_id,
+        old_values=old,
+    )
+    return jsonify({"message": "Photo deleted"})
