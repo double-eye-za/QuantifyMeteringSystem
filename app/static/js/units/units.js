@@ -176,6 +176,25 @@ function attachUnitRowEventListeners() {
   });
 }
 
+// Helper: set a <select> value, enabling the option if it was disabled.
+// Meters already assigned to THIS unit are marked disabled in the dropdown
+// to prevent other units from stealing them, but we need to allow this unit
+// to keep its own meter selected during editing.
+function setSelectValue(selectEl, value) {
+  if (!selectEl) return;
+  const strVal = value != null ? String(value) : "";
+  selectEl.value = strVal;
+  // If the assignment didn't take (option is disabled), enable it first
+  if (strVal && selectEl.value !== strVal) {
+    const opt = selectEl.querySelector(`option[value="${strVal}"]`);
+    if (opt) {
+      opt.disabled = false;
+      opt.textContent = opt.textContent.replace(" (assigned)", " (current)");
+      selectEl.value = strVal;
+    }
+  }
+}
+
 // Edit unit from data object (instead of DOM traversal)
 function editUnitFromData(data) {
   const modal = document.getElementById("editUnitModal");
@@ -192,10 +211,10 @@ function editUnitFromData(data) {
   if (editUnitNumber) editUnitNumber.value = data.unit_number || "";
   if (editUnitFloor) editUnitFloor.value = data.floor || "";
   if (editUnitEstate) editUnitEstate.value = data.estate_id || "";
-  if (editEmeter) editEmeter.value = data.electricity_meter_id || "";
-  if (editWmeter) editWmeter.value = data.water_meter_id || "";
-  if (editHwmeter) editHwmeter.value = data.hot_water_meter_id || "";
-  if (editSmeter) editSmeter.value = data.solar_meter_id || "";
+  setSelectValue(editEmeter, data.electricity_meter_id);
+  setSelectValue(editWmeter, data.water_meter_id);
+  setSelectValue(editHwmeter, data.hot_water_meter_id);
+  setSelectValue(editSmeter, data.solar_meter_id);
 
   const editBilling = document.getElementById("edit_unit_billing_enabled");
   if (editBilling) editBilling.checked = data.billing_enabled !== false;
