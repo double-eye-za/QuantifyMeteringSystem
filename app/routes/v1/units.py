@@ -20,7 +20,7 @@ from ...services.units import (
     recommission_unit as svc_recommission_unit,
     UnitDeleteError,
 )
-from ...services.meters import list_available_by_type as svc_list_available_meters
+from ...services.meters import list_all_by_type as svc_list_all_meters
 from ...services.persons import (
     list_persons_for_dropdown as svc_list_persons_for_dropdown,
 )
@@ -94,13 +94,13 @@ def units_page():
         }
 
     electricity_meters = [
-        serialize_meter(m) for m in svc_list_available_meters("electricity")
+        serialize_meter(m) for m in svc_list_all_meters("electricity")
     ]
-    water_meters = [serialize_meter(m) for m in svc_list_available_meters("water")]
+    water_meters = [serialize_meter(m) for m in svc_list_all_meters("water")]
     hot_water_meters = [
-        serialize_meter(m) for m in svc_list_available_meters("hot_water")
+        serialize_meter(m) for m in svc_list_all_meters("hot_water")
     ]
-    solar_meters = [serialize_meter(m) for m in svc_list_available_meters("solar")]
+    solar_meters = [serialize_meter(m) for m in svc_list_all_meters("solar")]
 
     persons = [
         {"id": p.id, "name": p.full_name}

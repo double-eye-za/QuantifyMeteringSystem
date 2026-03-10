@@ -274,6 +274,19 @@ def list_available_by_type(meter_type: str):
     )
 
 
+def list_all_by_type(meter_type: str):
+    """Return ALL active meters of a given type (both assigned and unassigned).
+
+    Used by the unit edit modal so assigned meters appear in the dropdown
+    and can stay selected when editing a unit.
+    """
+    return (
+        Meter.query.filter(Meter.meter_type == meter_type, Meter.is_active == True)
+        .order_by(Meter.serial_number)
+        .all()
+    )
+
+
 def list_for_meter_readings(
     meter_id: int, start: Optional[datetime] = None, end: Optional[datetime] = None
 ):
