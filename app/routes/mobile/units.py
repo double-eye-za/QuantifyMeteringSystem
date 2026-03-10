@@ -2,14 +2,110 @@
 from __future__ import annotations
 
 from flask import jsonify, request
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
+from sqlalchemy import func
 
+from ...db import db
 from ...services.mobile_users import can_access_unit, can_topup_unit
 from ...services.meters import get_meter_by_id as svc_get_meter_by_id
 from ...utils.feature_flags import is_feature_enabled
-from ...models import MobileUser, Unit, Meter, Wallet
+from ...utils.rates import (
+    calculate_consumption_charge,
+    compute_hot_water_cost,
+    get_default_rate_structure,
+)
+from ...models import MobileUser, Unit, Meter, Wallet, MeterReading, Estate, RateTable
 from .auth import require_mobile_auth
 from . import mobile_api
+
+
+# Utility metadata: label, unit of measure, raw-unit-is-liters flag
+_UTILITY_META = {
+    'electricity': ('Electricity', 'kWh', False),
+    'water':       ('Water',       'kL',  True),
+    'hot_water':   ('Hot Water',   'kL',  True),
+    'solar':       ('Solar',       'kWh', False),
+}
+
+_METER_FIELDS = [
+    ('electricity_meter_id', 'electricity'),
+    ('water_meter_id',       'water'),
+    ('hot_water_meter_id',   'hot_water'),
+    ('solar_meter_id',       'solar'),
+]
+
+
+def _resolve_rate_structure(unit, estate, utility_type):
+    """Resolve rate structure for a meter: unit override -> estate -> default."""
+    import json as _json
+    rt_id = None
+    markup = None
+    if utility_type == 'electricity':
+        rt_id = getattr(unit, 'electricity_rate_table_id', None) or (getattr(estate, 'electricity_rate_table_id', None) if estate else None)
+        markup = getattr(estate, 'electricity_markup_percentage', None) if estate else None
+    elif utility_type == 'water':
+        rt_id = getattr(unit, 'water_rate_table_id', None) or (getattr(estate, 'water_rate_table_id', None) if estate else None)
+        markup = getattr(estate, 'water_markup_percentage', None) if estate else None
+    elif utility_type == 'hot_water':
+        rt_id = getattr(unit, 'hot_water_rate_table_id', None) or (getattr(estate, 'hot_water_rate_table_id', None) if estate else None)
+        markup = getattr(estate, 'hot_water_markup_percentage', None) if estate else None
+
+    structure = None
+    if rt_id:
+        rt = RateTable.query.get(rt_id)
+        if rt and rt.rate_structure:
+            structure = rt.rate_structure if isinstance(rt.rate_structure, dict) else _json.loads(rt.rate_structure)
+    if not structure:
+        structure = get_default_rate_structure(utility_type)
+    return structure, float(markup or 0)
+
+
+def _compute_analytics(meter_id, utility_type, date_from, date_to, rate_structure, markup_pct):
+    """Compute consumption aggregates and cost for a meter over a date range."""
+    label, uom, is_liters = _UTILITY_META.get(utility_type, ('Unknown', '', False))
+
+    row = db.session.query(
+        func.sum(MeterReading.consumption_since_last).label('total'),
+        func.count(MeterReading.id).label('readings'),
+        func.min(MeterReading.reading_date).label('first'),
+        func.max(MeterReading.reading_date).label('last'),
+    ).filter(
+        MeterReading.meter_id == meter_id,
+        MeterReading.reading_date >= date_from,
+        MeterReading.reading_date <= date_to,
+        MeterReading.consumption_since_last.isnot(None),
+    ).first()
+
+    total_raw = float(row.total or 0)
+    count = int(row.readings or 0)
+    if count == 0 or total_raw == 0:
+        return None  # no data
+
+    total = total_raw / 1000.0 if is_liters else total_raw
+    delta = max((row.last - row.first).days, 1) if row.first and row.last else 1
+    avg_day = total / delta
+
+    # Cost
+    if utility_type == 'hot_water':
+        hw = compute_hot_water_cost(total_raw, rate_structure, markup_pct)
+        total_cost = hw['total_cost']
+    else:
+        total_cost = calculate_consumption_charge(total, utility_type, rate_structure, markup_pct)
+
+    cost_day = total_cost / delta if delta > 0 else 0
+
+    return {
+        'total': round(total, 2),
+        'uom': uom,
+        'avg_day': round(avg_day, 2),
+        'avg_week': round(avg_day * 7, 2),
+        'avg_month': round(avg_day * 30, 2),
+        'total_cost': round(total_cost, 2),
+        'cost_day': round(cost_day, 2),
+        'cost_week': round(cost_day * 7, 2),
+        'cost_month': round(cost_day * 30, 2),
+        'readings': count,
+    }
 
 
 @mobile_api.get("/units/<int:unit_id>/meters")
@@ -283,7 +379,6 @@ def get_meter_readings(meter_id: int, mobile_user: MobileUser):
         utility_type = 'hot_water'
 
     # Get readings
-    from ...models import MeterReading
     readings = MeterReading.query.filter(
         MeterReading.meter_id == meter_id,
         MeterReading.reading_date >= start_date,
@@ -479,8 +574,6 @@ def update_wallet_threshold(unit_id: int, mobile_user: MobileUser):
             }
         }
     """
-    from ...db import db
-
     # Check if user has access to this unit
     if not can_access_unit(mobile_user.person_id, unit_id):
         return jsonify({
@@ -527,4 +620,79 @@ def update_wallet_threshold(unit_id: int, mobile_user: MobileUser):
             'low_balance_alert_type': wallet.low_balance_alert_type or 'fixed',
             'low_balance_days_threshold': wallet.low_balance_days_threshold or 3,
         }
+    }), 200
+
+
+@mobile_api.get("/units/<int:unit_id>/consumption-analytics")
+@require_mobile_auth
+def get_consumption_analytics(unit_id: int, mobile_user: MobileUser):
+    """
+    Get consumption analytics for all meters on a unit.
+
+    Query parameters:
+        - days: Number of days to analyse (default: 30)
+
+    Response:
+        {
+            "period_days": 30,
+            "date_from": "2026-02-07",
+            "date_to": "2026-03-09",
+            "meters": [
+                {
+                    "meter_id": 1,
+                    "serial_number": "MTR001",
+                    "utility_type": "electricity",
+                    "total": 40.0,
+                    "uom": "kWh",
+                    "avg_day": 1.33,
+                    "avg_week": 9.33,
+                    "avg_month": 40.0,
+                    "total_cost": 100.0,
+                    "cost_day": 3.33,
+                    "cost_week": 23.33,
+                    "cost_month": 100.0,
+                    "readings": 3101
+                }
+            ]
+        }
+    """
+    if not can_access_unit(mobile_user.person_id, unit_id):
+        return jsonify({'error': 'Access denied', 'message': 'You do not have access to this unit'}), 403
+
+    unit = Unit.query.get(unit_id)
+    if not unit:
+        return jsonify({'error': 'Unit not found', 'message': f'Unit with ID {unit_id} not found'}), 404
+
+    days = request.args.get('days', default=30, type=int)
+    today = date.today()
+    date_to = datetime.combine(today, datetime.max.time())
+    date_from = datetime.combine(today - timedelta(days=days), datetime.min.time())
+
+    estate = Estate.query.get(unit.estate_id) if unit.estate_id else None
+
+    results = []
+    for meter_field, utility_type in _METER_FIELDS:
+        meter_id = getattr(unit, meter_field, None)
+        if not meter_id:
+            continue
+        meter = Meter.query.get(meter_id)
+        if not meter:
+            continue
+
+        rate_structure, markup = _resolve_rate_structure(unit, estate, utility_type)
+        analytics = _compute_analytics(meter_id, utility_type, date_from, date_to, rate_structure, markup)
+
+        if analytics:
+            results.append({
+                'meter_id': meter.id,
+                'serial_number': meter.serial_number,
+                'utility_type': utility_type,
+                **analytics,
+            })
+
+    return jsonify({
+        'period_days': days,
+        'date_from': date_from.strftime('%Y-%m-%d'),
+        'date_to': date_to.strftime('%Y-%m-%d'),
+        'meters': results,
     }), 200

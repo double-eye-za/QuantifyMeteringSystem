@@ -14,6 +14,8 @@ from ...services.mobile_users import (
     get_mobile_user_by_id,
 )
 from ...models import MobileUser, Person
+from ...utils.feature_flags import is_feature_enabled
+from ...services.system_settings import get_setting
 from . import mobile_api
 
 
@@ -187,6 +189,14 @@ def login():
     # Get person details
     person = mobile_user.person
 
+    # Wallet defaults to enabled; only disabled when flag explicitly set to True
+    wallet_disabled = is_feature_enabled('wallet_enabled')
+    # The flag name is inverted: feature_wallet_enabled = true means wallet IS enabled
+    # But is_feature_enabled defaults to False, so wallet shows by default.
+    # We use get_setting directly for clarity: if the setting exists and is False, hide it.
+    wallet_setting = get_setting('feature_wallet_enabled', default_value=None)
+    wallet_enabled = wallet_setting is not False  # True when not set or set to True
+
     return jsonify({
         'token': token,
         'user': mobile_user.to_dict(),
@@ -199,7 +209,10 @@ def login():
             'email': person.email,
         },
         'units': units,
-        'password_must_change': mobile_user.password_must_change
+        'password_must_change': mobile_user.password_must_change,
+        'settings': {
+            'wallet_enabled': wallet_enabled,
+        }
     }), 200
 
 

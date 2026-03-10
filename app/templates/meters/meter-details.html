@@ -132,7 +132,8 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
     </div>
   </div>
 
-  <!-- Current Balance Card -->
+  <!-- Current Balance Card (hidden when billing is disabled) -->
+  {% if not unit or unit.billing_enabled is not defined or unit.billing_enabled %}
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
       Current Balance
@@ -143,7 +144,6 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">&nbsp;</div>
       <div class="mt-4 space-y-2">
-        <!-- Debug: is_super_admin = {{ is_super_admin() }}, wallet = {{ 'exists' if wallet else 'none' }}, unit = {{ 'exists' if unit else 'none' }} -->
         {% if is_super_admin() %}
         <button
           id="topUpBtn"
@@ -162,6 +162,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
 <!-- Meter Photos Gallery -->
@@ -488,14 +489,11 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
     Quick Actions
   </h3>
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <button
-      class="px-4 py-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg hover:bg-green-200 dark:hover:bg-green-800"
-    >
-      <i class="fas fa-sync mr-2"></i>Force Read
-    </button>
-    <button
-      class="px-4 py-3 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800"
+      id="configureBtn"
+      {% if not meter %}disabled{% endif %}
+      class="px-4 py-3 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <i class="fas fa-cog mr-2"></i>Configure
     </button>
@@ -641,7 +639,117 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
   </div>
 </div>
 
-<!-- Top Up Modal -->
+<!-- Configure Meter Modal -->
+<div id="configureModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-[28rem] shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <i class="fas fa-cog text-blue-500 mr-2"></i>Configure Meter
+      </h3>
+      <button id="closeConfigureModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <form id="configureForm">
+        <div class="space-y-4">
+          <!-- Serial Number -->
+          <div>
+            <label for="cfgSerialNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Serial Number
+            </label>
+            <input
+              type="text"
+              id="cfgSerialNumber"
+              value="{{ meter.serial_number if meter else '' }}"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+            >
+          </div>
+
+          <!-- Device EUI -->
+          <div>
+            <label for="cfgDeviceEui" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Device EUI
+            </label>
+            <input
+              type="text"
+              id="cfgDeviceEui"
+              value="{{ meter.device_eui if meter and meter.device_eui else '' }}"
+              placeholder="16 hex characters (e.g. 24e124621f170095)"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white font-mono"
+            >
+            <p class="text-xs text-gray-400 mt-1">Required for disconnect/reconnect commands</p>
+          </div>
+
+          <!-- Meter Type -->
+          <div>
+            <label for="cfgMeterType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Meter Type
+            </label>
+            <select
+              id="cfgMeterType"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+            >
+              <option value="electricity" {% if meter and meter.meter_type == 'electricity' %}selected{% endif %}>Electricity</option>
+              <option value="water" {% if meter and meter.meter_type == 'water' %}selected{% endif %}>Water</option>
+              <option value="gas" {% if meter and meter.meter_type == 'gas' %}selected{% endif %}>Gas</option>
+              <option value="hot_water" {% if meter and meter.meter_type == 'hot_water' %}selected{% endif %}>Hot Water</option>
+              <option value="solar" {% if meter and meter.meter_type == 'solar' %}selected{% endif %}>Solar</option>
+            </select>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label for="cfgStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Status
+            </label>
+            <select
+              id="cfgStatus"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+            >
+              <option value="active" {% if meter and meter.is_active %}selected{% endif %}>Active</option>
+              <option value="inactive" {% if meter and not meter.is_active %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+
+          <!-- Installation Date -->
+          <div>
+            <label for="cfgInstallDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Installation Date
+            </label>
+            <input
+              type="date"
+              id="cfgInstallDate"
+              value="{{ meter.installation_date if meter and meter.installation_date else '' }}"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
+            >
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelConfigureBtn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            id="submitConfigureBtn"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600"
+          >
+            <i class="fas fa-check mr-2"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Top Up Modal (hidden when billing is disabled) -->
+{% if not unit or unit.billing_enabled is not defined or unit.billing_enabled %}
 <div id="topUpModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
   <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
     <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -724,6 +832,7 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Set Alert Interval Modal -->
 <div id="alertModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -968,9 +1077,10 @@ System{% endblock %} {% block page_title %}Meter Details: {{ meter_id or 'N/A'
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
 <script>
-  // Make meter_id and meter_type available to JavaScript
+  // Make meter_id, meter_type, and DB id available to JavaScript
   window.METER_ID = "{{ meter_id }}";
   window.METER_TYPE = "{{ meter.meter_type if meter else 'unknown' }}";
+  window.METER_DB_ID = {{ meter.id if meter else 'null' }};
 </script>
 <script src="/static/js/meters/meter-details.js"></script>
 <script>

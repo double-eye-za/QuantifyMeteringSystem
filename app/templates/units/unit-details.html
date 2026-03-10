@@ -339,7 +339,8 @@
 
   <!-- Center Column - Wallet & Meters -->
   <div class="lg:col-span-2 space-y-6">
-    <!-- Prepaid Wallet Status (static placeholders until backend data exists) -->
+    <!-- Prepaid Wallet Status (hidden when billing is disabled) -->
+    {% if unit.billing_enabled is not defined or unit.billing_enabled %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -518,6 +519,7 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
     <!-- Individual Meter Readings (static placeholders) -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">

@@ -416,6 +416,122 @@ function setupRelayControls() {
 }
 
 // ============================================
+// Configure Meter Functions
+// ============================================
+
+function openConfigureModal() {
+  const modal = document.getElementById("configureModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function closeConfigureModal() {
+  const modal = document.getElementById("configureModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function handleConfigureSubmit(event) {
+  event.preventDefault();
+
+  if (!window.METER_DB_ID) {
+    alert("Error: Meter ID not found");
+    return;
+  }
+
+  const serialNumber = document.getElementById("cfgSerialNumber").value.trim();
+  const deviceEui = document.getElementById("cfgDeviceEui").value.trim();
+  const meterType = document.getElementById("cfgMeterType").value;
+  const status = document.getElementById("cfgStatus").value;
+  const installDate = document.getElementById("cfgInstallDate").value;
+
+  if (!serialNumber) {
+    alert("Serial number is required");
+    return;
+  }
+
+  const payload = {
+    serial_number: serialNumber,
+    device_eui: deviceEui || null,
+    meter_type: meterType,
+    status: status,
+  };
+
+  if (installDate) {
+    payload.installation_date = installDate;
+  }
+
+  const submitBtn = document.getElementById("submitConfigureBtn");
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+  try {
+    const response = await fetch(`/api/v1/meters/${window.METER_DB_ID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      closeConfigureModal();
+      if (typeof showFlashMessage === "function") {
+        showFlashMessage("Meter configuration updated successfully.", "success");
+      }
+      // Reload page to reflect changes
+      window.location.reload();
+    } else {
+      alert(`Error: ${result.message || "Failed to update meter configuration"}`);
+    }
+  } catch (error) {
+    console.error("Configure error:", error);
+    alert("Error: Failed to update meter configuration. Please try again.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
+
+function setupConfigureControl() {
+  const configureBtn = document.getElementById("configureBtn");
+  const closeConfigureModalBtn = document.getElementById("closeConfigureModal");
+  const cancelConfigureBtn = document.getElementById("cancelConfigureBtn");
+  const configureForm = document.getElementById("configureForm");
+  const configureModal = document.getElementById("configureModal");
+
+  if (configureBtn) {
+    configureBtn.addEventListener("click", openConfigureModal);
+  }
+
+  if (closeConfigureModalBtn) {
+    closeConfigureModalBtn.addEventListener("click", closeConfigureModal);
+  }
+
+  if (cancelConfigureBtn) {
+    cancelConfigureBtn.addEventListener("click", closeConfigureModal);
+  }
+
+  if (configureForm) {
+    configureForm.addEventListener("submit", handleConfigureSubmit);
+  }
+
+  // Close modal when clicking outside
+  if (configureModal) {
+    configureModal.addEventListener("click", function (event) {
+      if (event.target === configureModal) {
+        closeConfigureModal();
+      }
+    });
+  }
+}
+
+// ============================================
 // Readings Table Functions
 // ============================================
 
@@ -954,6 +1070,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Setup Relay Controls (Disconnect/Reconnect)
   setupRelayControls();
+
+  // Setup Configure Modal
+  setupConfigureControl();
 
   // Initialize and fetch readings
   initReadingsDateFilters();
